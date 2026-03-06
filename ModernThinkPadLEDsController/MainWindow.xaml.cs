@@ -1,23 +1,28 @@
-﻿using System.Text;
+﻿using System.ComponentModel;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+using ModernThinkPadLEDsController.ViewModels;
+using Wpf.Ui.Controls;
 
 namespace ModernThinkPadLEDsController;
 
-/// <summary>
-/// Interaction logic for MainWindow.xaml
-/// </summary>
-public partial class MainWindow : Window
+public partial class MainWindow : FluentWindow
 {
-    public MainWindow()
+    public MainViewModel    MainVm     { get; }
+    public SettingsViewModel SettingsVm { get; }
+
+    public MainWindow(MainViewModel mainVm, SettingsViewModel settingsVm)
     {
+        MainVm     = mainVm;
+        SettingsVm = settingsVm;
         InitializeComponent();
+        DataContext = this;
+    }
+
+    // When the user clicks ✕, hide to tray instead of closing.
+    // App.xaml.cs listens to TrayIconService.ExitRequested for a real exit.
+    private void Window_Closing(object sender, CancelEventArgs e)
+    {
+        e.Cancel = true;
+        Hide();
     }
 }

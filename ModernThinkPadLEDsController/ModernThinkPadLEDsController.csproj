@@ -7,6 +7,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
 
     <!-- Single-file publish settings -->
     <PublishSingleFile>true</PublishSingleFile>
@@ -18,7 +19,19 @@
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-    <PackageReference Include="wpf-ui" Version="4.2.0" />
+    <PackageReference Include="H.NotifyIcon.Wpf"     Version="2.4.1" />
+    <PackageReference Include="wpf-ui"               Version="4.2.0" />
+    <PackageReference Include="NAudio"               Version="2.2.1" />
+  </ItemGroup>
+
+  <!-- inpoutx64.dll is a native (C++) DLL that talks to the kernel driver.
+       It cannot be packed inside the .exe like C# code can, so it sits next
+       to the .exe in the output folder. PublishSingleFile only bundles
+       managed (.NET) assemblies; native DLLs always stay as separate files. -->
+  <ItemGroup>
+    <Content Include="inpoutx64.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>

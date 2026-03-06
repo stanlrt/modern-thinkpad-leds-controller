@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ModernThinkPadLEDsController")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4823ed11d5a7010f8f00d6287b20dde8659dab4f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+66bffe777c080ee698f50ce8efd85655a5c3d657")]
 [assembly: System.Reflection.AssemblyProductAttribute("ModernThinkPadLEDsController")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ModernThinkPadLEDsController")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

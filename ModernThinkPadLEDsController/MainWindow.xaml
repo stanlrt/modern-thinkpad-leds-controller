@@ -1,12 +1,267 @@
-﻿<Window x:Class="ModernThinkPadLEDsController.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:ModernThinkPadLEDsController"
-        mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
+<ui:FluentWindow
+    x:Class="ModernThinkPadLEDsController.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    xmlns:vm="clr-namespace:ModernThinkPadLEDsController.ViewModels"
+    Title="Modern ThinkPad LEDs Controller"
+    Width="700" Height="560"
+    MinWidth="600" MinHeight="480"
+    WindowStartupLocation="CenterScreen"
+    Closing="Window_Closing">
 
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <ui:TitleBar Grid.Row="0" Title="Modern ThinkPad LEDs Controller"/>
+
+        <TabControl Grid.Row="1" Margin="8">
+
+            <!-- ============================================================ -->
+            <!-- TAB 1 — LED Control (manual On/Off/Blink buttons)            -->
+            <!-- ============================================================ -->
+            <TabItem Header="LED Control">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="16">
+
+                        <TextBlock Text="Manually set each LED state." Opacity="0.6" Margin="0,0,0,16"/>
+
+                        <ui:Card>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="110"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Power"       VerticalAlignment="Center" Margin="0,6"/>
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Red Dot"     VerticalAlignment="Center" Margin="0,6"/>
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Microphone"  VerticalAlignment="Center" Margin="0,6"/>
+                                <TextBlock Grid.Row="3" Grid.Column="0" Text="Sleep"       VerticalAlignment="Center" Margin="0,6"/>
+                                <TextBlock Grid.Row="4" Grid.Column="0" Text="Fn Lock"     VerticalAlignment="Center" Margin="0,6"/>
+
+                                <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Margin="0,4">
+                                    <Button Content="On"    Command="{Binding MainVm.PowerOnCommand}"    Margin="0,0,6,0"/>
+                                    <Button Content="Off"   Command="{Binding MainVm.PowerOffCommand}"   Margin="0,0,6,0"/>
+                                    <Button Content="Blink" Command="{Binding MainVm.PowerBlinkCommand}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="0,4">
+                                    <Button Content="On"    Command="{Binding MainVm.RedDotOnCommand}"   Margin="0,0,6,0"/>
+                                    <Button Content="Off"   Command="{Binding MainVm.RedDotOffCommand}"  Margin="0,0,6,0"/>
+                                    <Button Content="Blink" Command="{Binding MainVm.RedDotBlinkCommand}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Margin="0,4">
+                                    <Button Content="On"    Command="{Binding MainVm.MicOnCommand}"      Margin="0,0,6,0"/>
+                                    <Button Content="Off"   Command="{Binding MainVm.MicOffCommand}"     Margin="0,0,6,0"/>
+                                    <Button Content="Blink" Command="{Binding MainVm.MicBlinkCommand}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Margin="0,4">
+                                    <Button Content="On"    Command="{Binding MainVm.SleepOnCommand}"    Margin="0,0,6,0"/>
+                                    <Button Content="Off"   Command="{Binding MainVm.SleepOffCommand}"   Margin="0,0,6,0"/>
+                                    <Button Content="Blink" Command="{Binding MainVm.SleepBlinkCommand}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal" Margin="0,4">
+                                    <Button Content="On"    Command="{Binding MainVm.FnLockOnCommand}"   Margin="0,0,6,0"/>
+                                    <Button Content="Off"   Command="{Binding MainVm.FnLockOffCommand}"  Margin="0,0,6,0"/>
+                                    <Button Content="Blink" Command="{Binding MainVm.FnLockBlinkCommand}"/>
+                                </StackPanel>
+                            </Grid>
+                        </ui:Card>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ============================================================ -->
+            <!-- TAB 2 — Disk Mapping                                         -->
+            <!-- ============================================================ -->
+            <TabItem Header="Disk Mapping">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="16">
+
+                        <TextBlock Text="Choose which LEDs respond to disk activity." Opacity="0.6" Margin="0,0,0,8"/>
+                        <CheckBox Content="Enable disk monitoring"
+                                  IsChecked="{Binding MainVm.DiskMonitoringEnabled}"
+                                  Margin="0,0,0,12"/>
+
+                        <ui:Card IsEnabled="{Binding MainVm.DiskMonitoringEnabled}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0" Grid.Column="1" Text="Power"   HorizontalAlignment="Center" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                                <TextBlock Grid.Row="0" Grid.Column="2" Text="Red Dot" HorizontalAlignment="Center" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                                <TextBlock Grid.Row="0" Grid.Column="3" Text="Mic"     HorizontalAlignment="Center" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                                <TextBlock Grid.Row="0" Grid.Column="4" Text="Sleep"   HorizontalAlignment="Center" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                                <TextBlock Grid.Row="0" Grid.Column="5" Text="Fn Lock" HorizontalAlignment="Center" FontWeight="SemiBold" Margin="0,0,0,6"/>
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Read"   VerticalAlignment="Center" Margin="0,6"/>
+                                <CheckBox  Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center" IsChecked="{Binding MainVm.Power.HddRead}"/>
+                                <CheckBox  Grid.Row="1" Grid.Column="2" HorizontalAlignment="Center" IsChecked="{Binding MainVm.RedDot.HddRead}"/>
+                                <CheckBox  Grid.Row="1" Grid.Column="3" HorizontalAlignment="Center" IsChecked="{Binding MainVm.Microphone.HddRead}"/>
+                                <CheckBox  Grid.Row="1" Grid.Column="4" HorizontalAlignment="Center" IsChecked="{Binding MainVm.Sleep.HddRead}"/>
+                                <CheckBox  Grid.Row="1" Grid.Column="5" HorizontalAlignment="Center" IsChecked="{Binding MainVm.FnLock.HddRead}"/>
+
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Write"  VerticalAlignment="Center" Margin="0,6"/>
+                                <CheckBox  Grid.Row="2" Grid.Column="1" HorizontalAlignment="Center" IsChecked="{Binding MainVm.Power.HddWrite}"/>
+                                <CheckBox  Grid.Row="2" Grid.Column="2" HorizontalAlignment="Center" IsChecked="{Binding MainVm.RedDot.HddWrite}"/>
+                                <CheckBox  Grid.Row="2" Grid.Column="3" HorizontalAlignment="Center" IsChecked="{Binding MainVm.Microphone.HddWrite}"/>
+                                <CheckBox  Grid.Row="2" Grid.Column="4" HorizontalAlignment="Center" IsChecked="{Binding MainVm.Sleep.HddWrite}"/>
+                                <CheckBox  Grid.Row="2" Grid.Column="5" HorizontalAlignment="Center" IsChecked="{Binding MainVm.FnLock.HddWrite}"/>
+
+                                <TextBlock Grid.Row="3" Grid.Column="0" Text="Invert" VerticalAlignment="Center" Margin="0,6" Opacity="0.6"/>
+                                <CheckBox  Grid.Row="3" Grid.Column="1" HorizontalAlignment="Center" IsChecked="{Binding MainVm.Power.Invert}"/>
+                                <CheckBox  Grid.Row="3" Grid.Column="2" HorizontalAlignment="Center" IsChecked="{Binding MainVm.RedDot.Invert}"/>
+                                <CheckBox  Grid.Row="3" Grid.Column="3" HorizontalAlignment="Center" IsChecked="{Binding MainVm.Microphone.Invert}"/>
+                                <CheckBox  Grid.Row="3" Grid.Column="4" HorizontalAlignment="Center" IsChecked="{Binding MainVm.Sleep.Invert}"/>
+                                <CheckBox  Grid.Row="3" Grid.Column="5" HorizontalAlignment="Center" IsChecked="{Binding MainVm.FnLock.Invert}"/>
+                            </Grid>
+                        </ui:Card>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ============================================================ -->
+            <!-- TAB 3 — Key Mapping                                          -->
+            <!-- ============================================================ -->
+            <TabItem Header="Key Mapping">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="16">
+
+                        <TextBlock Text="Choose which LEDs respond to Caps Lock and Num Lock." Opacity="0.6" Margin="0,0,0,8"/>
+                        <CheckBox Content="Enable key monitoring (Caps Lock / Num Lock → LED)"
+                                  IsChecked="{Binding MainVm.KeyMonitoringEnabled}"
+                                  Margin="0,0,0,8"/>
+                        <CheckBox Content="Enable mic monitoring (Microphone LED follows mic mute state)"
+                                  IsChecked="{Binding MainVm.MicMonitoringEnabled}"
+                                  Margin="0,0,0,12"/>
+
+                        <ui:Card IsEnabled="{Binding MainVm.KeyMonitoringEnabled}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0" Grid.Column="1" Text="Power"   HorizontalAlignment="Center" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                                <TextBlock Grid.Row="0" Grid.Column="2" Text="Red Dot" HorizontalAlignment="Center" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                                <TextBlock Grid.Row="0" Grid.Column="3" Text="Mic"     HorizontalAlignment="Center" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                                <TextBlock Grid.Row="0" Grid.Column="4" Text="Sleep"   HorizontalAlignment="Center" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                                <TextBlock Grid.Row="0" Grid.Column="5" Text="Fn Lock" HorizontalAlignment="Center" FontWeight="SemiBold" Margin="0,0,0,6"/>
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Caps Lock" VerticalAlignment="Center" Margin="0,6"/>
+                                <CheckBox  Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center" IsChecked="{Binding MainVm.Power.CapsLock}"/>
+                                <CheckBox  Grid.Row="1" Grid.Column="2" HorizontalAlignment="Center" IsChecked="{Binding MainVm.RedDot.CapsLock}"/>
+                                <CheckBox  Grid.Row="1" Grid.Column="3" HorizontalAlignment="Center" IsChecked="{Binding MainVm.Microphone.CapsLock}"/>
+                                <CheckBox  Grid.Row="1" Grid.Column="4" HorizontalAlignment="Center" IsChecked="{Binding MainVm.Sleep.CapsLock}"/>
+                                <CheckBox  Grid.Row="1" Grid.Column="5" HorizontalAlignment="Center" IsChecked="{Binding MainVm.FnLock.CapsLock}"/>
+
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Num Lock"  VerticalAlignment="Center" Margin="0,6"/>
+                                <CheckBox  Grid.Row="2" Grid.Column="1" HorizontalAlignment="Center" IsChecked="{Binding MainVm.Power.NumLock}"/>
+                                <CheckBox  Grid.Row="2" Grid.Column="2" HorizontalAlignment="Center" IsChecked="{Binding MainVm.RedDot.NumLock}"/>
+                                <CheckBox  Grid.Row="2" Grid.Column="3" HorizontalAlignment="Center" IsChecked="{Binding MainVm.Microphone.NumLock}"/>
+                                <CheckBox  Grid.Row="2" Grid.Column="4" HorizontalAlignment="Center" IsChecked="{Binding MainVm.Sleep.NumLock}"/>
+                                <CheckBox  Grid.Row="2" Grid.Column="5" HorizontalAlignment="Center" IsChecked="{Binding MainVm.FnLock.NumLock}"/>
+                            </Grid>
+                        </ui:Card>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ============================================================ -->
+            <!-- TAB 4 — Settings                                             -->
+            <!-- ============================================================ -->
+            <TabItem Header="Settings">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="16">
+
+                        <!-- Timing -->
+                        <ui:Card Margin="0,0,0,12">
+                            <StackPanel>
+                                <TextBlock Text="Timing" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="Disk poll interval (ms):" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                    <Slider Minimum="10" Maximum="1000"
+                                            Width="160"
+                                            Value="{Binding SettingsVm.HddPollIntervalMs}"
+                                            TickFrequency="10" IsSnapToTickEnabled="True"/>
+                                    <TextBlock Text="{Binding SettingsVm.HddPollIntervalMs, StringFormat={}{0} ms}"
+                                               VerticalAlignment="Center" Width="55" Margin="8,0,0,0"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </ui:Card>
+
+                        <!-- Keyboard backlight -->
+                        <ui:Card Margin="0,0,0,12">
+                            <StackPanel>
+                                <TextBlock Text="Keyboard Backlight" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <Button Content="Off"  Command="{Binding SettingsVm.SetBacklightOffCommand}"  Margin="0,0,6,0"/>
+                                    <Button Content="Low"  Command="{Binding SettingsVm.SetBacklightLowCommand}"  Margin="0,0,6,0"/>
+                                    <Button Content="High" Command="{Binding SettingsVm.SetBacklightHighCommand}"/>
+                                </StackPanel>
+                                <CheckBox Content="Remember and restore after sleep / lid-open"
+                                          IsChecked="{Binding SettingsVm.RememberKeyboardBacklight}"
+                                          Margin="0,0,0,4"/>
+                                <CheckBox Content="Dim backlight and LEDs when a fullscreen app is active"
+                                          IsChecked="{Binding SettingsVm.DimLedsWhenFullscreen}"/>
+                            </StackPanel>
+                        </ui:Card>
+
+                        <!-- Startup -->
+                        <ui:Card Margin="0,0,0,12">
+                            <StackPanel>
+                                <TextBlock Text="Startup" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                <CheckBox Content="Start with Windows (silent, no UAC prompt)"
+                                          IsChecked="{Binding SettingsVm.StartWithWindows}"
+                                          Command="{Binding SettingsVm.ToggleStartupCommand}"/>
+                            </StackPanel>
+                        </ui:Card>
+
+                        <!-- Driver info -->
+                        <ui:Card>
+                            <StackPanel>
+                                <TextBlock Text="Driver" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                <TextBlock Text="{Binding SettingsVm.DriverStatus}" Opacity="0.6"/>
+                            </StackPanel>
+                        </ui:Card>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+        </TabControl>
     </Grid>
-</Window>
+</ui:FluentWindow>
