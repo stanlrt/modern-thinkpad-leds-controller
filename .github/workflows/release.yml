@@ -38,10 +38,11 @@ jobs:
 
       - name: Install WiX Toolset
         run: |
-          dotnet tool install --global wix --version 5.0.2
-          wix extension add WixToolset.UI.wixext
+          dotnet tool install --global wix
+          wix extension add WixToolset.UI.wixext/5.0.2
 
       - name: Build MSI Installer
+        id: build_msi
         run: |
           $version = "${{ github.ref_name }}".TrimStart('v')
           $msiName = "ModernThinkPadLEDsController-${{ github.ref_name }}-win-x64.msi"
@@ -54,14 +55,14 @@ jobs:
             -arch x64
 
           # Set output for next step
-          echo "MSI_NAME=$msiName" >> $env:GITHUB_ENV
-          echo "VERSION=${{ github.ref_name }}" >> $env:GITHUB_ENV
+          echo "msi_name=$msiName" >> $env:GITHUB_OUTPUT
+          echo "version=${{ github.ref_name }}" >> $env:GITHUB_OUTPUT
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ env.MSI_NAME }}
-          name: Release ${{ env.VERSION }}
+          files: ${{ steps.build_msi.outputs.msi_name }}
+          name: Release ${{ steps.build_msi.outputs.version }}
           draft: false
           prerelease: false
           generate_release_notes: true
