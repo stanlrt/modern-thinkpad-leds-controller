@@ -36,7 +36,7 @@
                 <!-- SECTION 1 — LED mode table                                   -->
                 <!-- ============================================================ -->
                 <ui:Card Padding="12,10"
-                         Margin="0,0,0,12">
+                         Margin="0,0,0,32">
                     <!-- Horizontal scroll so narrow windows don't clip columns -->
                     <!-- Single grid — header + all LED rows share the same column layout,
                          so alignment is guaranteed without any SharedSizeGroup tricks. -->
@@ -106,7 +106,7 @@
                                         <ToolTip>
                                             <TextBlock MaxWidth="240"
                                                        TextWrapping="Wrap"
-                                                       Text="Don't override — let the OS or BIOS manage this LED. For the Microphone LED this means it follows the system mute state (muted = on)."/>
+                                                       Text="Let the LED follow the default OS behaviour."/>
                                         </ToolTip>
                                     </Border.ToolTip>
                                     <TextBlock Text="?"
@@ -161,7 +161,7 @@
                                         <ToolTip>
                                             <TextBlock MaxWidth="240"
                                                        TextWrapping="Wrap"
-                                                       Text="This LED cycles through the configured states each time Win+Shift+K is pressed. Configure the cycle in the Hotkey tab below."/>
+                                                       Text="Make the LED cycle through the selected states each time the hotkey is pressed. Configure the states in the Hotkey tab below."/>
                                         </ToolTip>
                                     </Border.ToolTip>
                                     <TextBlock Text="?"
@@ -194,7 +194,7 @@
                                         <ToolTip>
                                             <TextBlock MaxWidth="240"
                                                        TextWrapping="Wrap"
-                                                       Text="LED turns on whenever a disk write is detected (HDD, SSD, NVMe — any storage)."/>
+                                                       Text="LED turns on whenever a disk write is detected (HDD, SSD, NVMe, ...). Configure the polling interval in the Disk tab below."/>
                                         </ToolTip>
                                     </Border.ToolTip>
                                     <TextBlock Text="?"
@@ -227,7 +227,7 @@
                                         <ToolTip>
                                             <TextBlock MaxWidth="240"
                                                        TextWrapping="Wrap"
-                                                       Text="LED turns on whenever a disk read is detected (HDD, SSD, NVMe — any storage)."/>
+                                                       Text="LED turns on whenever a disk read is detected (HDD, SSD, NVMe, ...). Configure the polling interval in the Disk tab below."/>
                                         </ToolTip>
                                     </Border.ToolTip>
                                     <TextBlock Text="?"
@@ -532,6 +532,8 @@
                     </ScrollViewer>
                 </ui:Card>
 
+
+
                 <!-- ============================================================ -->
                 <!-- SECTION 2 — Tab panels                                       -->
                 <!-- ============================================================ -->
@@ -546,10 +548,12 @@
                             <Border CornerRadius="4"
                                     Padding="12,6"
                                     Margin="0,0,0,14"
-                                    Background="{DynamicResource ControlFillColorDefaultBrush}">
+                                    Background="{DynamicResource ControlFillColorDefaultBrush}"
+                                    HorizontalAlignment="Left">
                                 <TextBlock Text="Win + Shift + K"
                                            FontFamily="Consolas"
-                                           FontSize="14"/>
+                                           FontSize="14"
+                                           HorizontalAlignment="Left"/>
                             </Border>
                             <TextBlock Text="LEDs assigned to 'Hotkey' cycle through the selected states each time the shortcut is pressed."
                                        Opacity="0.6"
@@ -560,12 +564,13 @@
                                        Margin="0,0,0,8"/>
                             <CheckBox Content="On"
                                       IsChecked="{Binding MainVm.HotkeyCycleOn}"
-                                      Margin="0,0,0,6"/>
+                                      Margin="-8,0,0,6"/>
                             <CheckBox Content="Off"
                                       IsChecked="{Binding MainVm.HotkeyCycleOff}"
-                                      Margin="0,0,0,6"/>
+                                      Margin="-8,0,0,6"/>
                             <CheckBox Content="Blink"
-                                      IsChecked="{Binding MainVm.HotkeyCycleBlink}"/>
+                                      IsChecked="{Binding MainVm.HotkeyCycleBlink}"
+                                      Margin="-8,0,0,0"/>
                         </StackPanel>
                     </TabItem>
 

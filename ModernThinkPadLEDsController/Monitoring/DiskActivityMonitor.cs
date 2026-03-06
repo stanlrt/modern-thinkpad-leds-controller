@@ -26,7 +26,7 @@ public sealed class DiskActivityMonitor : IDisposable
     private CancellationTokenSource? _cts;
     private int _intervalMs;
 
-    public DiskActivityMonitor(int intervalMs = 100)
+    public DiskActivityMonitor(int intervalMs = 300)
     {
         _intervalMs = intervalMs;
     }
@@ -37,13 +37,13 @@ public sealed class DiskActivityMonitor : IDisposable
     {
         try
         {
-            if (!PerformanceCounterCategory.Exists("LogicalDisk"))                         return false;
-            if (!PerformanceCounterCategory.CounterExists("Disk Read Bytes/sec",  "LogicalDisk")) return false;
+            if (!PerformanceCounterCategory.Exists("LogicalDisk")) return false;
+            if (!PerformanceCounterCategory.CounterExists("Disk Read Bytes/sec", "LogicalDisk")) return false;
             if (!PerformanceCounterCategory.CounterExists("Disk Write Bytes/sec", "LogicalDisk")) return false;
 
-            _readCounter  = new PerformanceCounter("LogicalDisk", "Disk Read Bytes/sec",  "_Total");
+            _readCounter = new PerformanceCounter("LogicalDisk", "Disk Read Bytes/sec", "_Total");
             _writeCounter = new PerformanceCounter("LogicalDisk", "Disk Write Bytes/sec", "_Total");
-            IsAvailable   = true;
+            IsAvailable = true;
             return true;
         }
         catch { return false; }
@@ -72,10 +72,10 @@ public sealed class DiskActivityMonitor : IDisposable
             // Pattern matching on a tuple — maps (hasRead, hasWrite) to a state value.
             DiskActivityState state = (r > 0, w > 0) switch
             {
-                (true,  true)  => DiskActivityState.ReadWrite,
-                (true,  false) => DiskActivityState.Read,
-                (false, true)  => DiskActivityState.Write,
-                _              => DiskActivityState.Idle,
+                (true, true) => DiskActivityState.ReadWrite,
+                (true, false) => DiskActivityState.Read,
+                (false, true) => DiskActivityState.Write,
+                _ => DiskActivityState.Idle,
             };
 
             StateChanged?.Invoke(state);
