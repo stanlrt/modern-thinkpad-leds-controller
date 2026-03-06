@@ -16,7 +16,6 @@
     <!-- Icon for Add/Remove Programs -->
     <Icon Id="AppIcon.exe" SourceFile="$(PublishDir)\ModernThinkPadLEDsController.exe" />
     <Property Id="ARPPRODUCTICON" Value="AppIcon.exe" />
-    <Property Id="ARPNOMODIFY" Value="1" />
 
     <!-- Installation directory structure -->
     <StandardDirectory Id="ProgramFiles64Folder">
