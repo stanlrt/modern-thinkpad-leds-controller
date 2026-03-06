@@ -52,6 +52,7 @@ public sealed class TrayIconService : IDisposable
         _taskbarIcon.ContextMenu = menu;
         _taskbarIcon.MenuActivation = PopupActivationMode.RightClick;
         _taskbarIcon.TrayMouseDoubleClick += (_, _) => ShowWindowRequested?.Invoke();
+        _taskbarIcon.Visibility = System.Windows.Visibility.Visible;
     }
 
     public void SetDiskState(DiskActivityState state)

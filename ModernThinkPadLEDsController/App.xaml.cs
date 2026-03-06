@@ -36,6 +36,11 @@ public partial class App : System.Windows.Application
     {
         base.OnStartup(e);
 
+        // Global exception handlers to prevent silent crashes
+        DispatcherUnhandledException += OnDispatcherUnhandledException;
+        AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
+        System.Threading.Tasks.TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
+
         if (!TryInitializeSingleInstance()) return;
         if (!TryInitializeDriver()) return;
 
@@ -218,6 +223,50 @@ public partial class App : System.Windows.Application
         _singleInstanceMutex?.Dispose();
 
         Shutdown();
+    }
+
+    // ── Global exception handlers ──
+    // These catch exceptions that would otherwise crash the app silently or
+    // cause the 0xC000041D "unhandled exception in user callback" error.
+
+    private void OnDispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+    {
+        LogAndShowException("UI Thread Exception", e.Exception);
+        e.Handled = true; // Prevent crash
+    }
+
+    private void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
+    {
+        if (e.ExceptionObject is Exception ex)
+            LogAndShowException("Background Thread Exception", ex);
+    }
+
+    private void OnUnobservedTaskException(object? sender, System.Threading.Tasks.UnobservedTaskExceptionEventArgs e)
+    {
+        LogAndShowException("Task Exception", e.Exception);
+        e.SetObserved(); // Prevent crash
+    }
+
+    private void LogAndShowException(string title, Exception ex)
+    {
+        var message = $"{ex.GetType().Name}: {ex.Message}\n\nStack Trace:\n{ex.StackTrace}";
+
+        // Log to file for debugging
+        try
+        {
+            var logPath = System.IO.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "ModernThinkPadLEDsController",
+                "crash.log");
+
+            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(logPath)!);
+            System.IO.File.AppendAllText(logPath,
+                $"\n[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {title}\n{message}\n");
+        }
+        catch { /* Ignore logging errors */ }
+
+        // Show to user
+        System.Windows.MessageBox.Show(message, title, MessageBoxButton.OK, MessageBoxImage.Error);
     }
 
 }
