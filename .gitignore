@@ -53,3 +53,8 @@ _ReSharper*/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+## WiX / MSI build artifacts
+*.msi
+*.wixpdb
+*.wixobj

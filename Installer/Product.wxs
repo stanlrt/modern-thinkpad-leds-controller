@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <?define ProductName = "Modern ThinkPad LEDs Controller" ?>
+  <?define ProductVersion = "!(bind.FileVersion.MainExecutable)" ?>
+  <?define Manufacturer = "stanlrt" ?>
+  <?define UpgradeCode = "12345678-1234-1234-1234-123456789ABC" ?>
+
+  <Product
+    Id="*"
+    Name="$(var.ProductName)"
+    Language="1033"
+    Version="$(var.ProductVersion)"
+    Manufacturer="$(var.Manufacturer)"
+    UpgradeCode="$(var.UpgradeCode)">
+
+    <Package
+      InstallerVersion="200"
+      Compressed="yes"
+      InstallScope="perMachine"
+      Description="Control LED indicators on modern ThinkPad laptops"
+      Comments="Requires administrator privileges for hardware access" />
+
+    <MajorUpgrade
+      DowngradeErrorMessage="A newer version of [ProductName] is already installed."
+      AllowSameVersionUpgrades="yes" />
+
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- Require administrator privileges -->
+    <Property Id="ALLUSERS" Value="1" />
+
+    <!-- Icon for Add/Remove Programs -->
+    <Icon Id="AppIcon.exe" SourceFile="$(var.PublishDir)\ModernThinkPadLEDsController.exe" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon.exe" />
+    <Property Id="ARPNOMODIFY" Value="yes" Secure="yes" />
+
+    <!-- Installation directory structure -->
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFiles64Folder">
+        <Directory Id="INSTALLFOLDER" Name="Modern ThinkPad LEDs Controller" />
+      </Directory>
+      <Directory Id="ProgramMenuFolder">
+        <Directory Id="ApplicationProgramsFolder" Name="Modern ThinkPad LEDs Controller"/>
+      </Directory>
+    </Directory>
+
+    <!-- Components to install -->
+    <DirectoryRef Id="INSTALLFOLDER">
+      <Component Id="MainExecutable" Guid="A1B2C3D4-E5F6-4A5B-8C9D-E1F2A3B4C5D6" Win64="yes">
+        <File
+          Id="MainExecutable"
+          Source="$(var.PublishDir)\ModernThinkPadLEDsController.exe"
+          KeyPath="yes"
+          Checksum="yes" />
+      </Component>
+
+      <Component Id="NativeDriver" Guid="B2C3D4E5-F6A7-4B5C-9D0E-F1A2B3C4D5E6" Win64="yes">
+        <File
+          Id="InpOutDLL"
+          Source="$(var.PublishDir)\inpoutx64.dll"
+          KeyPath="yes"
+          Checksum="yes" />
+      </Component>
+    </DirectoryRef>
+
+    <!-- Start Menu shortcut -->
+    <DirectoryRef Id="ApplicationProgramsFolder">
+      <Component Id="ApplicationShortcut" Guid="C3D4E5F6-A7B8-4C5D-0E1F-A2B3C4D5E6F7" Win64="yes">
+        <Shortcut
+          Id="ApplicationStartMenuShortcut"
+          Name="Modern ThinkPad LEDs Controller"
+          Description="Control LED indicators on ThinkPad laptops"
+          Target="[INSTALLFOLDER]ModernThinkPadLEDsController.exe"
+          WorkingDirectory="INSTALLFOLDER" />
+        <RemoveFolder Id="CleanUpShortCut" Directory="ApplicationProgramsFolder" On="uninstall"/>
+        <RegistryValue
+          Root="HKCU"
+          Key="Software\ModernThinkPadLEDsController"
+          Name="installed"
+          Type="integer"
+          Value="1"
+          KeyPath="yes"/>
+      </Component>
+    </DirectoryRef>
+
+    <!-- Define features (what gets installed) -->
+    <Feature Id="ProductFeature" Title="Modern ThinkPad LEDs Controller" Level="1">
+      <ComponentRef Id="MainExecutable" />
+      <ComponentRef Id="NativeDriver" />
+      <ComponentRef Id="ApplicationShortcut" />
+    </Feature>
+
+    <!-- Custom UI sequence -->
+    <UI>
+      <UIRef Id="WixUI_Minimal" />
+      <UIRef Id="WixUI_ErrorProgressText" />
+    </UI>
+
+    <!-- License agreement (optional - using default WiX license for now) -->
+    <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
+
+  </Product>
+</Wix>

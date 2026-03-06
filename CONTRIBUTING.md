@@ -117,3 +117,63 @@ ModernThinkPadLEDsController/
 4. Test on real ThinkPad hardware if your change touches `Hardware/` or `Monitoring/`.
 
 5. Open a **Pull Request** against `main` with a clear description of what was changed and why.
+
+## Creating a Release
+
+Releases are automated via GitHub Actions. When you push a version tag, a workflow builds an MSI installer and creates a GitHub release.
+
+### Release Process
+
+1. **Ensure `main` branch is ready**
+   
+   Make sure all desired changes are merged and tested.
+
+2. **Create and push a version tag**
+
+   Use semantic versioning (`v{major}.{minor}.{patch}`):
+
+   ```shell
+   git tag v1.0.0
+   git push origin v1.0.0
+   ```
+
+3. **GitHub Actions automatically:**
+   - Publishes the single-file executable
+   - Builds the MSI installer using WiX Toolset
+   - Creates a GitHub release with:
+     - Auto-generated release notes
+     - `ModernThinkPadLEDsController-v1.0.0-win-x64.msi` download
+
+### Version Numbering Guidelines
+
+- `v1.0.0` - First stable release
+- `v1.1.0` - New features (minor version bump)
+- `v1.0.1` - Bug fixes only (patch version bump)
+- `v2.0.0` - Breaking changes (major version bump)
+
+### Building MSI Locally (Optional)
+
+To test the installer before releasing:
+
+```shell
+# Install WiX Toolset (one-time setup)
+dotnet tool install --global wix
+wix extension add WixToolset.UI.wixext
+
+# Publish the application
+dotnet publish ModernThinkPadLEDsController/ModernThinkPadLEDsController.csproj `
+  --configuration Release `
+  --output ./publish `
+  /p:PublishSingleFile=true `
+  /p:SelfContained=true `
+  /p:RuntimeIdentifier=win-x64
+
+# Build the MSI
+wix build Installer/Product.wxs `
+  -d PublishDir=publish `
+  -out ModernThinkPadLEDsController.msi `
+  -ext WixToolset.UI.wixext `
+  -arch x64
+```
+
+The MSI installs to `C:\Program Files\Modern ThinkPad LEDs Controller\` and creates a Start Menu shortcut.

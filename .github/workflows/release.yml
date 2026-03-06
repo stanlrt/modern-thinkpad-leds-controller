@@ -1,0 +1,85 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Triggers on version tags like v1.0.0, v1.2.3, etc.
+
+permissions:
+  contents: write  # Required to create releases
+
+jobs:
+  build-and-release:
+    name: Build and Release
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore dependencies
+        run: dotnet restore ModernThinkPadLEDsController/ModernThinkPadLEDsController.csproj
+
+      - name: Publish Release Build
+        run: >
+          dotnet publish ModernThinkPadLEDsController/ModernThinkPadLEDsController.csproj
+          --configuration Release
+          --output ./publish
+          --no-restore
+          /p:PublishSingleFile=true
+          /p:SelfContained=true
+          /p:RuntimeIdentifier=win-x64
+          /p:PublishReadyToRun=true
+
+      - name: Install WiX Toolset
+        run: |
+          dotnet tool install --global wix --version 5.0.2
+          wix extension add WixToolset.UI.wixext
+
+      - name: Build MSI Installer
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          $msiName = "ModernThinkPadLEDsController-${{ github.ref_name }}-win-x64.msi"
+
+          # Build the MSI using WiX
+          wix build Installer/Product.wxs `
+            -d PublishDir=publish `
+            -out $msiName `
+            -ext WixToolset.UI.wixext `
+            -arch x64
+
+          # Set output for next step
+          echo "MSI_NAME=$msiName" >> $env:GITHUB_ENV
+          echo "VERSION=${{ github.ref_name }}" >> $env:GITHUB_ENV
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.MSI_NAME }}
+          name: Release ${{ env.VERSION }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          body: |
+            ## Installation
+            1. Download the `.msi` installer below
+            2. Run the installer (requires administrator privileges)
+            3. Launch "Modern ThinkPad LEDs Controller" from the Start Menu
+
+            ## Requirements
+            - Windows 10/11 (x64)
+            - Administrator privileges for hardware access
+
+            ## Features
+            - Self-contained installer (no .NET installation required)
+            - Installs to Program Files
+            - Creates Start Menu shortcut
+            - Clean uninstall via Add/Remove Programs
+
+            ## What's Changed
+            <!-- Release notes will be auto-generated below -->
