@@ -36,7 +36,22 @@ public partial class App : System.Windows.Application
     {
         base.OnStartup(e);
 
-        // --- Single instance guard ---
+        if (!TryInitializeSingleInstance()) return;
+        if (!TryInitializeDriver()) return;
+
+        InitializeHardwareAndMonitoring(out var leds, out var diskOk);
+        InitializeViewModelsAndUI(leds, diskOk);
+        WireUpEventHandlers();
+        StartMonitors();
+
+        // --- Show or hide on startup ---
+        bool startMinimized = e.Args.Contains("--minimized");
+        if (!startMinimized)
+            _mainWindow!.Show();
+    }
+
+    private bool TryInitializeSingleInstance()
+    {
         _singleInstanceMutex = new System.Threading.Mutex(
             initiallyOwned: true,
             name: "ModernThinkPadLEDsController_SingleInstance",
@@ -47,10 +62,13 @@ public partial class App : System.Windows.Application
             System.Windows.MessageBox.Show("Modern ThinkPad LEDs Controller is already running.\n\nLook for its icon in the system tray.",
                             "Already Running", MessageBoxButton.OK, MessageBoxImage.Information);
             Shutdown();
-            return;
+            return false;
         }
+        return true;
+    }
 
-        // --- Open InpOut driver ---
+    private bool TryInitializeDriver()
+    {
         if (!InpOutDriver.TryOpen(out _driver))
         {
             var setup = new DriverSetupWindow();
@@ -59,7 +77,7 @@ public partial class App : System.Windows.Application
             if (!setup.DriverReady)
             {
                 Shutdown();
-                return;
+                return false;
             }
 
             if (!InpOutDriver.TryOpen(out _driver))
@@ -67,121 +85,111 @@ public partial class App : System.Windows.Application
                 System.Windows.MessageBox.Show("Could not open InpOut driver. Exiting.",
                                 "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 Shutdown();
-                return;
+                return false;
             }
         }
+        return true;
+    }
 
-        // --- Hardware layer ---
+    private void InitializeHardwareAndMonitoring(out LedController leds, out bool diskOk)
+    {
         var ec = new EcController(_driver!);
-        var leds = new LedController(ec);
+        leds = new LedController(ec);
 
-        // --- Settings ---
         _settings = AppSettings.Load();
 
-        // --- Monitoring ---
         _diskMonitor = new DiskActivityMonitor(_settings.HddPollIntervalMs);
         _kbdMonitor = new KeyboardBacklightMonitor(leds);
         _micMonitor = new MicrophoneMuteMonitor();
         _powerListener = new PowerEventListener();
 
-        bool diskOk = _diskMonitor.TryInitialize();
+        diskOk = _diskMonitor.TryInitialize();
+    }
 
-        // --- ViewModels ---
+    private void InitializeViewModelsAndUI(LedController leds, bool diskOk)
+    {
         _mainVm = new MainViewModel(leds);
-        _settingsVm = new SettingsViewModel(_settings, _diskMonitor, _kbdMonitor, _powerListener, leds);
+        _settingsVm = new SettingsViewModel(_settings!, _diskMonitor!, _kbdMonitor!, _powerListener!, leds);
 
-        _mainVm.LoadFrom(_settings);
-        _settingsVm.LoadFrom(_settings);
+        _mainVm.LoadFrom(_settings!);
+        _settingsVm.LoadFrom(_settings!);
         _mainVm.DiskMonitoringAvailable = diskOk;
-
-        // Apply static LED modes (On/Off/Blink) to hardware immediately after load.
         _mainVm.ApplyAll();
 
-        // --- Tray icon ---
         _tray = new TrayIconService();
         _tray.Initialize();
         _tray.ShowWindowRequested += ShowMainWindow;
         _tray.ExitRequested += RequestExit;
 
-        // --- Main window ---
         _mainWindow = new MainWindow(_mainVm, _settingsVm);
 
-        // --- Wire disk monitoring to LED usage ---
-        _mainVm.DiskModeLedsChanged += hasDiskModes =>
-            Dispatcher.Invoke(() =>
-            {
-                if (hasDiskModes) _settingsVm.StartDiskMonitoring();
-                else _settingsVm.StopDiskMonitoring();
-            });
-
-        // Check initial state and start monitoring if needed
         if (_mainVm.HasDiskModeLeds && diskOk)
             _settingsVm.StartDiskMonitoring();
+    }
 
-        _mainWindow.SourceInitialized += (_, _) =>
+    private void WireUpEventHandlers()
+    {
+        _mainVm!.DiskModeLedsChanged += hasDiskModes =>
+            Dispatcher.Invoke(() =>
+            {
+                if (hasDiskModes) _settingsVm!.StartDiskMonitoring();
+                else _settingsVm!.StopDiskMonitoring();
+            });
+
+        _mainWindow!.SourceInitialized += (_, _) =>
         {
-            _powerListener.Attach(_mainWindow);
-
-            // Register Win+Shift+K global hotkey — requires a valid HWND.
+            _powerListener!.Attach(_mainWindow);
             _hotkey = new HotkeyService();
             _hotkey.Register(_mainWindow);
             _hotkey.HotkeyPressed += () => Dispatcher.Invoke(() => _mainVm.OnHotkeyPressed());
         };
 
-        // --- Wire monitoring events → ViewModel methods ---
-        _diskMonitor.StateChanged += state =>
+        _diskMonitor!.StateChanged += state =>
             Dispatcher.Invoke(() =>
             {
-                _tray.SetDiskState(state);
+                _tray!.SetDiskState(state);
                 _mainVm.OnDiskStateChanged(state);
             });
 
-        _micMonitor.MuteStateChanged += isMuted =>
+        _micMonitor!.MuteStateChanged += isMuted =>
             Dispatcher.Invoke(() => _mainVm.OnMicrophoneMuteChanged(isMuted));
 
-        _powerListener.SystemSuspending += () =>
+        _powerListener!.SystemSuspending += () =>
             Dispatcher.Invoke(() =>
             {
-                _kbdMonitor.Stop();
+                _kbdMonitor!.Stop();
                 _diskMonitor.Stop();
             });
 
         _powerListener.SystemResumed += () =>
             Dispatcher.Invoke(() =>
             {
-                if (_settings.RememberKeyboardBacklight)
-                    _kbdMonitor.RestoreMostCommonLevel();
-
+                if (_settings!.RememberKeyboardBacklight)
+                    _kbdMonitor!.RestoreMostCommonLevel();
                 if (_mainVm.HasDiskModeLeds)
                     _diskMonitor.Start();
-                _kbdMonitor.Start();
+                _kbdMonitor!.Start();
             });
 
         _powerListener.LidStateChanged += isOpen =>
             Dispatcher.Invoke(() =>
             {
-                if (isOpen && _settings.RememberKeyboardBacklight)
-                    _kbdMonitor.RestoreMostCommonLevel();
+                if (isOpen && _settings!.RememberKeyboardBacklight)
+                    _kbdMonitor!.RestoreMostCommonLevel();
             });
 
         _powerListener.FullscreenChanged += isFullscreen =>
             Dispatcher.Invoke(() =>
-                _mainVm.OnFullscreenChanged(isFullscreen, _kbdMonitor.CurrentLevel));
+                _mainVm.OnFullscreenChanged(isFullscreen, _kbdMonitor!.CurrentLevel));
+    }
 
-        // --- Start monitors ---
-        // Note: Disk monitor is started by LoadFrom -> property change handler if enabled
-        if (_settings.RememberKeyboardBacklight) _kbdMonitor.Start();
-        if (_settings.DimLedsWhenFullscreen) _powerListener.StartFullscreenPolling();
+    private void StartMonitors()
+    {
+        if (_settings!.RememberKeyboardBacklight) _kbdMonitor!.Start();
+        if (_settings.DimLedsWhenFullscreen) _powerListener!.StartFullscreenPolling();
 
-        _micMonitor.Start();
-
-        // Sync mic LED to current mute state before the first poll fires.
-        _mainVm.OnMicrophoneMuteChanged(_micMonitor.QueryMuted());
-
-        // --- Show or hide on startup ---
-        bool startMinimized = e.Args.Contains("--minimized");
-        if (!startMinimized)
-            _mainWindow.Show();
+        _micMonitor!.Start();
+        _mainVm!.OnMicrophoneMuteChanged(_micMonitor.QueryMuted());
     }
 
     private void ShowMainWindow()

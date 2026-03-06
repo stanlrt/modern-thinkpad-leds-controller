@@ -25,7 +25,16 @@ public partial class MainWindow : FluentWindow
         SourceInitialized += (s, e) =>
         {
             var source = PresentationSource.FromVisual(this) as HwndSource;
-            source?.AddHook(WndProc);
+            source?.AddHook((IntPtr _, int msg, IntPtr wParam, IntPtr __, ref bool handled) =>
+            {
+                if (msg == WM_MOUSEHWHEEL && TableScrollViewer != null)
+                {
+                    int delta = (short)((long)wParam >> 16);
+                    TableScrollViewer.ScrollToHorizontalOffset(TableScrollViewer.HorizontalOffset + delta / 3.0);
+                    handled = true;
+                }
+                return IntPtr.Zero;
+            });
         };
     }
 
@@ -53,25 +62,6 @@ public partial class MainWindow : FluentWindow
         e.Handled = false;
     }
 
-    // Intercept horizontal mouse wheel messages from precision touchpads
+    // Constant for horizontal mouse wheel messages from precision touchpads
     private const int WM_MOUSEHWHEEL = 0x020E;
-
-    private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
-    {
-        if (msg == WM_MOUSEHWHEEL)
-        {
-            // Extract scroll delta from high word of wParam
-            int delta = (short)((long)wParam >> 16);
-
-            // Apply horizontal scroll to the LED table ScrollViewer
-            if (TableScrollViewer != null)
-            {
-                // Divide by 3.0 for smoother scrolling (same as vertical)
-                TableScrollViewer.ScrollToHorizontalOffset(TableScrollViewer.HorizontalOffset + delta / 3.0);
-                handled = true;
-            }
-        }
-
-        return IntPtr.Zero;
-    }
 }

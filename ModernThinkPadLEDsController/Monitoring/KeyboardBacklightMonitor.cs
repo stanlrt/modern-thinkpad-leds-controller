@@ -32,11 +32,17 @@ public sealed class KeyboardBacklightMonitor : IDisposable
 
     public void Start()
     {
+        _cts?.Dispose();
         _cts = new CancellationTokenSource();
         _ = Task.Run(() => PollLoop(_cts.Token));
     }
 
-    public void Stop() => _cts?.Cancel();
+    public void Stop()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _cts = null;
+    }
 
     // Called by PowerEventListener on system resume and lid-open.
     public void RestoreMostCommonLevel()
@@ -77,5 +83,9 @@ public sealed class KeyboardBacklightMonitor : IDisposable
         }
     }
 
-    public void Dispose() => _cts?.Cancel();
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+    }
 }
