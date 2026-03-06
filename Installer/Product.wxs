@@ -5,7 +5,7 @@
   <Package
     Name="Modern ThinkPad LEDs Controller"
     Manufacturer="stanlrt"
-    Version="1.0.0"
+    Version="$(Version)"
     UpgradeCode="12345678-1234-1234-1234-123456789ABC"
     Scope="perMachine">
 
@@ -14,17 +14,17 @@
     <MediaTemplate EmbedCab="yes" />
 
     <!-- Icon for Add/Remove Programs -->
-    <Icon Id="AppIcon.exe" SourceFile="$(PublishDir)\ModernThinkPadLEDsController.exe" />
+    <Icon Id="AppIcon.exe" SourceFile="$(PublishDir)/ModernThinkPadLEDsController.exe" />
     <Property Id="ARPPRODUCTICON" Value="AppIcon.exe" />
 
     <!-- Installation directory structure -->
     <StandardDirectory Id="ProgramFiles64Folder">
       <Directory Id="INSTALLFOLDER" Name="Modern ThinkPad LEDs Controller">
         <Component>
-          <File Source="$(PublishDir)\ModernThinkPadLEDsController.exe" />
+          <File Source="$(PublishDir)/ModernThinkPadLEDsController.exe" />
         </Component>
         <Component>
-          <File Source="$(PublishDir)\inpoutx64.dll" />
+          <File Source="$(PublishDir)/inpoutx64.dll" />
         </Component>
       </Directory>
     </StandardDirectory>
@@ -45,7 +45,7 @@
 
     <!-- UI -->
     <ui:WixUI Id="WixUI_Minimal" />
-    <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
+    <WixVariable Id="WixUILicenseRtf" Value="Installer/License.rtf" />
 
   </Package>
 </Wix>

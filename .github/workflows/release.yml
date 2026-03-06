@@ -46,10 +46,11 @@ jobs:
           $version = "${{ github.ref_name }}".TrimStart('v')
           $msiName = "ModernThinkPadLEDsController-${{ github.ref_name }}-win-x64.msi"
 
-          # Build the MSI using WiX v5
+          # Build the MSI using WiX v6
           wix build -arch x64 `
             -ext WixToolset.UI.wixext `
             -d PublishDir=publish `
+            -d Version=$version `
             -out $msiName `
             Installer\Product.wxs
 
