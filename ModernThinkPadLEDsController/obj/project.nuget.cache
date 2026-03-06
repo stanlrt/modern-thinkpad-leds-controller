@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "dgSpecHash": "m3ZIYj01gZ8=",
+  "success": true,
+  "projectFilePath": "d:\\Repos\\System\\modern-thinkpad-leds-controller\\ModernThinkPadLEDsController\\ModernThinkPadLEDsController.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\stnsl\\.nuget\\packages\\communitytoolkit.mvvm\\8.4.0\\communitytoolkit.mvvm.8.4.0.nupkg.sha512",
+    "C:\\Users\\stnsl\\.nuget\\packages\\microsoft.net.illink.tasks\\10.0.3\\microsoft.net.illink.tasks.10.0.3.nupkg.sha512",
+    "C:\\Users\\stnsl\\.nuget\\packages\\wpf-ui\\4.2.0\\wpf-ui.4.2.0.nupkg.sha512",
+    "C:\\Users\\stnsl\\.nuget\\packages\\wpf-ui.abstractions\\4.2.0\\wpf-ui.abstractions.4.2.0.nupkg.sha512",
+    "C:\\Users\\stnsl\\.nuget\\packages\\microsoft.netcore.app.runtime.win-x64\\10.0.3\\microsoft.netcore.app.runtime.win-x64.10.0.3.nupkg.sha512",
+    "C:\\Users\\stnsl\\.nuget\\packages\\microsoft.windowsdesktop.app.runtime.win-x64\\10.0.3\\microsoft.windowsdesktop.app.runtime.win-x64.10.0.3.nupkg.sha512",
+    "C:\\Users\\stnsl\\.nuget\\packages\\microsoft.aspnetcore.app.runtime.win-x64\\10.0.3\\microsoft.aspnetcore.app.runtime.win-x64.10.0.3.nupkg.sha512",
+    "C:\\Users\\stnsl\\.nuget\\packages\\microsoft.netcore.app.crossgen2.win-x64\\10.0.3\\microsoft.netcore.app.crossgen2.win-x64.10.0.3.nupkg.sha512"
+  ],
+  "logs": []
+}
