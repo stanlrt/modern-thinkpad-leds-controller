@@ -28,9 +28,21 @@ public sealed partial class MainViewModel : ObservableObject
     // The View uses this to show a warning in the Disk tab.
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(DiskMonitoringUnavailable))]
+    [NotifyPropertyChangedFor(nameof(DiskRadiosEnabled))]
     private bool _diskMonitoringAvailable = true;
 
     public bool DiskMonitoringUnavailable => !DiskMonitoringAvailable;
+
+    // Disk radios should only be enabled when monitoring is available.
+    public bool DiskRadiosEnabled => DiskMonitoringAvailable;
+
+    // True when at least one LED is using disk monitoring modes.
+    public bool HasDiskModeLeds => _mappings.Values.Any(m => m.Mode is LedMode.DiskRead or LedMode.DiskWrite);
+
+    // Event fired when the disk mode LED count changes (0 to 1+ or 1+ to 0)
+    public event Action<bool>? DiskModeLedsChanged;
+
+    private bool _previousHadDiskModes = false;
 
     // --- Hotkey cycle config (Win+Shift+K) ---
     // Which states should LEDs in HotkeyControlled mode cycle through?
@@ -67,14 +79,27 @@ public sealed partial class MainViewModel : ObservableObject
             map.PropertyChanged += (_, e) =>
             {
                 if (e.PropertyName != nameof(LedMapping.Mode)) return;
+
                 switch (map.Mode)
                 {
                     case LedMode.On: _leds.SetLed(led, LedState.On); break;
                     case LedMode.Off: _leds.SetLed(led, LedState.Off); break;
                     case LedMode.Blink: _leds.SetLed(led, LedState.Blink); break;
                 }
+
+                // Check if disk mode usage changed (none->some or some->none)
+                bool hasDiskModesNow = HasDiskModeLeds;
+                if (_previousHadDiskModes != hasDiskModesNow)
+                {
+                    _previousHadDiskModes = hasDiskModesNow;
+                    OnPropertyChanged(nameof(HasDiskModeLeds));
+                    DiskModeLedsChanged?.Invoke(hasDiskModesNow);
+                }
             };
         }
+
+        // Initialize the tracking variable
+        _previousHadDiskModes = HasDiskModeLeds;
     }
 
     // -------------------------------------------------------------------------
@@ -179,6 +204,10 @@ public sealed partial class MainViewModel : ObservableObject
         HotkeyCycleOn = s.HotkeyCycleOn;
         HotkeyCycleOff = s.HotkeyCycleOff;
         HotkeyCycleBlink = s.HotkeyCycleBlink;
+
+        // Update tracking variable after loading modes
+        _previousHadDiskModes = HasDiskModeLeds;
+        OnPropertyChanged(nameof(HasDiskModeLeds));
     }
 
     public void SaveTo(AppSettings s)

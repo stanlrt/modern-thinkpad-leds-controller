@@ -106,6 +106,18 @@ public partial class App : System.Windows.Application
         // --- Main window ---
         _mainWindow = new MainWindow(_mainVm, _settingsVm);
 
+        // --- Wire disk monitoring to LED usage ---
+        _mainVm.DiskModeLedsChanged += hasDiskModes =>
+            Dispatcher.Invoke(() =>
+            {
+                if (hasDiskModes) _settingsVm.StartDiskMonitoring();
+                else _settingsVm.StopDiskMonitoring();
+            });
+
+        // Check initial state and start monitoring if needed
+        if (_mainVm.HasDiskModeLeds && diskOk)
+            _settingsVm.StartDiskMonitoring();
+
         _mainWindow.SourceInitialized += (_, _) =>
         {
             _powerListener.Attach(_mainWindow);
@@ -140,7 +152,8 @@ public partial class App : System.Windows.Application
                 if (_settings.RememberKeyboardBacklight)
                     _kbdMonitor.RestoreMostCommonLevel();
 
-                _diskMonitor.Start();
+                if (_mainVm.HasDiskModeLeds)
+                    _diskMonitor.Start();
                 _kbdMonitor.Start();
             });
 
@@ -156,7 +169,7 @@ public partial class App : System.Windows.Application
                 _mainVm.OnFullscreenChanged(isFullscreen, _kbdMonitor.CurrentLevel));
 
         // --- Start monitors ---
-        if (diskOk) _diskMonitor.Start();
+        // Note: Disk monitor is started by LoadFrom -> property change handler if enabled
         if (_settings.RememberKeyboardBacklight) _kbdMonitor.Start();
         if (_settings.DimLedsWhenFullscreen) _powerListener.StartFullscreenPolling();
 

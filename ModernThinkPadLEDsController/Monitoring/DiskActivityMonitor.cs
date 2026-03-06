@@ -52,12 +52,19 @@ public sealed class DiskActivityMonitor : IDisposable
     public void Start()
     {
         if (!IsAvailable) return;
+        // Stop any existing monitoring first to prevent multiple loops
+        Stop();
         _cts = new CancellationTokenSource();
         // Task.Run starts the loop on a .NET thread-pool thread (background thread).
         _ = Task.Run(() => MonitorLoop(_cts.Token));
     }
 
-    public void Stop() => _cts?.Cancel();
+    public void Stop()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _cts = null;
+    }
 
     // Call when the user changes the HDD poll interval slider.
     public void UpdateInterval(int ms) => Interlocked.Exchange(ref _intervalMs, ms);
@@ -87,7 +94,7 @@ public sealed class DiskActivityMonitor : IDisposable
 
     public void Dispose()
     {
-        _cts?.Cancel();
+        Stop();
         _readCounter?.Dispose();
         _writeCounter?.Dispose();
     }

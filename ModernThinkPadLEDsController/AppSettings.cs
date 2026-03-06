@@ -15,16 +15,16 @@ public sealed class AppSettings
 
     // --- LED modes ---
     // Each LED has exactly one mode (mutually exclusive).
-    public LedMode PowerMode      { get; set; } = LedMode.Default;
-    public LedMode RedDotMode     { get; set; } = LedMode.Default;
+    public LedMode PowerMode { get; set; } = LedMode.Default;
+    public LedMode RedDotMode { get; set; } = LedMode.Default;
     public LedMode MicrophoneMode { get; set; } = LedMode.Default;
-    public LedMode SleepMode      { get; set; } = LedMode.Default;
-    public LedMode FnLockMode     { get; set; } = LedMode.Default;
+    public LedMode SleepMode { get; set; } = LedMode.Default;
+    public LedMode FnLockMode { get; set; } = LedMode.Default;
 
     // --- Hotkey cycle (Win+Shift+K) ---
     // Which states LEDs in HotkeyControlled mode should cycle through.
-    public bool HotkeyCycleOn    { get; set; } = true;
-    public bool HotkeyCycleOff   { get; set; } = true;
+    public bool HotkeyCycleOn { get; set; } = true;
+    public bool HotkeyCycleOff { get; set; } = true;
     public bool HotkeyCycleBlink { get; set; } = false;
 
     // --- Timing ---
@@ -32,10 +32,10 @@ public sealed class AppSettings
 
     // --- Keyboard backlight ---
     public bool RememberKeyboardBacklight { get; set; }
-    public int  SavedKeyboardBacklight    { get; set; } // 0=Off, 1=Low, 2=High
+    public int SavedKeyboardBacklight { get; set; } // 0=Off, 1=Low, 2=High
 
     // --- Behaviour ---
-    public bool DimLedsWhenFullscreen      { get; set; }
+    public bool DimLedsWhenFullscreen { get; set; }
     public bool SuppressDiskCounterWarning { get; set; }
 
     // --- Load/Save ---

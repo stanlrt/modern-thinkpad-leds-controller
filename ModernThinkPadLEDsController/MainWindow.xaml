@@ -286,7 +286,9 @@
                                          HorizontalAlignment="Left"
                                          VerticalAlignment="Center"
                                          Margin="8,6,16,6"
-                                         IsEnabled="{Binding MainVm.DiskMonitoringAvailable}"
+                                         IsEnabled="{Binding MainVm.DiskRadiosEnabled}"
+                                         ToolTip="Disabled: disk monitoring is either unavailable or turned off in the Disk tab"
+                                         ToolTipService.ShowOnDisabled="True"
                                          IsChecked="{Binding MainVm.Power.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static root:LedMode.DiskWrite}}"/>
                             <RadioButton Grid.Row="1"
                                          Grid.Column="7"
@@ -294,7 +296,9 @@
                                          HorizontalAlignment="Left"
                                          VerticalAlignment="Center"
                                          Margin="8,6,0,6"
-                                         IsEnabled="{Binding MainVm.DiskMonitoringAvailable}"
+                                         IsEnabled="{Binding MainVm.DiskRadiosEnabled}"
+                                         ToolTip="Disabled: disk monitoring is either unavailable or turned off in the Disk tab"
+                                         ToolTipService.ShowOnDisabled="True"
                                          IsChecked="{Binding MainVm.Power.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static root:LedMode.DiskRead}}"/>
 
                             <!-- ── Red Dot ── -->
@@ -344,7 +348,9 @@
                                          HorizontalAlignment="Left"
                                          VerticalAlignment="Center"
                                          Margin="8,6,16,6"
-                                         IsEnabled="{Binding MainVm.DiskMonitoringAvailable}"
+                                         IsEnabled="{Binding MainVm.DiskRadiosEnabled}"
+                                         ToolTip="Disabled: disk monitoring is either unavailable or turned off in the Disk tab"
+                                         ToolTipService.ShowOnDisabled="True"
                                          IsChecked="{Binding MainVm.RedDot.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static root:LedMode.DiskWrite}}"/>
                             <RadioButton Grid.Row="2"
                                          Grid.Column="7"
@@ -352,7 +358,9 @@
                                          HorizontalAlignment="Left"
                                          VerticalAlignment="Center"
                                          Margin="8,6,0,6"
-                                         IsEnabled="{Binding MainVm.DiskMonitoringAvailable}"
+                                         IsEnabled="{Binding MainVm.DiskRadiosEnabled}"
+                                         ToolTip="Disabled: disk monitoring is either unavailable or turned off in the Disk tab"
+                                         ToolTipService.ShowOnDisabled="True"
                                          IsChecked="{Binding MainVm.RedDot.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static root:LedMode.DiskRead}}"/>
 
                             <!-- ── Microphone ── -->
@@ -402,7 +410,9 @@
                                          HorizontalAlignment="Left"
                                          VerticalAlignment="Center"
                                          Margin="8,6,16,6"
-                                         IsEnabled="{Binding MainVm.DiskMonitoringAvailable}"
+                                         IsEnabled="{Binding MainVm.DiskRadiosEnabled}"
+                                         ToolTip="Disabled: disk monitoring is either unavailable or turned off in the Disk tab"
+                                         ToolTipService.ShowOnDisabled="True"
                                          IsChecked="{Binding MainVm.Microphone.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static root:LedMode.DiskWrite}}"/>
                             <RadioButton Grid.Row="3"
                                          Grid.Column="7"
@@ -410,7 +420,9 @@
                                          HorizontalAlignment="Left"
                                          VerticalAlignment="Center"
                                          Margin="8,6,0,6"
-                                         IsEnabled="{Binding MainVm.DiskMonitoringAvailable}"
+                                         IsEnabled="{Binding MainVm.DiskRadiosEnabled}"
+                                         ToolTip="Disabled: disk monitoring is either unavailable or turned off in the Disk tab"
+                                         ToolTipService.ShowOnDisabled="True"
                                          IsChecked="{Binding MainVm.Microphone.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static root:LedMode.DiskRead}}"/>
 
                             <!-- ── Sleep ── -->
@@ -460,7 +472,9 @@
                                          HorizontalAlignment="Left"
                                          VerticalAlignment="Center"
                                          Margin="8,6,16,6"
-                                         IsEnabled="{Binding MainVm.DiskMonitoringAvailable}"
+                                         IsEnabled="{Binding MainVm.DiskRadiosEnabled}"
+                                         ToolTip="Disabled: disk monitoring is either unavailable or turned off in the Disk tab"
+                                         ToolTipService.ShowOnDisabled="True"
                                          IsChecked="{Binding MainVm.Sleep.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static root:LedMode.DiskWrite}}"/>
                             <RadioButton Grid.Row="4"
                                          Grid.Column="7"
@@ -468,7 +482,9 @@
                                          HorizontalAlignment="Left"
                                          VerticalAlignment="Center"
                                          Margin="8,6,0,6"
-                                         IsEnabled="{Binding MainVm.DiskMonitoringAvailable}"
+                                         IsEnabled="{Binding MainVm.DiskRadiosEnabled}"
+                                         ToolTip="Disabled: disk monitoring is either unavailable or turned off in the Disk tab"
+                                         ToolTipService.ShowOnDisabled="True"
                                          IsChecked="{Binding MainVm.Sleep.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static root:LedMode.DiskRead}}"/>
 
                             <!-- ── Fn Lock ── -->
@@ -518,7 +534,9 @@
                                          HorizontalAlignment="Left"
                                          VerticalAlignment="Center"
                                          Margin="8,6,16,6"
-                                         IsEnabled="{Binding MainVm.DiskMonitoringAvailable}"
+                                         IsEnabled="{Binding MainVm.DiskRadiosEnabled}"
+                                         ToolTip="Disabled: disk monitoring is either unavailable or turned off in the Disk tab"
+                                         ToolTipService.ShowOnDisabled="True"
                                          IsChecked="{Binding MainVm.FnLock.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static root:LedMode.DiskWrite}}"/>
                             <RadioButton Grid.Row="5"
                                          Grid.Column="7"
@@ -526,7 +544,9 @@
                                          HorizontalAlignment="Left"
                                          VerticalAlignment="Center"
                                          Margin="8,6,0,6"
-                                         IsEnabled="{Binding MainVm.DiskMonitoringAvailable}"
+                                         IsEnabled="{Binding MainVm.DiskRadiosEnabled}"
+                                         ToolTip="Disabled: disk monitoring is either unavailable or turned off in the Disk tab"
+                                         ToolTipService.ShowOnDisabled="True"
                                          IsChecked="{Binding MainVm.FnLock.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static root:LedMode.DiskRead}}"/>
                         </Grid>
                     </ScrollViewer>
@@ -586,18 +606,41 @@
                                 <TextBlock TextWrapping="Wrap"
                                            Text="⚠  Disk performance counters are not available on this system. Disk Read and Disk Write modes will have no effect."/>
                             </Border>
+
+                            <!-- Message shown when no LEDs are using disk monitoring -->
+                            <TextBlock Text="No LED is mapped to disk operations."
+                                       FontStyle="Italic"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       Margin="0,0,0,0">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility"
+                                                Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding MainVm.HasDiskModeLeds}"
+                                                    Value="False">
+                                                <Setter Property="Visibility"
+                                                        Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+
+                            <!-- Poll interval slider shown when at least one LED is using disk monitoring -->
                             <TextBlock Text="Poll interval"
                                        FontWeight="SemiBold"
-                                       Margin="0,0,0,8"/>
+                                       Margin="0,0,0,8"
+                                       Visibility="{Binding MainVm.HasDiskModeLeds, Converter={StaticResource BoolToVis}}"/>
                             <StackPanel Orientation="Horizontal"
-                                        VerticalAlignment="Center">
+                                        VerticalAlignment="Center"
+                                        Visibility="{Binding MainVm.HasDiskModeLeds, Converter={StaticResource BoolToVis}}">
                                 <Slider Minimum="10"
                                         Maximum="1000"
                                         Width="200"
                                         Value="{Binding SettingsVm.HddPollIntervalMs}"
                                         TickFrequency="10"
-                                        IsSnapToTickEnabled="True"
-                                        IsEnabled="{Binding MainVm.DiskMonitoringAvailable}"/>
+                                        IsSnapToTickEnabled="True"/>
                                 <TextBlock Text="{Binding SettingsVm.HddPollIntervalMs, StringFormat={}{0} ms}"
                                            VerticalAlignment="Center"
                                            Width="60"
