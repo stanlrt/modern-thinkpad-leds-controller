@@ -19,10 +19,10 @@ public partial class App : System.Windows.Application
     // We keep references so Dispose() is called on shutdown.
     private InpOutDriver?            _driver;
     private DiskActivityMonitor?     _diskMonitor;
-    private KeyLockMonitor?          _keyMonitor;
     private KeyboardBacklightMonitor? _kbdMonitor;
     private MicrophoneMuteMonitor?   _micMonitor;
     private PowerEventListener?      _powerListener;
+    private HotkeyService?           _hotkey;
     private TrayIconService?         _tray;
     private AppSettings?             _settings;
     private MainViewModel?           _mainVm;
@@ -51,8 +51,6 @@ public partial class App : System.Windows.Application
         }
 
         // --- Open InpOut driver ---
-        // TryOpen() calls IsInpOutDriverOpen() which self-installs the kernel
-        // service if it isn't running yet. Requires admin rights (manifest).
         if (!InpOutDriver.TryOpen(out _driver))
         {
             var setup = new DriverSetupWindow();
@@ -64,7 +62,6 @@ public partial class App : System.Windows.Application
                 return;
             }
 
-            // Try again after the user clicked Initialise in DriverSetupWindow.
             if (!InpOutDriver.TryOpen(out _driver))
             {
                 MessageBox.Show("Could not open InpOut driver. Exiting.",
@@ -83,22 +80,22 @@ public partial class App : System.Windows.Application
 
         // --- Monitoring ---
         _diskMonitor   = new DiskActivityMonitor(_settings.HddPollIntervalMs);
-        _keyMonitor    = new KeyLockMonitor();
         _kbdMonitor    = new KeyboardBacklightMonitor(leds);
         _micMonitor    = new MicrophoneMuteMonitor();
         _powerListener = new PowerEventListener();
 
         bool diskOk = _diskMonitor.TryInitialize();
-        if (!diskOk)
-            _settings.DisableDiskMonitoring = true;
 
         // --- ViewModels ---
         _mainVm     = new MainViewModel(leds);
-        _settingsVm = new SettingsViewModel(_settings, _diskMonitor, _keyMonitor, _kbdMonitor, _powerListener, leds);
+        _settingsVm = new SettingsViewModel(_settings, _diskMonitor, _kbdMonitor, _powerListener, leds);
 
         _mainVm.LoadFrom(_settings);
         _settingsVm.LoadFrom(_settings);
         _mainVm.DiskMonitoringAvailable = diskOk;
+
+        // Apply static LED modes (On/Off/Blink) to hardware immediately after load.
+        _mainVm.ApplyAll();
 
         // --- Tray icon ---
         _tray = new TrayIconService();
@@ -109,30 +106,23 @@ public partial class App : System.Windows.Application
         // --- Main window ---
         _mainWindow = new MainWindow(_mainVm, _settingsVm);
 
-        // PowerEventListener needs the window's HWND — only available after
-        // the window is created (but before it's shown).
         _mainWindow.SourceInitialized += (_, _) =>
         {
             _powerListener.Attach(_mainWindow);
+
+            // Register Win+Shift+K global hotkey — requires a valid HWND.
+            _hotkey = new HotkeyService();
+            _hotkey.Register(_mainWindow);
+            _hotkey.HotkeyPressed += () => Dispatcher.Invoke(() => _mainVm.OnHotkeyPressed());
         };
 
         // --- Wire monitoring events → ViewModel methods ---
-        // All event handlers Dispatcher.Invoke back to the UI thread before
-        // touching ViewModel properties, because monitors run on background threads
-        // and WPF requires property changes to happen on the UI thread.
-
         _diskMonitor.StateChanged += state =>
             Dispatcher.Invoke(() =>
             {
                 _tray.SetDiskState(state);
                 _mainVm.OnDiskStateChanged(state);
             });
-
-        _keyMonitor.CapsLockChanged += isOn =>
-            Dispatcher.Invoke(() => _mainVm.OnCapsLockChanged(isOn));
-
-        _keyMonitor.NumLockChanged += isOn =>
-            Dispatcher.Invoke(() => _mainVm.OnNumLockChanged(isOn));
 
         _micMonitor.MuteStateChanged += isMuted =>
             Dispatcher.Invoke(() => _mainVm.OnMicrophoneMuteChanged(isMuted));
@@ -152,7 +142,6 @@ public partial class App : System.Windows.Application
 
                 _diskMonitor.Start();
                 _kbdMonitor.Start();
-                _keyMonitor.SyncInitialState();
             });
 
         _powerListener.LidStateChanged += isOpen =>
@@ -167,13 +156,13 @@ public partial class App : System.Windows.Application
                 _mainVm.OnFullscreenChanged(isFullscreen, _kbdMonitor.CurrentLevel));
 
         // --- Start monitors ---
-        if (!_settings.DisableDiskMonitoring) _diskMonitor.Start();
-        if (!_settings.DisableKeyMonitoring)  _keyMonitor.Start();
+        if (diskOk) _diskMonitor.Start();
         if (_settings.RememberKeyboardBacklight) _kbdMonitor.Start();
-        if (_settings.DimLedsWhenFullscreen)  _powerListener.StartFullscreenPolling();
+        if (_settings.DimLedsWhenFullscreen)     _powerListener.StartFullscreenPolling();
 
         _micMonitor.Start();
-        _keyMonitor.SyncInitialState();
+
+        // Sync mic LED to current mute state before the first poll fires.
         _mainVm.OnMicrophoneMuteChanged(_micMonitor.QueryMuted());
 
         // --- Show or hide on startup ---
@@ -197,10 +186,10 @@ public partial class App : System.Windows.Application
         _settings?.Save();
 
         _diskMonitor?.Dispose();
-        _keyMonitor?.Dispose();
         _kbdMonitor?.Dispose();
         _micMonitor?.Dispose();
         _powerListener?.Dispose();
+        _hotkey?.Dispose();
         _tray?.Dispose();
         _driver?.Dispose();
 

@@ -10,7 +10,6 @@ public sealed partial class SettingsViewModel : ObservableObject
 {
     private readonly AppSettings              _settings;
     private readonly DiskActivityMonitor      _disk;
-    private readonly KeyLockMonitor           _keys;
     private readonly KeyboardBacklightMonitor _backlight;
     private readonly PowerEventListener       _power;
     private readonly LedController            _leds;
@@ -78,10 +77,13 @@ public sealed partial class SettingsViewModel : ObservableObject
     }
 
     // -------------------------------------------------------------------------
-    // Driver info (read-only, shown in the UI for diagnostics)
+    // Driver / app info (read-only, shown in App Settings tab)
     // -------------------------------------------------------------------------
 
     public string DriverStatus { get; } = "InpOut x64 (WHQL-signed)";
+
+    public string AppVersion { get; } =
+        System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "—";
 
     // -------------------------------------------------------------------------
     // Constructor + settings round-trip
@@ -90,14 +92,12 @@ public sealed partial class SettingsViewModel : ObservableObject
     public SettingsViewModel(
         AppSettings              settings,
         DiskActivityMonitor      disk,
-        KeyLockMonitor           keys,
         KeyboardBacklightMonitor backlight,
         PowerEventListener       power,
         LedController            leds)
     {
         _settings  = settings;
         _disk      = disk;
-        _keys      = keys;
         _backlight = backlight;
         _power     = power;
         _leds      = leds;
@@ -105,11 +105,10 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     public void LoadFrom(AppSettings s)
     {
-        // Setting properties through the generated setters so partial callbacks fire.
-        HddPollIntervalMs        = s.HddPollIntervalMs;
+        HddPollIntervalMs         = s.HddPollIntervalMs;
         RememberKeyboardBacklight = s.RememberKeyboardBacklight;
-        DimLedsWhenFullscreen    = s.DimLedsWhenFullscreen;
-        StartWithWindows         = StartupTaskManager.IsRegistered();
+        DimLedsWhenFullscreen     = s.DimLedsWhenFullscreen;
+        StartWithWindows          = StartupTaskManager.IsRegistered();
     }
 
     public void SaveTo(AppSettings s)
