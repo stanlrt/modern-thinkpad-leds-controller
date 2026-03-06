@@ -212,36 +212,5 @@ public partial class App : System.Windows.Application
         Shutdown();
     }
 
-    // Falls back to default WPF scrolling if anything goes wrong — no crash.
-    private void ScrollViewer_PreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
-    {
-        try
-        {
-            // When "scroll one screen at a time" is set in mouse settings, let WPF handle it.
-            if (System.Windows.Forms.SystemInformation.MouseWheelScrollLines == -1)
-            {
-                e.Handled = false;
-            }
-            else
-            {
-                try
-                {
-                    var sv = (System.Windows.Controls.ScrollViewer)sender;
-                    sv.ScrollToVerticalOffset(
-                        sv.VerticalOffset -
-                        e.Delta * 10 * System.Windows.Forms.SystemInformation.MouseWheelScrollLines / (double)120);
-                    e.Handled = true;
-                }
-                catch (Exception)
-                {
-                    // Intentionally swallowed: fall back to default WPF scrolling.
-                }
-            }
-        }
-        catch (Exception)
-        {
-            // Intentionally swallowed: fall back to default WPF scrolling.
-        }
-    }
 }
 

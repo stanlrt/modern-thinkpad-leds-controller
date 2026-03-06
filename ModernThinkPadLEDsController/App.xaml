@@ -72,11 +72,6 @@
                 </Setter>
             </Style>
 
-            <Style TargetType="ScrollViewer">
-                <EventSetter Event="PreviewMouseWheel"
-                             Handler="ScrollViewer_PreviewMouseWheel"/>
-            </Style>
-
         </ResourceDictionary>
     </Application.Resources>
 </Application>

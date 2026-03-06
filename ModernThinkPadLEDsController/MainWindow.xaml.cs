@@ -1,7 +1,9 @@
 ﻿using System.ComponentModel;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
 using ModernThinkPadLEDsController.ViewModels;
 using Wpf.Ui.Controls;
 
@@ -18,6 +20,13 @@ public partial class MainWindow : FluentWindow
         SettingsVm = settingsVm;
         InitializeComponent();
         DataContext = this;
+
+        // Hook into Win32 message pump to catch horizontal mouse wheel events
+        SourceInitialized += (s, e) =>
+        {
+            var source = PresentationSource.FromVisual(this) as HwndSource;
+            source?.AddHook(WndProc);
+        };
     }
 
     // When the user clicks ✕, hide to tray instead of closing.
@@ -28,33 +37,41 @@ public partial class MainWindow : FluentWindow
         Hide();
     }
 
-    // The table's horizontal ScrollViewer would swallow all wheel events, blocking
-    // vertical scroll on the outer ScrollViewer while hovering the table.
-    // Only bubble the event up when the inner viewer can't scroll horizontally
-    // (i.e. it is already at its limit), so horizontal touchpad swipes are kept
-    // by the inner viewer while vertical scroll always reaches the outer one.
-    private void TableScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    // Adjust vertical scroll speed for smoother scrolling
+    private void MainScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
         var sv = (ScrollViewer)sender;
-
-        // Let the inner viewer keep the event if it can still scroll horizontally.
-        bool canScrollH = sv.ScrollableWidth > 0
-                          && ((e.Delta < 0 && sv.HorizontalOffset < sv.ScrollableWidth)
-                              || (e.Delta > 0 && sv.HorizontalOffset > 0));
-
-        // Shift+wheel is the standard horizontal-scroll gesture — keep those too.
-        bool isHorizontalGesture = (Keyboard.Modifiers & ModifierKeys.Shift) != 0;
-
-        if (canScrollH || isHorizontalGesture)
-            return;
-
-        // Vertical (or exhausted horizontal) — bubble up to the outer ScrollViewer.
+        // Reduce scroll speed: divide delta by 3 for smoother scrolling
+        sv.ScrollToVerticalOffset(sv.VerticalOffset - e.Delta / 3.0);
         e.Handled = true;
-        var parent = sv.Parent as UIElement;
-        parent?.RaiseEvent(new MouseWheelEventArgs(e.MouseDevice, e.Timestamp, e.Delta)
+    }
+
+    // Let vertical scrolling bubble up from table to main ScrollViewer
+    private void TableScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        // Don't handle - let the event bubble up to MainScrollViewer
+        e.Handled = false;
+    }
+
+    // Intercept horizontal mouse wheel messages from precision touchpads
+    private const int WM_MOUSEHWHEEL = 0x020E;
+
+    private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        if (msg == WM_MOUSEHWHEEL)
         {
-            RoutedEvent = MouseWheelEvent,
-            Source = sender
-        });
+            // Extract scroll delta from high word of wParam
+            int delta = (short)((long)wParam >> 16);
+
+            // Apply horizontal scroll to the LED table ScrollViewer
+            if (TableScrollViewer != null)
+            {
+                // Divide by 3.0 for smoother scrolling (same as vertical)
+                TableScrollViewer.ScrollToHorizontalOffset(TableScrollViewer.HorizontalOffset + delta / 3.0);
+                handled = true;
+            }
+        }
+
+        return IntPtr.Zero;
     }
 }
