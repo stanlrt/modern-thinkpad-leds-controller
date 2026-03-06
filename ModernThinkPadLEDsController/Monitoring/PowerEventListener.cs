@@ -21,11 +21,11 @@ public enum MonitorState { On, Off }
 // parsing WM_POWERBROADCAST wParam values).
 public sealed class PowerEventListener : IDisposable
 {
-    public event Action<bool>?        LidStateChanged;    // true = lid is open
+    public event Action<bool>? LidStateChanged;    // true = lid is open
     public event Action<MonitorState>? MonitorStateChanged;
-    public event Action?              SystemSuspending;
-    public event Action?              SystemResumed;
-    public event Action<bool>?        FullscreenChanged;  // true = a fullscreen app is in front
+    public event Action? SystemSuspending;
+    public event Action? SystemResumed;
+    public event Action<bool>? FullscreenChanged;  // true = a fullscreen app is in front
 
     private HwndSource? _source;
     private bool? _previousLidState;
@@ -33,7 +33,7 @@ public sealed class PowerEventListener : IDisposable
     private System.Windows.Threading.DispatcherTimer? _fullscreenTimer;
     private bool _wasFullscreen;
 
-    private IntPtr _lidHandle     = IntPtr.Zero;
+    private IntPtr _lidHandle = IntPtr.Zero;
     private IntPtr _monitorHandle = IntPtr.Zero;
 
     // GUIDs that identify which power setting notification we're registering for.
@@ -44,7 +44,7 @@ public sealed class PowerEventListener : IDisposable
     private static readonly Guid GUID_MONITOR_POWER_ON =
         new(0x02731015, 0x4510, 0x4526, 0x99, 0xE6, 0xE5, 0xA1, 0x7E, 0xBD, 0x1A, 0xEA);
 
-    private const int WM_POWERBROADCAST      = 0x0218;
+    private const int WM_POWERBROADCAST = 0x0218;
     private const int PBT_POWERSETTINGCHANGE = 0x8013;
     private const int DEVICE_NOTIFY_WINDOW_HANDLE = 0x0000;
 
@@ -83,12 +83,12 @@ public sealed class PowerEventListener : IDisposable
     public void Attach(Window window)
     {
         var helper = new WindowInteropHelper(window);
-        _source    = HwndSource.FromHwnd(helper.Handle);
+        _source = HwndSource.FromHwnd(helper.Handle);
         _source.AddHook(WndProcHook);
 
         Guid lidGuid = GUID_LIDSWITCH_STATE_CHANGE;
         Guid monGuid = GUID_MONITOR_POWER_ON;
-        _lidHandle     = RegisterPowerSettingNotification(helper.Handle, ref lidGuid, DEVICE_NOTIFY_WINDOW_HANDLE);
+        _lidHandle = RegisterPowerSettingNotification(helper.Handle, ref lidGuid, DEVICE_NOTIFY_WINDOW_HANDLE);
         _monitorHandle = RegisterPowerSettingNotification(helper.Handle, ref monGuid, DEVICE_NOTIFY_WINDOW_HANDLE);
 
         SystemEvents.PowerModeChanged += OnPowerModeChanged;
@@ -164,14 +164,14 @@ public sealed class PowerEventListener : IDisposable
         switch (e.Mode)
         {
             case PowerModes.Suspend: SystemSuspending?.Invoke(); break;
-            case PowerModes.Resume:  SystemResumed?.Invoke();    break;
+            case PowerModes.Resume: SystemResumed?.Invoke(); break;
         }
     }
 
     public void Dispose()
     {
         SystemEvents.PowerModeChanged -= OnPowerModeChanged;
-        if (_lidHandle     != IntPtr.Zero) UnregisterPowerSettingNotification(_lidHandle);
+        if (_lidHandle != IntPtr.Zero) UnregisterPowerSettingNotification(_lidHandle);
         if (_monitorHandle != IntPtr.Zero) UnregisterPowerSettingNotification(_monitorHandle);
         _source?.RemoveHook(WndProcHook);
         _fullscreenTimer?.Stop();

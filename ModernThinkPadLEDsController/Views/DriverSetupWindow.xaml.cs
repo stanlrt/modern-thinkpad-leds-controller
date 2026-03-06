@@ -27,9 +27,9 @@ public partial class DriverSetupWindow : FluentWindow
         }
         else
         {
-            StatusText.Text       = "Failed to initialise the driver. Make sure inpoutx64.dll is next to the .exe and that you are running as Administrator.";
+            StatusText.Text = "Failed to initialise the driver. Make sure inpoutx64.dll is next to the .exe and that you are running as Administrator.";
             StatusText.Visibility = Visibility.Visible;
-            InitButton.IsEnabled  = true;
+            InitButton.IsEnabled = true;
         }
     }
 }

@@ -21,9 +21,9 @@ public sealed class KeyLockMonitor : IDisposable
     // WH_KEYBOARD_LL = low-level keyboard hook type (13).
     // WM_KEYDOWN     = message sent when a non-system key is pressed (0x100).
     private const int WH_KEYBOARD_LL = 13;
-    private const int WM_KEYDOWN     = 0x0100;
-    private const int VK_CAPITAL     = 0x14;  // virtual key code for Caps Lock
-    private const int VK_NUMLOCK     = 0x90;  // virtual key code for Num Lock
+    private const int WM_KEYDOWN = 0x0100;
+    private const int VK_CAPITAL = 0x14;  // virtual key code for Caps Lock
+    private const int VK_NUMLOCK = 0x90;  // virtual key code for Num Lock
 
     // We store the delegate in a field so the GC cannot collect it while
     // the hook is active. If it were a local variable, the GC might free it
@@ -50,7 +50,7 @@ public sealed class KeyLockMonitor : IDisposable
     public void Start()
     {
         using var process = System.Diagnostics.Process.GetCurrentProcess();
-        using var module  = process.MainModule!;
+        using var module = process.MainModule!;
         _hookId = SetWindowsHookEx(WH_KEYBOARD_LL, _proc, GetModuleHandle(module.ModuleName), 0);
     }
 

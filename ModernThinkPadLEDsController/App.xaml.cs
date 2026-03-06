@@ -1,4 +1,4 @@
-﻿using System.Windows;
+using System.Windows;
 using ModernThinkPadLEDsController.Hardware;
 using ModernThinkPadLEDsController.Monitoring;
 using ModernThinkPadLEDsController.Services;

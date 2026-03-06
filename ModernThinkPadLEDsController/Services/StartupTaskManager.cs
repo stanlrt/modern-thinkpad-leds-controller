@@ -25,10 +25,10 @@ internal static class StartupTaskManager
         {
             using var proc = Process.Start(new ProcessStartInfo("schtasks.exe")
             {
-                Arguments            = $"/Query /TN \"{TaskName}\"",
-                UseShellExecute      = false,
+                Arguments = $"/Query /TN \"{TaskName}\"",
+                UseShellExecute = false,
                 RedirectStandardOutput = true,
-                CreateNoWindow       = true,
+                CreateNoWindow = true,
             })!;
             proc.WaitForExit();
             return proc.ExitCode == 0;
@@ -43,7 +43,7 @@ internal static class StartupTaskManager
         try
         {
             string username = WindowsIdentity.GetCurrent().Name;
-            string xml      = BuildTaskXml(username, executablePath);
+            string xml = BuildTaskXml(username, executablePath);
 
             // schtasks.exe /Create /XML requires a file — write it to %TEMP%.
             string tempXml = Path.Combine(Path.GetTempPath(), "mtleds_task.xml");
@@ -51,9 +51,9 @@ internal static class StartupTaskManager
 
             using var proc = Process.Start(new ProcessStartInfo("schtasks.exe")
             {
-                Arguments      = $"/Create /F /TN \"{TaskName}\" /XML \"{tempXml}\"",
+                Arguments = $"/Create /F /TN \"{TaskName}\" /XML \"{tempXml}\"",
                 UseShellExecute = false,
-                CreateNoWindow  = true,
+                CreateNoWindow = true,
             })!;
             proc.WaitForExit();
             File.Delete(tempXml);
@@ -70,9 +70,9 @@ internal static class StartupTaskManager
         {
             using var proc = Process.Start(new ProcessStartInfo("schtasks.exe")
             {
-                Arguments      = $"/Delete /F /TN \"{TaskName}\"",
+                Arguments = $"/Delete /F /TN \"{TaskName}\"",
                 UseShellExecute = false,
-                CreateNoWindow  = true,
+                CreateNoWindow = true,
             })!;
             proc.WaitForExit();
             return proc.ExitCode == 0;

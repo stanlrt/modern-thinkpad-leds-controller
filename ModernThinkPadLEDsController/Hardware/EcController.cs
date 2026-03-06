@@ -15,10 +15,10 @@ public sealed class EcController
     private const ushort EC_DATAPORT = 0x62;
     private const ushort EC_CTRLPORT = 0x66;
 
-    private const int  EC_STAT_OBF = 0x01;   // Output Buffer Full  — EC has data waiting for us
-    private const int  EC_STAT_IBF = 0x02;   // Input Buffer Full   — EC is still processing our last write
+    private const int EC_STAT_OBF = 0x01;   // Output Buffer Full  — EC has data waiting for us
+    private const int EC_STAT_IBF = 0x02;   // Input Buffer Full   — EC is still processing our last write
 
-    private const byte EC_CTRLPORT_READ  = 0x80;  // Command: we want to READ a register
+    private const byte EC_CTRLPORT_READ = 0x80;  // Command: we want to READ a register
     private const byte EC_CTRLPORT_WRITE = 0x81;  // Command: we want to WRITE a register
 
     private readonly IPortIO _io;
@@ -66,10 +66,10 @@ public sealed class EcController
         data = 0xFF;
 
         if (!WaitPortStatus(EC_STAT_IBF | EC_STAT_OBF)) return false; // wait for both buffers clear
-        if (!WritePort(EC_CTRLPORT, EC_CTRLPORT_READ))   return false; // send READ command
-        if (!WaitPortStatus(EC_STAT_IBF))                return false; // wait for EC to consume command
-        if (!WritePort(EC_DATAPORT, offset))             return false; // send the register address
-        if (!WaitPortStatus(EC_STAT_IBF))                return false; // wait for EC to consume address
+        if (!WritePort(EC_CTRLPORT, EC_CTRLPORT_READ)) return false; // send READ command
+        if (!WaitPortStatus(EC_STAT_IBF)) return false; // wait for EC to consume command
+        if (!WritePort(EC_DATAPORT, offset)) return false; // send the register address
+        if (!WaitPortStatus(EC_STAT_IBF)) return false; // wait for EC to consume address
 
         return ReadPort(EC_DATAPORT, out data);                        // read the register value
     }
@@ -79,11 +79,11 @@ public sealed class EcController
     public bool WriteByte(byte offset, byte data)
     {
         if (!WaitPortStatus(EC_STAT_IBF | EC_STAT_OBF)) return false;
-        if (!WritePort(EC_CTRLPORT, EC_CTRLPORT_WRITE))  return false;
-        if (!WaitPortStatus(EC_STAT_IBF))                return false;
-        if (!WritePort(EC_DATAPORT, offset))             return false;
-        if (!WaitPortStatus(EC_STAT_IBF))                return false;
-        if (!WritePort(EC_DATAPORT, data))               return false;
+        if (!WritePort(EC_CTRLPORT, EC_CTRLPORT_WRITE)) return false;
+        if (!WaitPortStatus(EC_STAT_IBF)) return false;
+        if (!WritePort(EC_DATAPORT, offset)) return false;
+        if (!WaitPortStatus(EC_STAT_IBF)) return false;
+        if (!WritePort(EC_DATAPORT, data)) return false;
         return WaitPortStatus(EC_STAT_IBF);
     }
 }

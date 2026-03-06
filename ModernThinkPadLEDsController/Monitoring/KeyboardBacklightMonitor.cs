@@ -22,7 +22,7 @@ public sealed class KeyboardBacklightMonitor : IDisposable
 
     private readonly LedController _leds;
     private readonly Queue<KeyboardBacklight> _history = new();
-    private const int HistorySize    = 5;
+    private const int HistorySize = 5;
     private const int PollIntervalMs = 1000;
 
     private CancellationTokenSource? _cts;

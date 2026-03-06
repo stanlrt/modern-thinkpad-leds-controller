@@ -16,7 +16,7 @@ public sealed class HotkeyService : IDisposable
 {
     // Win32 modifier flags
     private const int MOD_SHIFT = 0x0004;
-    private const int MOD_WIN   = 0x0008;
+    private const int MOD_WIN = 0x0008;
 
     // Virtual-key code for K
     private const int VK_K = 0x4B;
@@ -44,7 +44,7 @@ public sealed class HotkeyService : IDisposable
     /// </summary>
     public void Register(Window window)
     {
-        _hwnd   = new WindowInteropHelper(window).Handle;
+        _hwnd = new WindowInteropHelper(window).Handle;
         _source = HwndSource.FromHwnd(_hwnd);
         _source?.AddHook(WndProc);
         RegisterHotKey(_hwnd, HotkeyId, MOD_WIN | MOD_SHIFT, VK_K);
