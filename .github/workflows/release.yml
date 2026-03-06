@@ -34,6 +34,7 @@ jobs:
           /p:PublishSingleFile=true
           /p:SelfContained=true
           /p:RuntimeIdentifier=win-x64
+          /p:PublishReadyToRun=true
 
       - name: Install WiX Toolset v6
         run: |
