@@ -6,24 +6,26 @@ namespace ModernThinkPadLEDsController.Hardware;
 
 public enum Led : byte
 {
-    Power      = 0x00,
-    Sleep      = 0x07,
-    FnLock     = 0x06,
-    RedDot     = 0x0A,
+    Power = 0x00,
+    Mute = 0x04,
+    Sleep = 0x07,
+    FnLock = 0x06,
+    RedDot = 0x0A,
     Microphone = 0x0E,
+    Camera = 0x0F,
 }
 
 public enum LedState : byte
 {
-    Off   = 0x00,
-    On    = 0x80,
+    Off = 0x00,
+    On = 0x80,
     Blink = 0xC0,
 }
 
 public enum KeyboardBacklight : byte
 {
-    Off  = 0x00,
-    Low  = 0x40,
+    Off = 0x00,
+    Low = 0x40,
     High = 0x80,
 }
 
@@ -43,12 +45,14 @@ public sealed class LedController
     // invertState: when true, On becomes Off and Off becomes On.
     //   Used for the "invert" feature — e.g. power LED off while
     //   system is active, on only during disk idle.
-    public bool SetLed(Led led, LedState state, bool invertState = false)
+    // customId: when provided, overrides the default LED register ID from the enum
+    public bool SetLed(Led led, LedState state, bool invertState = false, byte? customId = null)
     {
         if (invertState && state != LedState.Blink)
             state = state == LedState.On ? LedState.Off : LedState.On;
 
-        byte value = (byte)((byte)led | (byte)state);
+        byte ledId = customId ?? (byte)led;
+        byte value = (byte)(ledId | (byte)state);
         return _ec.WriteByte(TP_LED_OFFSET, value);
     }
 
@@ -73,8 +77,8 @@ public sealed class LedController
         level = raw switch
         {
             >= 100 and < 150 => KeyboardBacklight.High,
-            >= 50  and < 100 => KeyboardBacklight.Low,
-            _                => KeyboardBacklight.Off,
+            >= 50 and < 100 => KeyboardBacklight.Low,
+            _ => KeyboardBacklight.Off,
         };
         return true;
     }
