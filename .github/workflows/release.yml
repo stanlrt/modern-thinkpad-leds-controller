@@ -34,12 +34,11 @@ jobs:
           /p:PublishSingleFile=true
           /p:SelfContained=true
           /p:RuntimeIdentifier=win-x64
-          /p:PublishReadyToRun=true
 
-      - name: Install WiX Toolset
+      - name: Install WiX Toolset v6
         run: |
-          dotnet tool install --global wix
-          wix extension add WixToolset.UI.wixext/5.0.2
+          dotnet tool install --global wix --version 6.0.2
+          wix extension add -g WixToolset.UI.wixext/6.0.2
 
       - name: Build MSI Installer
         id: build_msi
@@ -47,12 +46,12 @@ jobs:
           $version = "${{ github.ref_name }}".TrimStart('v')
           $msiName = "ModernThinkPadLEDsController-${{ github.ref_name }}-win-x64.msi"
 
-          # Build the MSI using WiX
-          wix build Installer/Product.wxs `
+          # Build the MSI using WiX v5
+          wix build -arch x64 `
+            -ext WixToolset.UI.wixext `
             -d PublishDir=publish `
             -out $msiName `
-            -ext WixToolset.UI.wixext `
-            -arch x64
+            Installer\Product.wxs
 
           # Set output for next step
           echo "msi_name=$msiName" >> $env:GITHUB_OUTPUT
