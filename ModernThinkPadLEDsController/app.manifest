@@ -21,12 +21,5 @@
     </application>
   </compatibility>
 
-  <!-- PerMonitorV2: the window will be rendered at the correct resolution on every
-       monitor, even when dragged between screens with different DPI settings. -->
-  <application xmlns="urn:schemas-microsoft-com:asm.v3">
-    <windowsSettings>
-      <dpiAwareness xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">PerMonitorV2</dpiAwareness>
-      <dpiAware xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">true/PM</dpiAware>
-    </windowsSettings>
-  </application>
+  <!-- DPI settings moved to .csproj ApplicationHighDpiMode property (modern .NET approach) -->
 </assembly>
