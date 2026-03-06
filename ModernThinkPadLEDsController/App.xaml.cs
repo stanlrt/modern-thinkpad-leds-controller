@@ -17,17 +17,17 @@ namespace ModernThinkPadLEDsController;
 public partial class App : System.Windows.Application
 {
     // We keep references so Dispose() is called on shutdown.
-    private InpOutDriver?            _driver;
-    private DiskActivityMonitor?     _diskMonitor;
+    private InpOutDriver? _driver;
+    private DiskActivityMonitor? _diskMonitor;
     private KeyboardBacklightMonitor? _kbdMonitor;
-    private MicrophoneMuteMonitor?   _micMonitor;
-    private PowerEventListener?      _powerListener;
-    private HotkeyService?           _hotkey;
-    private TrayIconService?         _tray;
-    private AppSettings?             _settings;
-    private MainViewModel?           _mainVm;
-    private SettingsViewModel?       _settingsVm;
-    private MainWindow?              _mainWindow;
+    private MicrophoneMuteMonitor? _micMonitor;
+    private PowerEventListener? _powerListener;
+    private HotkeyService? _hotkey;
+    private TrayIconService? _tray;
+    private AppSettings? _settings;
+    private MainViewModel? _mainVm;
+    private SettingsViewModel? _settingsVm;
+    private MainWindow? _mainWindow;
 
     // A named Mutex prevents two instances of the app running simultaneously.
     private System.Threading.Mutex? _singleInstanceMutex;
@@ -44,7 +44,7 @@ public partial class App : System.Windows.Application
 
         if (!isFirstInstance)
         {
-            MessageBox.Show("Modern ThinkPad LEDs Controller is already running.\n\nLook for its icon in the system tray.",
+            System.Windows.MessageBox.Show("Modern ThinkPad LEDs Controller is already running.\n\nLook for its icon in the system tray.",
                             "Already Running", MessageBoxButton.OK, MessageBoxImage.Information);
             Shutdown();
             return;
@@ -64,7 +64,7 @@ public partial class App : System.Windows.Application
 
             if (!InpOutDriver.TryOpen(out _driver))
             {
-                MessageBox.Show("Could not open InpOut driver. Exiting.",
+                System.Windows.MessageBox.Show("Could not open InpOut driver. Exiting.",
                                 "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 Shutdown();
                 return;
@@ -72,22 +72,22 @@ public partial class App : System.Windows.Application
         }
 
         // --- Hardware layer ---
-        var ec   = new EcController(_driver!);
+        var ec = new EcController(_driver!);
         var leds = new LedController(ec);
 
         // --- Settings ---
         _settings = AppSettings.Load();
 
         // --- Monitoring ---
-        _diskMonitor   = new DiskActivityMonitor(_settings.HddPollIntervalMs);
-        _kbdMonitor    = new KeyboardBacklightMonitor(leds);
-        _micMonitor    = new MicrophoneMuteMonitor();
+        _diskMonitor = new DiskActivityMonitor(_settings.HddPollIntervalMs);
+        _kbdMonitor = new KeyboardBacklightMonitor(leds);
+        _micMonitor = new MicrophoneMuteMonitor();
         _powerListener = new PowerEventListener();
 
         bool diskOk = _diskMonitor.TryInitialize();
 
         // --- ViewModels ---
-        _mainVm     = new MainViewModel(leds);
+        _mainVm = new MainViewModel(leds);
         _settingsVm = new SettingsViewModel(_settings, _diskMonitor, _kbdMonitor, _powerListener, leds);
 
         _mainVm.LoadFrom(_settings);
@@ -101,7 +101,7 @@ public partial class App : System.Windows.Application
         _tray = new TrayIconService();
         _tray.Initialize();
         _tray.ShowWindowRequested += ShowMainWindow;
-        _tray.ExitRequested       += RequestExit;
+        _tray.ExitRequested += RequestExit;
 
         // --- Main window ---
         _mainWindow = new MainWindow(_mainVm, _settingsVm);
@@ -158,7 +158,7 @@ public partial class App : System.Windows.Application
         // --- Start monitors ---
         if (diskOk) _diskMonitor.Start();
         if (_settings.RememberKeyboardBacklight) _kbdMonitor.Start();
-        if (_settings.DimLedsWhenFullscreen)     _powerListener.StartFullscreenPolling();
+        if (_settings.DimLedsWhenFullscreen) _powerListener.StartFullscreenPolling();
 
         _micMonitor.Start();
 
@@ -197,6 +197,38 @@ public partial class App : System.Windows.Application
         _singleInstanceMutex?.Dispose();
 
         Shutdown();
+    }
+
+    // Falls back to default WPF scrolling if anything goes wrong — no crash.
+    private void ScrollViewer_PreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
+    {
+        try
+        {
+            // When "scroll one screen at a time" is set in mouse settings, let WPF handle it.
+            if (System.Windows.Forms.SystemInformation.MouseWheelScrollLines == -1)
+            {
+                e.Handled = false;
+            }
+            else
+            {
+                try
+                {
+                    var sv = (System.Windows.Controls.ScrollViewer)sender;
+                    sv.ScrollToVerticalOffset(
+                        sv.VerticalOffset -
+                        e.Delta * 10 * System.Windows.Forms.SystemInformation.MouseWheelScrollLines / (double)120);
+                    e.Handled = true;
+                }
+                catch (Exception)
+                {
+                    // Intentionally swallowed: fall back to default WPF scrolling.
+                }
+            }
+        }
+        catch (Exception)
+        {
+            // Intentionally swallowed: fall back to default WPF scrolling.
+        }
     }
 }
 

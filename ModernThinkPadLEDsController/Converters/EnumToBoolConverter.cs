@@ -22,5 +22,5 @@ public sealed class EnumToBoolConverter : IValueConverter
         => value?.Equals(parameter) == true;
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
-        => value is true && parameter is not null ? parameter : Binding.DoNothing;
+        => value is true && parameter is not null ? parameter : System.Windows.Data.Binding.DoNothing;
 }

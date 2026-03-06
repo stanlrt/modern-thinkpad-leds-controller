@@ -28,7 +28,8 @@
         <!-- Outer vertical scroll covers the whole content area -->
         <ScrollViewer Grid.Row="1"
                       VerticalScrollBarVisibility="Auto"
-                      Padding="12">
+                      Padding="12"
+                      CanContentScroll="false">
             <StackPanel>
 
                 <!-- ============================================================ -->
