@@ -16,10 +16,23 @@ public sealed class AppSettings
     // --- LED modes ---
     // Each LED has exactly one mode (mutually exclusive).
     public LedMode PowerMode { get; set; } = LedMode.Default;
+    public LedMode MuteMode { get; set; } = LedMode.Default;
     public LedMode RedDotMode { get; set; } = LedMode.Default;
     public LedMode MicrophoneMode { get; set; } = LedMode.Default;
     public LedMode SleepMode { get; set; } = LedMode.Default;
     public LedMode FnLockMode { get; set; } = LedMode.Default;
+    public LedMode CameraMode { get; set; } = LedMode.Default;
+
+    // --- Custom LED Register IDs ---
+    // Allow users to override the default EC register for each LED (for hardware compatibility).
+    // null = use the default from the Led enum
+    public byte? PowerCustomId { get; set; }
+    public byte? MuteCustomId { get; set; }
+    public byte? RedDotCustomId { get; set; }
+    public byte? MicrophoneCustomId { get; set; }
+    public byte? SleepCustomId { get; set; }
+    public byte? FnLockCustomId { get; set; }
+    public byte? CameraCustomId { get; set; }
 
     // --- Hotkey cycle (Win+Shift+K) ---
     // Which states LEDs in HotkeyControlled mode should cycle through.

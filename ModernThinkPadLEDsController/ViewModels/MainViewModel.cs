@@ -16,10 +16,12 @@ public sealed partial class MainViewModel : ObservableObject
 
     // One LedMapping per LED. The View binds to e.g. Power.Mode, RedDot.Mode, etc.
     public LedMapping Power { get; } = new() { Name = "Power" };
+    public LedMapping Mute { get; } = new() { Name = "Mute" };
     public LedMapping RedDot { get; } = new() { Name = "Red Dot" };
     public LedMapping Microphone { get; } = new() { Name = "Microphone" };
     public LedMapping Sleep { get; } = new() { Name = "Sleep" };
     public LedMapping FnLock { get; } = new() { Name = "Fn Lock" };
+    public LedMapping Camera { get; } = new() { Name = "Camera" };
 
     // Ordered list for the XAML ItemsControl — same objects as above.
     public IReadOnlyList<LedMapping> Leds { get; }
@@ -63,14 +65,16 @@ public sealed partial class MainViewModel : ObservableObject
     public MainViewModel(LedController leds)
     {
         _leds = leds;
-        Leds = [Power, RedDot, Microphone, Sleep, FnLock];
+        Leds = [Power, Mute, RedDot, Microphone, Sleep, FnLock, Camera];
         _mappings = new Dictionary<Led, LedMapping>
         {
             [Led.Power] = Power,
+            [Led.Mute] = Mute,
             [Led.RedDot] = RedDot,
             [Led.Microphone] = Microphone,
             [Led.Sleep] = Sleep,
             [Led.FnLock] = FnLock,
+            [Led.Camera] = Camera,
         };
 
         // When the user changes a mode via the UI, apply it to hardware immediately.
@@ -82,9 +86,9 @@ public sealed partial class MainViewModel : ObservableObject
 
                 switch (map.Mode)
                 {
-                    case LedMode.On: _leds.SetLed(led, LedState.On); break;
-                    case LedMode.Off: _leds.SetLed(led, LedState.Off); break;
-                    case LedMode.Blink: _leds.SetLed(led, LedState.Blink); break;
+                    case LedMode.On: _leds.SetLed(led, LedState.On, customId: map.CustomRegisterId); break;
+                    case LedMode.Off: _leds.SetLed(led, LedState.Off, customId: map.CustomRegisterId); break;
+                    case LedMode.Blink: _leds.SetLed(led, LedState.Blink, customId: map.CustomRegisterId); break;
                 }
 
                 // Check if disk mode usage changed (none->some or some->none)
@@ -116,17 +120,29 @@ public sealed partial class MainViewModel : ObservableObject
 
         foreach (var (led, map) in _mappings)
         {
-            if (map.Mode == LedMode.DiskRead) _leds.SetLed(led, reading ? LedState.On : LedState.Off);
-            else if (map.Mode == LedMode.DiskWrite) _leds.SetLed(led, writing ? LedState.On : LedState.Off);
+            if (map.Mode == LedMode.DiskRead) _leds.SetLed(led, reading ? LedState.On : LedState.Off, customId: map.CustomRegisterId);
+            else if (map.Mode == LedMode.DiskWrite) _leds.SetLed(led, writing ? LedState.On : LedState.Off, customId: map.CustomRegisterId);
         }
     }
 
     // Default mode for the Microphone LED means: mirror the system mute state.
+    // If the mode is NOT Default but the mute state changes, the user likely pressed
+    // the physical mic button — automatically switch back to Default mode so the OS regains control.
     public void OnMicrophoneMuteChanged(bool isMuted)
     {
         if (_isFullscreen) return;
+
         if (Microphone.Mode == LedMode.Default)
-            _leds.SetLed(Led.Microphone, isMuted ? LedState.On : LedState.Off);
+        {
+            _leds.SetLed(Led.Microphone, isMuted ? LedState.On : LedState.Off, customId: Microphone.CustomRegisterId);
+        }
+        else
+        {
+            // Mute state changed while in non-Default mode — user pressed the physical button.
+            // Automatically revert to Default so OS control is restored.
+            Microphone.Mode = LedMode.Default;
+            _leds.SetLed(Led.Microphone, isMuted ? LedState.On : LedState.Off, customId: Microphone.CustomRegisterId);
+        }
     }
 
     // Called by PowerEventListener when a fullscreen app covers the screen.
@@ -138,16 +154,18 @@ public sealed partial class MainViewModel : ObservableObject
         {
             _preFullscreenBacklight = currentBacklight;
             _leds.SetKeyboardBacklight(KeyboardBacklight.Off);
-            _leds.SetLed(Led.Power, LedState.Off);
-            _leds.SetLed(Led.Microphone, LedState.Off);
-            _leds.SetLed(Led.FnLock, LedState.Off);
+            _leds.SetLed(Led.Power, LedState.Off, customId: Power.CustomRegisterId);
+            _leds.SetLed(Led.Mute, LedState.Off, customId: Mute.CustomRegisterId);
+            _leds.SetLed(Led.Microphone, LedState.Off, customId: Microphone.CustomRegisterId);
+            _leds.SetLed(Led.FnLock, LedState.Off, customId: FnLock.CustomRegisterId);
+            _leds.SetLed(Led.Camera, LedState.Off, customId: Camera.CustomRegisterId);
         }
         else
         {
             if (_preFullscreenBacklight != KeyboardBacklight.Off)
                 _leds.SetKeyboardBacklight(_preFullscreenBacklight);
 
-            _leds.SetLed(Led.Power, LedState.On);
+            _leds.SetLed(Led.Power, LedState.On, customId: Power.CustomRegisterId);
         }
     }
 
@@ -167,7 +185,7 @@ public sealed partial class MainViewModel : ObservableObject
         foreach (var (led, map) in _mappings)
         {
             if (map.Mode == LedMode.HotkeyControlled)
-                _leds.SetLed(led, next);
+                _leds.SetLed(led, next, customId: map.CustomRegisterId);
         }
     }
 
@@ -182,9 +200,9 @@ public sealed partial class MainViewModel : ObservableObject
         {
             switch (map.Mode)
             {
-                case LedMode.On: _leds.SetLed(led, LedState.On); break;
-                case LedMode.Off: _leds.SetLed(led, LedState.Off); break;
-                case LedMode.Blink: _leds.SetLed(led, LedState.Blink); break;
+                case LedMode.On: _leds.SetLed(led, LedState.On, customId: map.CustomRegisterId); break;
+                case LedMode.Off: _leds.SetLed(led, LedState.Off, customId: map.CustomRegisterId); break;
+                case LedMode.Blink: _leds.SetLed(led, LedState.Blink, customId: map.CustomRegisterId); break;
             }
         }
     }
@@ -196,10 +214,20 @@ public sealed partial class MainViewModel : ObservableObject
     public void LoadFrom(AppSettings s)
     {
         Power.Mode = s.PowerMode;
+        Mute.Mode = s.MuteMode;
         RedDot.Mode = s.RedDotMode;
         Microphone.Mode = s.MicrophoneMode;
         Sleep.Mode = s.SleepMode;
         FnLock.Mode = s.FnLockMode;
+        Camera.Mode = s.CameraMode;
+
+        Power.CustomRegisterId = s.PowerCustomId;
+        Mute.CustomRegisterId = s.MuteCustomId;
+        RedDot.CustomRegisterId = s.RedDotCustomId;
+        Microphone.CustomRegisterId = s.MicrophoneCustomId;
+        Sleep.CustomRegisterId = s.SleepCustomId;
+        FnLock.CustomRegisterId = s.FnLockCustomId;
+        Camera.CustomRegisterId = s.CameraCustomId;
 
         HotkeyCycleOn = s.HotkeyCycleOn;
         HotkeyCycleOff = s.HotkeyCycleOff;
@@ -213,10 +241,20 @@ public sealed partial class MainViewModel : ObservableObject
     public void SaveTo(AppSettings s)
     {
         s.PowerMode = Power.Mode;
+        s.MuteMode = Mute.Mode;
         s.RedDotMode = RedDot.Mode;
         s.MicrophoneMode = Microphone.Mode;
         s.SleepMode = Sleep.Mode;
         s.FnLockMode = FnLock.Mode;
+        s.CameraMode = Camera.Mode;
+
+        s.PowerCustomId = Power.CustomRegisterId;
+        s.MuteCustomId = Mute.CustomRegisterId;
+        s.RedDotCustomId = RedDot.CustomRegisterId;
+        s.MicrophoneCustomId = Microphone.CustomRegisterId;
+        s.SleepCustomId = Sleep.CustomRegisterId;
+        s.FnLockCustomId = FnLock.CustomRegisterId;
+        s.CameraCustomId = Camera.CustomRegisterId;
 
         s.HotkeyCycleOn = HotkeyCycleOn;
         s.HotkeyCycleOff = HotkeyCycleOff;
