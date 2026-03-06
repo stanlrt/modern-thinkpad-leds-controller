@@ -1,18 +1,55 @@
 ## Visual Studio / .NET build outputs
-bin/
-obj/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+bld/
+
+## Publish output
+publish/
+PublishOutput/
+*.pubxml
+*.pubxml.user
+*.publishsettings
 
 ## User-specific files
+*.rsuser
 *.user
 *.suo
 *.userosscache
 *.sln.docstates
 .vs/
 
+## Test results
+[Tt]est[Rr]esult*/
+*.trx
+*.coverage
+*.coveragexml
+coverage*/
+
+## Debug symbols / native artifacts
+*.pdb
+*.ilk
+*.obj
+*.iobj
+
 ## NuGet packages
 *.nupkg
+*.snupkg
 packages/
+!**/packages/build/
+
+## Strong-name / certificate keys (never commit private keys)
+*.pfx
+*.snk
+
+## ReSharper / Rider
+_ReSharper*/
+*.DotSettings.user
+.idea/
+*.sln.iml
 
 ## OS files
 .DS_Store
 Thumbs.db
+desktop.ini
