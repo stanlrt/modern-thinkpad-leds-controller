@@ -1,0 +1,41 @@
+name: Format & Lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  format-lint:
+    name: dotnet format + build (analyzers)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore dependencies
+        run: dotnet restore ModernThinkPadLEDsController/ModernThinkPadLEDsController.csproj
+
+      - name: Check formatting (dotnet format)
+        # Fails if any file deviates from .editorconfig rules.
+        # Remove --verify-no-changes locally to auto-fix instead.
+        run: >
+          dotnet format ModernThinkPadLEDsController/ModernThinkPadLEDsController.csproj
+          --verify-no-changes
+          --verbosity diagnostic
+
+      - name: Lint (build with analyzer warnings as errors)
+        # Roslyn analyzers run as part of the build; /warnaserror promotes
+        # every analyzer warning to an error so the step fails on violations.
+        run: >
+          dotnet build ModernThinkPadLEDsController/ModernThinkPadLEDsController.csproj
+          --no-restore
+          --configuration Release
+          /warnaserror

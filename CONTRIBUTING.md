@@ -1,26 +1,22 @@
-# Contributing to modern-thinkpad-leds-controller
-
-Thank you for your interest in contributing! This document explains how to set up, build, and run the project locally.
+# Contributing
 
 ## Prerequisites
 
-| Requirement | Notes |
-|---|---|
-| **Windows 10/11 (x64)** | The app talks directly to ThinkPad hardware; it will not run on other platforms or non-ThinkPad machines |
-| **[.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)** | Required to build and run the project |
-| **[Visual Studio 2022+](https://visualstudio.microsoft.com/) (v17.14+)** or **[JetBrains Rider](https://www.jetbrains.com/rider/)** |
-| **Administrator privileges** | Required at runtime — the app initialises a kernel-mode port I/O driver (`inpoutx64.dll`) on first launch |
+- Windows 10 or later
+- A C# compatible IDE (Visual Studio 2022+, Rider, or VS Code with C# extensions)
+- NET 10 SDK
+- A ThinkPad laptop
 
 ## Setup
 
-1. **Clone the repository**
+1. Clone the repository
 
    ```shell
    git clone https://github.com/stanlrt/modern-thinkpad-leds-controller.git
    cd modern-thinkpad-leds-controller
    ```
 
-2. **Open the solution**
+2. Open the solution
 
    Open `ModernThinkPadLEDsController.slnx` in Visual Studio or Rider.
 
