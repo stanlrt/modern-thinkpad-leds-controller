@@ -2,11 +2,12 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
      xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
 
+  <!-- IMPORTANT: Never change the UpgradeCode -->
   <Package
     Name="Modern ThinkPad LEDs Controller"
     Manufacturer="Stanislas Laurent"
     Version="$(Version)"
-    UpgradeCode="12345678-1234-1234-1234-123456789ABC"
+    UpgradeCode="8FE4A13B-13B3-4571-834B-D1163F95D942"
     Scope="perMachine">
 
     <MajorUpgrade DowngradeErrorMessage="A newer version is already installed." />
