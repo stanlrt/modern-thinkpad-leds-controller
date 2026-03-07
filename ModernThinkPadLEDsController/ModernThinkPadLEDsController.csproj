@@ -19,7 +19,7 @@
     <PublishReadyToRun>false</PublishReadyToRun>
     <PublishTrimmed>false</PublishTrimmed>
 
-    <!-- CRITICAL: WPF native libraries must be extracted for single-file to work -->
+    <!-- Ensure WPF native libraries are extracted for single-file to work -->
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
   </PropertyGroup>
@@ -45,13 +45,12 @@
     <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
   </ItemGroup>
 
-  <!-- PawnIO installer bundling (optional) -->
-  <!-- Download PawnIO-Setup.exe from https://pawnio.eu/ and place in Resources/ folder -->
+  <!-- PawnIO installer bundling (optional, see PawnIOInstaller.cs) -->
   <ItemGroup>
     <EmbeddedResource Include="Resources\PawnIO-Setup.exe" Condition="Exists('Resources\PawnIO-Setup.exe')" />
   </ItemGroup>
 
-  <!-- Application icon -->
+  <!-- Favicon -->
   <ItemGroup>
     <Resource Include="Resources\favicon.ico" />
     <None Include="Resources\favicon.ico">

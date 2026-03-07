@@ -13,7 +13,7 @@
     WindowStartupLocation="CenterScreen"
     ShowInTaskbar="True"
     Icon="pack://application:,,,/Resources/favicon.ico"
-    Closing="Window_Closing">
+    Closing="OnWindowClosing">
 
     <ui:FluentWindow.Resources>
         <converters:EnumToBoolConverter x:Key="EnumToBool"/>
@@ -1100,7 +1100,7 @@
                                            Opacity="0.6"
                                            Margin="0,0,8,0"/>
                                 <TextBlock>
-                                    <Hyperlink Click="CheckForUpdate_Click">
+                                    <Hyperlink Click="OnCheckForUpdateClicked">
                                         Check for update
                                     </Hyperlink>
                                 </TextBlock>

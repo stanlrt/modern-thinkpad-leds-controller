@@ -1,6 +1,5 @@
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -12,6 +11,10 @@ namespace ModernThinkPadLEDsController;
 
 public partial class MainWindow : FluentWindow
 {
+
+    private const int WM_MOUSEHWHEEL = 0x020E;
+    private const double SCROLL_SENSITIVITY = 3.0;
+
     public MainViewModel MainVm { get; }
     public SettingsViewModel SettingsVm { get; }
 
@@ -21,50 +24,51 @@ public partial class MainWindow : FluentWindow
         SettingsVm = settingsVm;
         InitializeComponent();
         DataContext = this;
-
-        // Hook into Win32 message pump to catch horizontal mouse wheel events
-        SourceInitialized += (s, e) =>
-        {
-            var source = PresentationSource.FromVisual(this) as HwndSource;
-            source?.AddHook((IntPtr _, int msg, IntPtr wParam, IntPtr __, ref bool handled) =>
-            {
-                if (msg == WM_MOUSEHWHEEL && TableScrollViewer != null)
-                {
-                    int delta = (short)((long)wParam >> 16);
-                    TableScrollViewer.ScrollToHorizontalOffset(TableScrollViewer.HorizontalOffset + delta / 3.0);
-                    handled = true;
-                }
-                return IntPtr.Zero;
-            });
-        };
+        SourceInitialized += OnWindowInitialized;
     }
 
-    // When the user clicks ✕, hide to tray instead of closing.
-    // App.xaml.cs listens to TrayIconService.ExitRequested for a real exit.
-    private void Window_Closing(object sender, CancelEventArgs e)
+    private void OnWindowInitialized(object? sender, EventArgs e)
+    {
+        var source = PresentationSource.FromVisual(this) as HwndSource;
+        source?.AddHook(OnHorizontalMouseWheel);
+    }
+
+    private IntPtr OnHorizontalMouseWheel(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        if (msg == WM_MOUSEHWHEEL && TableScrollViewer != null)
+        {
+            int delta = ExtractMouseWheelDelta(wParam);
+            TableScrollViewer.ScrollToHorizontalOffset(TableScrollViewer.HorizontalOffset + delta / SCROLL_SENSITIVITY);
+            handled = true;
+        }
+        return IntPtr.Zero;
+    }
+
+    private void OnWindowClosing(object sender, CancelEventArgs e)
     {
         e.Cancel = true;
         Hide();
     }
 
-    // Adjust vertical scroll speed for smoother scrolling
     private void MainScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
+        ReduceVerticalScrollSpeed(sender, e);
+    }
+
+    private void ReduceVerticalScrollSpeed(object sender, MouseWheelEventArgs e)
+    {
         var sv = (ScrollViewer)sender;
-        // Reduce scroll speed: divide delta by 3 for smoother scrolling
-        sv.ScrollToVerticalOffset(sv.VerticalOffset - e.Delta / 3.0);
+        sv.ScrollToVerticalOffset(sv.VerticalOffset - e.Delta / SCROLL_SENSITIVITY);
         e.Handled = true;
     }
 
-    // Let vertical scrolling bubble up from table to main ScrollViewer
     private void TableScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
-        // Don't handle - let the event bubble up to MainScrollViewer
+        // Don't handle, let event bubble up to MainScrollViewer
         e.Handled = false;
     }
 
-    // Open releases page when "Check for update" is clicked
-    private void CheckForUpdate_Click(object sender, RoutedEventArgs e)
+    private void OnCheckForUpdateClicked(object sender, RoutedEventArgs e)
     {
         Process.Start(new ProcessStartInfo
         {
@@ -73,6 +77,10 @@ public partial class MainWindow : FluentWindow
         });
     }
 
-    // Constant for horizontal mouse wheel messages from precision touchpads
-    private const int WM_MOUSEHWHEEL = 0x020E;
+    private static int ExtractMouseWheelDelta(IntPtr wParam)
+    {
+        return (short)((long)wParam >> 16);
+    }
+
+
 }

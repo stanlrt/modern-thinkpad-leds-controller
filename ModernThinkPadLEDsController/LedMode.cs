@@ -2,12 +2,11 @@ namespace ModernThinkPadLEDsController;
 
 /// <summary>
 /// The behaviour assigned to a single LED.
-/// Exactly one mode is active at a time — this replaces the old set of boolean flags.
+/// Exactly one mode is active at a time
 /// </summary>
 public enum LedMode
 {
-    /// <summary>Don't override — let the OS / BIOS manage this LED.
-    /// For the Microphone LED this also means: follow the system mute state.</summary>
+    /// <summary>Don't override — let the OS / BIOS manage this LED</summary>
     Default,
 
     /// <summary>Force the LED on permanently.</summary>
