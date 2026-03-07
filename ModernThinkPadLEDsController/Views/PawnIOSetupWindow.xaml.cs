@@ -1,6 +1,7 @@
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using Microsoft.Extensions.Logging;
 using ModernThinkPadLEDsController.Hardware;
 using Wpf.Ui.Controls;
 
@@ -8,153 +9,254 @@ namespace ModernThinkPadLEDsController.Views;
 
 public partial class PawnIOSetupWindow : FluentWindow
 {
-    // InstalledSuccessfully is set to true when PawnIO installs and opens successfully.
-    // App.xaml.cs reads this after ShowDialog() returns.
-    public bool InstalledSuccessfully { get; private set; }
+    // Constants
+    private const string PawnIODownloadUrl = "https://pawnio.eu/";
 
-    // Track if we're in verification mode (after opening download page)
-    private bool _verificationMode = false;
+    // State machine
+    private enum SetupState
+    {
+        Initial,                    // Fresh start, button says "Download PawnIO"
+        WaitingForManualInstall,    // Browser opened, button says "Restart to Verify"
+        Verifying,                  // Checking if PawnIO installed (brief)
+        InstallationFailed,         // Error shown, button says "Retry"
+        ManualRestartRequired       // Success but restart failed, button says "Close"
+    }
+
+    private SetupState _currentState = SetupState.Initial;
+    private readonly ILogger<PawnIOSetupWindow> _logger;
 
     public PawnIOSetupWindow()
     {
         InitializeComponent();
+
+        // Get logger from DI container
+        _logger = Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
+        {
+            builder.AddDebug();
+        }).CreateLogger<PawnIOSetupWindow>();
+
+        _logger.LogInformation("PawnIO setup window opened");
     }
 
     private void InstallButton_Click(object sender, RoutedEventArgs e)
     {
-        InstallButton.IsEnabled = false;
-        StatusText.Visibility = Visibility.Collapsed;
+        _logger.LogDebug("Install button clicked in state: {State}", _currentState);
 
-        // If we're in verification mode, just check if PawnIO is installed
-        if (_verificationMode)
+        switch (_currentState)
         {
-            // Show verifying status
-            StatusText.Text = "Verifying PawnIO installation...";
-            StatusText.Foreground = System.Windows.Media.Brushes.Blue;
-            StatusText.Visibility = Visibility.Visible;
-
-            // Check if PawnIO service is running
-            if (PawnIOInstaller.IsPawnIOInstalled())
-            {
-                StatusText.Text = "✓ PawnIO verified! Restarting application...";
-                StatusText.Foreground = System.Windows.Media.Brushes.Green;
-
-                try
-                {
-                    // Get the exe path - works for both debug and release
-                    var exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
-
-                    if (!string.IsNullOrEmpty(exePath))
-                    {
-                        // Restart the application (without runas - we're already admin if PawnIO works)
-                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                        {
-                            FileName = exePath,
-                            UseShellExecute = true
-                        });
-
-                        // Exit current instance
-                        System.Windows.Application.Current.Shutdown();
-                    }
-                    else
-                    {
-                        StatusText.Text = "✓ PawnIO verified! Please manually restart the application.";
-                        InstalledSuccessfully = true;
-                        Close();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    StatusText.Text = $"✓ PawnIO verified! Auto-restart failed: {ex.Message}\n\nPlease manually restart the application.";
-                    InstalledSuccessfully = true;
-                    Close();
-                }
-            }
-            else
-            {
-                StatusText.Text = "PawnIO is still not detected. Please make sure you installed it and are running as Administrator.";
-                StatusText.Foreground = System.Windows.Media.Brushes.Red;
-                StatusText.Visibility = Visibility.Visible;
-                InstallButton.IsEnabled = true;
-            }
-            return;
+            case SetupState.Initial:
+                HandleInitialInstall();
+                break;
+            case SetupState.WaitingForManualInstall:
+                HandleVerification();
+                break;
+            case SetupState.InstallationFailed:
+                HandleRetry();
+                break;
+            case SetupState.ManualRestartRequired:
+                HandleClose();
+                break;
+            case SetupState.Verifying:
+                // Button should be disabled in this state
+                _logger.LogWarning("Button clicked while in Verifying state");
+                break;
         }
+    }
+
+    private void HandleInitialInstall()
+    {
+        _logger.LogInformation("Attempting PawnIO installation");
 
         // Try to launch the embedded PawnIO installer
         bool installerLaunched = PawnIOInstaller.InstallPawnIO();
 
         if (!installerLaunched)
         {
-            // Installer not embedded - open browser to download page
-            try
-            {
-                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName = "https://pawnio.eu/",
-                    UseShellExecute = true
-                });
-                StatusText.Text = "Opening download page in browser. Please download and install PawnIO, then click the button below.";
-
-                // Update button text
-                if (InstallButton.Content is StackPanel sp && sp.Children.Count > 1 && sp.Children[1] is System.Windows.Controls.TextBlock tb)
-                {
-                    tb.Text = "Restart to verify";
-                }
-
-                _verificationMode = true;
-            }
-            catch
-            {
-                StatusText.Text = "Please download and install PawnIO manually from https://pawnio.eu/";
-            }
-            StatusText.Visibility = Visibility.Visible;
-            InstallButton.IsEnabled = true;
+            _logger.LogInformation("Embedded installer not available, opening download page");
+            OpenDownloadPage();
             return;
         }
 
-        // Embedded installer was launched - verify installation was successful
+        _logger.LogInformation("Embedded installer completed, checking installation");
+
+        // Embedded installer was launched (synchronous) - verify installation was successful
         if (PawnIOInstaller.IsPawnIOInstalled())
         {
-            try
-            {
-                // Get the exe path - works for both debug and release
-                var exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
-
-                if (!string.IsNullOrEmpty(exePath))
-                {
-                    // Restart the application
-                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                    {
-                        FileName = exePath,
-                        UseShellExecute = true
-                    });
-
-                    // Exit current instance
-                    System.Windows.Application.Current.Shutdown();
-                }
-                else
-                {
-                    InstalledSuccessfully = true;
-                    Close();
-                }
-            }
-            catch
-            {
-                InstalledSuccessfully = true;
-                Close();
-            }
+            _logger.LogInformation("PawnIO installation verified, attempting restart");
+            AttemptApplicationRestart();
         }
         else
         {
-            StatusText.Text = "PawnIO installation did not complete successfully. Please try installing manually from https://pawnio.eu/ or contact support.";
-            StatusText.Visibility = Visibility.Visible;
-            InstallButton.IsEnabled = true;
+            _logger.LogWarning("PawnIO installation failed after embedded installer ran");
+            TransitionToState(SetupState.InstallationFailed,
+                "PawnIO installation did not complete successfully. Please try installing manually or contact support.",
+                System.Windows.Media.Brushes.Red);
+        }
+    }
+
+    private void HandleVerification()
+    {
+        _logger.LogInformation("Starting PawnIO verification");
+        TransitionToState(SetupState.Verifying,
+            "Verifying PawnIO installation...",
+            System.Windows.Media.Brushes.Blue);
+
+        // Check if PawnIO service is running
+        if (PawnIOInstaller.IsPawnIOInstalled())
+        {
+            _logger.LogInformation("PawnIO verified successfully, attempting restart");
+            StatusText.Text = "✓ PawnIO verified! Restarting application...";
+            StatusText.Foreground = System.Windows.Media.Brushes.Green;
+
+            AttemptApplicationRestart();
+        }
+        else
+        {
+            _logger.LogWarning("PawnIO verification failed - not detected");
+            TransitionToState(SetupState.InstallationFailed,
+                "PawnIO is still not detected. Please make sure you installed it and are running as Administrator.",
+                System.Windows.Media.Brushes.Red);
+        }
+    }
+
+    private void HandleRetry()
+    {
+        _logger.LogInformation("User clicked retry, opening download page");
+        OpenDownloadPage();
+    }
+
+    private void HandleClose()
+    {
+        _logger.LogInformation("User manually closing window after successful installation");
+        Close();
+    }
+
+    private void OpenDownloadPage()
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = PawnIODownloadUrl,
+                UseShellExecute = true
+            });
+
+            _logger.LogInformation("Opened download page in browser");
+            TransitionToState(SetupState.WaitingForManualInstall,
+                "Opening download page in browser. Please download and install PawnIO, then click the button below.",
+                System.Windows.Media.Brushes.IndianRed);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to open download page in browser");
+            TransitionToState(SetupState.WaitingForManualInstall,
+                $"Please download and install PawnIO manually from {PawnIODownloadUrl}",
+                System.Windows.Media.Brushes.IndianRed);
+        }
+    }
+
+    private void AttemptApplicationRestart()
+    {
+        try
+        {
+            // Get the exe path - works for both debug and release
+            var exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
+
+            if (string.IsNullOrEmpty(exePath))
+            {
+                _logger.LogWarning("Could not determine executable path for restart");
+                TransitionToState(SetupState.ManualRestartRequired,
+                    "✓ PawnIO installed successfully!\n\nCould not determine application path. Please manually restart the application.",
+                    System.Windows.Media.Brushes.Green);
+                return;
+            }
+
+            _logger.LogInformation("Starting new application instance: {ExePath}", exePath);
+
+            // Restart the application
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = exePath,
+                UseShellExecute = true
+            });
+
+            _logger.LogInformation("New instance started, shutting down current instance");
+
+            // Exit current instance
+            System.Windows.Application.Current.Shutdown();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to automatically restart application");
+            TransitionToState(SetupState.ManualRestartRequired,
+                $"✓ PawnIO installed successfully!\n\nAuto-restart failed: {ex.Message}\n\nPlease manually close and restart the application.",
+                System.Windows.Media.Brushes.Green);
+        }
+    }
+
+    private void TransitionToState(SetupState newState, string statusMessage, System.Windows.Media.Brush statusColor)
+    {
+        _logger.LogDebug("Transitioning from {OldState} to {NewState}", _currentState, newState);
+        _currentState = newState;
+
+        UpdateUIForState(statusMessage, statusColor);
+    }
+
+    private void UpdateUIForState(string statusMessage, System.Windows.Media.Brush statusColor)
+    {
+        // Update status text
+        StatusText.Text = statusMessage;
+        StatusText.Foreground = statusColor;
+        StatusText.Visibility = Visibility.Visible;
+
+        // Update button based on state
+        switch (_currentState)
+        {
+            case SetupState.Initial:
+                UpdateButtonText("Download PawnIO");
+                InstallButton.IsEnabled = true;
+                break;
+
+            case SetupState.WaitingForManualInstall:
+                UpdateButtonText("Restart to Verify");
+                InstallButton.IsEnabled = true;
+                break;
+
+            case SetupState.Verifying:
+                // Button stays disabled during verification
+                InstallButton.IsEnabled = false;
+                break;
+
+            case SetupState.InstallationFailed:
+                UpdateButtonText("Retry");
+                InstallButton.IsEnabled = true;
+                break;
+
+            case SetupState.ManualRestartRequired:
+                UpdateButtonText("Close");
+                InstallButton.IsEnabled = true;
+                break;
+        }
+    }
+
+    private void UpdateButtonText(string text)
+    {
+        // Pattern match to update button text while preserving icon
+        if (InstallButton.Content is StackPanel sp &&
+            sp.Children.Count > 1 &&
+            sp.Children[1] is System.Windows.Controls.TextBlock tb)
+        {
+            tb.Text = text;
+        }
+        else
+        {
+            _logger.LogWarning("Could not update button text - unexpected button structure");
         }
     }
 
     private void CancelButton_Click(object sender, RoutedEventArgs e)
     {
-        InstalledSuccessfully = false;
+        _logger.LogInformation("User cancelled PawnIO setup");
         Close();
     }
 }
