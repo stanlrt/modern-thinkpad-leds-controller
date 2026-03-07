@@ -1,3 +1,5 @@
+using Serilog;
+
 namespace ModernThinkPadLEDsController.Hardware;
 
 // These enums replace the raw byte constants in the legacy code.
@@ -39,7 +41,11 @@ public sealed class LedController
 
     private readonly EcController _ec;
 
-    public LedController(EcController ec) => _ec = ec;
+    public LedController(EcController ec)
+    {
+        _ec = ec;
+        Log.Debug("LedController initialized");
+    }
 
     // Set a named LED to a specific state.
     // invertState: when true, On becomes Off and Off becomes On.
@@ -53,7 +59,14 @@ public sealed class LedController
 
         byte ledId = customId ?? (byte)led;
         byte value = (byte)(ledId | (byte)state);
-        return _ec.WriteByte(TP_LED_OFFSET, value);
+
+        bool success = _ec.WriteByte(TP_LED_OFFSET, value);
+        if (success)
+            Log.Debug("SetLed({Led}, {State}, invert={Invert}, customId={CustomId}) SUCCESS", led, state, invertState, customId);
+        else
+            Log.Warning("SetLed({Led}, {State}) FAILED", led, state);
+
+        return success;
     }
 
     // Set a LED by raw ID (for the custom EC write dialog).
@@ -64,7 +77,14 @@ public sealed class LedController
     }
 
     public bool SetKeyboardBacklight(KeyboardBacklight level)
-        => _ec.WriteByte(TP_KBD_OFFSET, (byte)level);
+    {
+        bool success = _ec.WriteByte(TP_KBD_OFFSET, (byte)level);
+        if (success)
+            Log.Debug("SetKeyboardBacklight({Level}) SUCCESS", level);
+        else
+            Log.Warning("SetKeyboardBacklight({Level}) FAILED", level);
+        return success;
+    }
 
     // Read the current keyboard backlight level from the EC.
     // The ranges (< 50, 50–100, 100–150) match the legacy GetKeyboardLightlevel() logic.
@@ -72,7 +92,10 @@ public sealed class LedController
     {
         level = KeyboardBacklight.Off;
         if (!_ec.ReadByte(TP_KBD_OFFSET, out byte raw))
+        {
+            Log.Warning("GetKeyboardBacklight() - ReadByte failed");
             return false;
+        }
 
         level = raw switch
         {
@@ -80,6 +103,8 @@ public sealed class LedController
             >= 50 and < 100 => KeyboardBacklight.Low,
             _ => KeyboardBacklight.Off,
         };
+
+        Log.Verbose("GetKeyboardBacklight() = {Level} (raw: {Raw})", level, raw);
         return true;
     }
 }

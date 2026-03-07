@@ -1,3 +1,5 @@
+using Serilog;
+
 namespace ModernThinkPadLEDsController.Hardware;
 
 // EcController talks to the ThinkPad Embedded Controller (EC) over I/O ports.
@@ -23,7 +25,11 @@ public sealed class EcController
 
     private readonly IPortIO _io;
 
-    public EcController(IPortIO io) => _io = io;
+    public EcController(IPortIO io)
+    {
+        _io = io;
+        Log.Debug("EcController initialized");
+    }
 
     // Wait until the EC's status flags match the desired state.
     // 'bits'  — which flag bits to watch (OBF, IBF, or both)
@@ -65,25 +71,46 @@ public sealed class EcController
     {
         data = 0xFF;
 
-        if (!WaitPortStatus(EC_STAT_IBF | EC_STAT_OBF)) return false; // wait for both buffers clear
-        if (!WritePort(EC_CTRLPORT, EC_CTRLPORT_READ)) return false; // send READ command
-        if (!WaitPortStatus(EC_STAT_IBF)) return false; // wait for EC to consume command
-        if (!WritePort(EC_DATAPORT, offset)) return false; // send the register address
-        if (!WaitPortStatus(EC_STAT_IBF)) return false; // wait for EC to consume address
+        if (!WaitPortStatus(EC_STAT_IBF | EC_STAT_OBF))
+        {
+            Log.Warning("EC ReadByte(0x{Offset:X2}) - Failed to wait for buffers clear", offset);
+            return false;
+        }
+        if (!WritePort(EC_CTRLPORT, EC_CTRLPORT_READ)) return false;
+        if (!WaitPortStatus(EC_STAT_IBF)) return false;
+        if (!WritePort(EC_DATAPORT, offset)) return false;
+        if (!WaitPortStatus(EC_STAT_IBF)) return false;
 
-        return ReadPort(EC_DATAPORT, out data);                        // read the register value
+        bool success = ReadPort(EC_DATAPORT, out data);
+        if (success)
+            Log.Verbose("EC ReadByte(0x{Offset:X2}) = 0x{Data:X2}", offset, data);
+        else
+            Log.Warning("EC ReadByte(0x{Offset:X2}) failed", offset);
+
+        return success;
     }
 
     // Write one byte to EC register 'offset'.
     // Similar 5-step handshake — extra step to deliver the data byte.
     public bool WriteByte(byte offset, byte data)
     {
-        if (!WaitPortStatus(EC_STAT_IBF | EC_STAT_OBF)) return false;
+        if (!WaitPortStatus(EC_STAT_IBF | EC_STAT_OBF))
+        {
+            Log.Warning("EC WriteByte(0x{Offset:X2}, 0x{Data:X2}) - Failed to wait for buffers clear", offset, data);
+            return false;
+        }
         if (!WritePort(EC_CTRLPORT, EC_CTRLPORT_WRITE)) return false;
         if (!WaitPortStatus(EC_STAT_IBF)) return false;
         if (!WritePort(EC_DATAPORT, offset)) return false;
         if (!WaitPortStatus(EC_STAT_IBF)) return false;
         if (!WritePort(EC_DATAPORT, data)) return false;
-        return WaitPortStatus(EC_STAT_IBF);
+
+        bool success = WaitPortStatus(EC_STAT_IBF);
+        if (success)
+            Log.Verbose("EC WriteByte(0x{Offset:X2}, 0x{Data:X2}) SUCCESS", offset, data);
+        else
+            Log.Warning("EC WriteByte(0x{Offset:X2}, 0x{Data:X2}) FAILED", offset, data);
+
+        return success;
     }
 }

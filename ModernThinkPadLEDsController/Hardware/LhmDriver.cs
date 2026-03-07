@@ -1,5 +1,6 @@
 using LibreHardwareMonitor.PawnIo;
 using System.ServiceProcess;
+using Serilog;
 
 namespace ModernThinkPadLEDsController.Hardware;
 
@@ -24,31 +25,38 @@ public sealed class LhmDriver : IPortIO, IDisposable
     {
         driver = null;
 
+        Log.Debug("Attempting to open LHM driver (PawnIO)");
+
         // Check if PawnIO Windows service is running
         try
         {
             using var service = new ServiceController("pawnio");
-            if (service.Status != ServiceControllerStatus.Running)
+            var status = service.Status;
+            Log.Information("PawnIO service status: {Status}", status);
+
+            if (status != ServiceControllerStatus.Running)
             {
-                // PawnIO service not running - needs installation or start
+                Log.Warning("PawnIO service not running - needs installation or start. Current status: {Status}", status);
                 return false;
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // PawnIO service doesn't exist
+            Log.Error(ex, "PawnIO service does not exist or cannot be accessed");
             return false;
         }
 
         try
         {
+            Log.Debug("Instantiating LpcAcpiEc module");
             var pawnModule = new LpcAcpiEc();
             driver = new LhmDriver(pawnModule);
+            Log.Information("LHM driver opened successfully");
             return true;
         }
-        catch
+        catch (Exception ex)
         {
-            // Exception during instantiation
+            Log.Error(ex, "Failed to instantiate LpcAcpiEc module");
             return false;
         }
     }
@@ -66,12 +74,12 @@ public sealed class LhmDriver : IPortIO, IDisposable
         try
         {
             byte result = _pawnModule.ReadPort((byte)port);
-            System.Diagnostics.Debug.WriteLine($"DEBUG: ReadPort(0x{port:X2}) = 0x{result:X2}");
+            Log.Verbose("ReadPort(0x{Port:X2}) = 0x{Result:X2}", port, result);
             return result;
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"DEBUG: ReadPort(0x{port:X2}) FAILED: {ex.Message}");
+            Log.Error(ex, "ReadPort(0x{Port:X2}) FAILED", port);
             throw;
         }
     }
@@ -84,11 +92,11 @@ public sealed class LhmDriver : IPortIO, IDisposable
         try
         {
             _pawnModule.WritePort((byte)port, data);
-            System.Diagnostics.Debug.WriteLine($"DEBUG: WritePort(0x{port:X2}, 0x{data:X2}) SUCCESS");
+            Log.Verbose("WritePort(0x{Port:X2}, 0x{Data:X2}) SUCCESS", port, data);
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"DEBUG: WritePort(0x{port:X2}, 0x{data:X2}) FAILED: {ex.Message}");
+            Log.Error(ex, "WritePort(0x{Port:X2}, 0x{Data:X2}) FAILED", port, data);
             throw;
         }
     }
@@ -97,6 +105,8 @@ public sealed class LhmDriver : IPortIO, IDisposable
     {
         if (_disposed) return;
         _disposed = true;
+        Log.Debug("Closing LHM driver");
         _pawnModule.Close();
+        Log.Information("LHM driver disposed");
     }
 }
