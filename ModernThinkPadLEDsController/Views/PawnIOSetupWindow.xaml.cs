@@ -28,9 +28,7 @@ public partial class PawnIOSetupWindow : FluentWindow
     public PawnIOSetupWindow()
     {
         InitializeComponent();
-
-        // Get logger from DI container
-        _logger = Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
+        _logger = LoggerFactory.Create(builder =>
         {
             builder.AddDebug();
         }).CreateLogger<PawnIOSetupWindow>();
@@ -66,11 +64,9 @@ public partial class PawnIOSetupWindow : FluentWindow
     private void HandleInitialInstall()
     {
         _logger.LogInformation("Attempting PawnIO installation");
+        bool hasInstallerLaunched = PawnIOInstaller.InstallPawnIO();
 
-        // Try to launch the embedded PawnIO installer
-        bool installerLaunched = PawnIOInstaller.InstallPawnIO();
-
-        if (!installerLaunched)
+        if (!hasInstallerLaunched)
         {
             _logger.LogInformation("Embedded installer not available, opening download page");
             OpenDownloadPage();
@@ -79,7 +75,6 @@ public partial class PawnIOSetupWindow : FluentWindow
 
         _logger.LogInformation("Embedded installer completed, checking installation");
 
-        // Embedded installer was launched (synchronous) - verify installation was successful
         if (PawnIOInstaller.IsPawnIOInstalled())
         {
             _logger.LogInformation("PawnIO installation verified, attempting restart");
@@ -101,7 +96,6 @@ public partial class PawnIOSetupWindow : FluentWindow
             "Verifying PawnIO installation...",
             System.Windows.Media.Brushes.Blue);
 
-        // Check if PawnIO service is running
         if (PawnIOInstaller.IsPawnIOInstalled())
         {
             _logger.LogInformation("PawnIO verified successfully, attempting restart");
@@ -159,7 +153,6 @@ public partial class PawnIOSetupWindow : FluentWindow
     {
         try
         {
-            // Get the exe path - works for both debug and release
             var exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
 
             if (string.IsNullOrEmpty(exePath))
@@ -204,12 +197,10 @@ public partial class PawnIOSetupWindow : FluentWindow
 
     private void UpdateUIForState(string statusMessage, System.Windows.Media.Brush statusColor)
     {
-        // Update status text
         StatusText.Text = statusMessage;
         StatusText.Foreground = statusColor;
         StatusText.Visibility = Visibility.Visible;
 
-        // Update button based on state
         switch (_currentState)
         {
             case SetupState.Initial:

@@ -5,11 +5,9 @@ using Microsoft.Extensions.Logging;
 
 namespace ModernThinkPadLEDsController.Hardware;
 
-// PawnIOInstaller handles automatic installation of the PawnIO driver.
-//
-// PawnIO is distributed under GPL-2.0 and bundled with this application
-// for user convenience. The installer is extracted from embedded resources
-// and launched with administrator privileges when needed.
+/// <summary>
+/// Helper class to manage PawnIO installation and verification.
+/// </summary>
 public static class PawnIOInstaller
 {
     private const string InstallerResourceName = "ModernThinkPadLEDsController.Resources.PawnIO-Setup.exe";
@@ -20,7 +18,6 @@ public static class PawnIOInstaller
         builder.AddDebug();
     }).CreateLogger("PawnIOInstaller");
 
-    // Check if PawnIO is already installed by attempting to open the driver
     public static bool IsPawnIOInstalled()
     {
         try
@@ -34,8 +31,10 @@ public static class PawnIOInstaller
         }
     }
 
-    // Extract and launch the PawnIO installer
-    // Returns true if installer was launched successfully, false if extraction/launch failed
+    /// <summary>
+    /// Extracts and launches the PawnIO installer.
+    /// </summary>
+    /// <returns>true if installer was launched successfully, false if extraction/launch failed</returns>
     public static bool InstallPawnIO()
     {
         try
@@ -49,7 +48,6 @@ public static class PawnIOInstaller
             {
                 if (resourceStream == null)
                 {
-                    // Installer not embedded - user needs to download manually
                     _logger.LogInformation("Embedded installer not found in resources");
                     return false;
                 }
@@ -64,7 +62,6 @@ public static class PawnIOInstaller
 
             _logger.LogInformation("Launching PawnIO installer with elevation");
 
-            // Launch the installer with admin privileges
             var startInfo = new ProcessStartInfo
             {
                 FileName = tempPath,
@@ -77,13 +74,11 @@ public static class PawnIOInstaller
             {
                 _logger.LogInformation("Waiting for installer to complete");
 
-                // Wait for installer to complete
                 process.WaitForExit();
 
                 var exitCode = process.ExitCode;
                 _logger.LogInformation("Installer completed with exit code: {ExitCode}", exitCode);
 
-                // Clean up temp file
                 try
                 {
                     File.Delete(tempPath);
