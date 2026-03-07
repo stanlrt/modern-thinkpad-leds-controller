@@ -58,3 +58,5 @@ desktop.ini
 *.msi
 *.wixpdb
 *.wixobj
+
+mcp.json

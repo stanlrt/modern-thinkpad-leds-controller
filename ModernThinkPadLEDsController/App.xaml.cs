@@ -17,7 +17,7 @@ namespace ModernThinkPadLEDsController;
 public partial class App : System.Windows.Application
 {
     // We keep references so Dispose() is called on shutdown.
-    private InpOutDriver? _driver;
+    private LhmDriver? _driver;
     private DiskActivityMonitor? _diskMonitor;
     private KeyboardBacklightMonitor? _kbdMonitor;
     private MicrophoneMuteMonitor? _micMonitor;
@@ -74,25 +74,17 @@ public partial class App : System.Windows.Application
 
     private bool TryInitializeDriver()
     {
-        if (!InpOutDriver.TryOpen(out _driver))
+        if (!LhmDriver.TryOpen(out _driver))
         {
-            var setup = new DriverSetupWindow();
+            var setup = new PawnIOSetupWindow();
             setup.ShowDialog();
 
-            if (!setup.DriverReady)
-            {
-                Shutdown();
-                return false;
-            }
-
-            if (!InpOutDriver.TryOpen(out _driver))
-            {
-                System.Windows.MessageBox.Show("Could not open InpOut driver. Exiting.",
-                                "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                Shutdown();
-                return false;
-            }
+            // User either cancelled or verification succeeded (with auto-restart or manual restart message)
+            // Either way, exit this instance
+            Shutdown();
+            return false;
         }
+
         return true;
     }
 
@@ -113,13 +105,17 @@ public partial class App : System.Windows.Application
 
     private void InitializeViewModelsAndUI(LedController leds, bool diskOk)
     {
-        _mainVm = new MainViewModel(leds);
+        _mainVm = new MainViewModel(leds, _settings!);
         _settingsVm = new SettingsViewModel(_settings!, _diskMonitor!, _kbdMonitor!, _powerListener!, leds);
 
         _mainVm.LoadFrom(_settings!);
         _settingsVm.LoadFrom(_settings!);
         _mainVm.DiskMonitoringAvailable = diskOk;
         _mainVm.ApplyAll();
+
+        // Wire up save callbacks for automatic persistence
+        _mainVm.SetSaveCallback(SaveSettings);
+        _settingsVm.SetSaveCallback(SaveSettings);
 
         _tray = new TrayIconService();
         _tray.Initialize();
@@ -207,9 +203,7 @@ public partial class App : System.Windows.Application
 
     private void RequestExit()
     {
-        _mainVm?.SaveTo(_settings!);
-        _settingsVm?.SaveTo(_settings!);
-        _settings?.Save();
+        SaveSettings();
 
         _diskMonitor?.Dispose();
         _kbdMonitor?.Dispose();
@@ -223,6 +217,13 @@ public partial class App : System.Windows.Application
         _singleInstanceMutex?.Dispose();
 
         Shutdown();
+    }
+
+    private void SaveSettings()
+    {
+        _mainVm?.SaveTo(_settings!);
+        _settingsVm?.SaveTo(_settings!);
+        _settings?.Save();
     }
 
     // ── Global exception handlers ──

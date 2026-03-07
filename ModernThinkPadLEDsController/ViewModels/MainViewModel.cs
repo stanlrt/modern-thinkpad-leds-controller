@@ -13,6 +13,8 @@ namespace ModernThinkPadLEDsController.ViewModels;
 public sealed partial class MainViewModel : ObservableObject
 {
     private readonly LedController _leds;
+    private readonly AppSettings _settings;
+    private Action? _saveSettingsCallback;
 
     // One LedMapping per LED. The View binds to e.g. Power.Mode, RedDot.Mode, etc.
     public LedMapping Power { get; } = new() { Name = "Power" };
@@ -52,6 +54,24 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool _hotkeyCycleOff = true;
     [ObservableProperty] private bool _hotkeyCycleBlink = false;
 
+    partial void OnHotkeyCycleOnChanged(bool value)
+    {
+        _settings.HotkeyCycleOn = value;
+        TriggerSaveIfEnabled();
+    }
+
+    partial void OnHotkeyCycleOffChanged(bool value)
+    {
+        _settings.HotkeyCycleOff = value;
+        TriggerSaveIfEnabled();
+    }
+
+    partial void OnHotkeyCycleBlinkChanged(bool value)
+    {
+        _settings.HotkeyCycleBlink = value;
+        TriggerSaveIfEnabled();
+    }
+
     // Tracks position within the cycle sequence; -1 means "not yet pressed".
     private int _hotkeyCycleIndex = -1;
 
@@ -62,9 +82,10 @@ public sealed partial class MainViewModel : ObservableObject
     // so we don't repeat switch statements.
     private readonly Dictionary<Led, LedMapping> _mappings;
 
-    public MainViewModel(LedController leds)
+    public MainViewModel(LedController leds, AppSettings settings)
     {
         _leds = leds;
+        _settings = settings;
         Leds = [Power, Mute, RedDot, Microphone, Sleep, FnLock, Camera];
         _mappings = new Dictionary<Led, LedMapping>
         {
@@ -82,22 +103,29 @@ public sealed partial class MainViewModel : ObservableObject
         {
             map.PropertyChanged += (_, e) =>
             {
-                if (e.PropertyName != nameof(LedMapping.Mode)) return;
-
-                switch (map.Mode)
+                if (e.PropertyName == nameof(LedMapping.Mode))
                 {
-                    case LedMode.On: _leds.SetLed(led, LedState.On, customId: map.CustomRegisterId); break;
-                    case LedMode.Off: _leds.SetLed(led, LedState.Off, customId: map.CustomRegisterId); break;
-                    case LedMode.Blink: _leds.SetLed(led, LedState.Blink, customId: map.CustomRegisterId); break;
+                    switch (map.Mode)
+                    {
+                        case LedMode.On: _leds.SetLed(led, LedState.On, customId: map.CustomRegisterId); break;
+                        case LedMode.Off: _leds.SetLed(led, LedState.Off, customId: map.CustomRegisterId); break;
+                        case LedMode.Blink: _leds.SetLed(led, LedState.Blink, customId: map.CustomRegisterId); break;
+                    }
+
+                    // Check if disk mode usage changed (none->some or some->none)
+                    bool hasDiskModesNow = HasDiskModeLeds;
+                    if (_previousHadDiskModes != hasDiskModesNow)
+                    {
+                        _previousHadDiskModes = hasDiskModesNow;
+                        OnPropertyChanged(nameof(HasDiskModeLeds));
+                        DiskModeLedsChanged?.Invoke(hasDiskModesNow);
+                    }
+
+                    TriggerSaveIfEnabled();
                 }
-
-                // Check if disk mode usage changed (none->some or some->none)
-                bool hasDiskModesNow = HasDiskModeLeds;
-                if (_previousHadDiskModes != hasDiskModesNow)
+                else if (e.PropertyName == nameof(LedMapping.CustomRegisterId))
                 {
-                    _previousHadDiskModes = hasDiskModesNow;
-                    OnPropertyChanged(nameof(HasDiskModeLeds));
-                    DiskModeLedsChanged?.Invoke(hasDiskModesNow);
+                    TriggerSaveIfEnabled();
                 }
             };
         }
@@ -259,5 +287,20 @@ public sealed partial class MainViewModel : ObservableObject
         s.HotkeyCycleOn = HotkeyCycleOn;
         s.HotkeyCycleOff = HotkeyCycleOff;
         s.HotkeyCycleBlink = HotkeyCycleBlink;
+    }
+
+    // -------------------------------------------------------------------------
+    // Settings persistence
+    // -------------------------------------------------------------------------
+
+    private void TriggerSaveIfEnabled()
+    {
+        if (_settings.PersistSettingsOnChange)
+            _saveSettingsCallback?.Invoke();
+    }
+
+    public void SetSaveCallback(Action callback)
+    {
+        _saveSettingsCallback = callback;
     }
 }

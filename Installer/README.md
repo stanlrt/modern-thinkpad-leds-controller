@@ -38,10 +38,11 @@ The MSI will be created in the current directory.
 ## What the Installer Does
 
 - Installs to `C:\Program Files\Modern ThinkPad LEDs Controller\`
-- Includes both the main executable and the native inpoutx64.dll
 - Creates a Start Menu shortcut
 - Registers in Add/Remove Programs for clean uninstall
 - Requires administrator privileges (perMachine install)
+
+> **Note:** The application requires [PawnIO](https://pawnio.eu/) to be installed for hardware access. Users must install PawnIO separately if not already installed.
 
 ## Important Notes
 

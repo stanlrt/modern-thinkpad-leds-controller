@@ -13,6 +13,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     private readonly KeyboardBacklightMonitor _backlight;
     private readonly PowerEventListener _power;
     private readonly LedController _leds;
+    private Action? _saveSettingsCallback;
 
     // -------------------------------------------------------------------------
     // Disk monitoring
@@ -33,6 +34,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     {
         _disk.UpdateInterval(value);
         _settings.HddPollIntervalMs = value;
+        TriggerSaveIfEnabled();
     }
 
     // -------------------------------------------------------------------------
@@ -53,6 +55,13 @@ public sealed partial class SettingsViewModel : ObservableObject
         if (value) _power.StartFullscreenPolling();
         else _power.StopFullscreenPolling();
         _settings.DimLedsWhenFullscreen = value;
+        TriggerSaveIfEnabled();
+    }
+
+    partial void OnRememberKeyboardBacklightChanged(bool value)
+    {
+        _settings.RememberKeyboardBacklight = value;
+        TriggerSaveIfEnabled();
     }
 
     // -------------------------------------------------------------------------
@@ -82,6 +91,25 @@ public sealed partial class SettingsViewModel : ObservableObject
         {
             StartupTaskManager.Unregister();
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // Settings persistence
+    // -------------------------------------------------------------------------
+
+    [ObservableProperty]
+    private bool _persistSettingsOnChange;
+
+    partial void OnPersistSettingsOnChangeChanged(bool value)
+    {
+        _settings.PersistSettingsOnChange = value;
+        TriggerSaveIfEnabled();
+    }
+
+    private void TriggerSaveIfEnabled()
+    {
+        if (_settings.PersistSettingsOnChange)
+            _saveSettingsCallback?.Invoke();
     }
 
     // -------------------------------------------------------------------------
@@ -116,6 +144,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         HddPollIntervalMs = s.HddPollIntervalMs;
         RememberKeyboardBacklight = s.RememberKeyboardBacklight;
         DimLedsWhenFullscreen = s.DimLedsWhenFullscreen;
+        PersistSettingsOnChange = s.PersistSettingsOnChange;
         StartWithWindows = StartupTaskManager.IsRegistered();
     }
 
@@ -124,5 +153,11 @@ public sealed partial class SettingsViewModel : ObservableObject
         s.HddPollIntervalMs = HddPollIntervalMs;
         s.RememberKeyboardBacklight = RememberKeyboardBacklight;
         s.DimLedsWhenFullscreen = DimLedsWhenFullscreen;
+        s.PersistSettingsOnChange = PersistSettingsOnChange;
+    }
+
+    public void SetSaveCallback(Action callback)
+    {
+        _saveSettingsCallback = callback;
     }
 }

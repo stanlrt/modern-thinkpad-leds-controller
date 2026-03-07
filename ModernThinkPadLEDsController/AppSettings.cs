@@ -50,6 +50,7 @@ public sealed class AppSettings
     // --- Behaviour ---
     public bool DimLedsWhenFullscreen { get; set; }
     public bool SuppressDiskCounterWarning { get; set; }
+    public bool PersistSettingsOnChange { get; set; } = true;
 
     // --- Load/Save ---
 

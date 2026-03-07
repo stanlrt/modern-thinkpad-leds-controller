@@ -43,7 +43,8 @@
                     <ScrollViewer x:Name="TableScrollViewer"
                                   HorizontalScrollBarVisibility="Auto"
                                   VerticalScrollBarVisibility="Disabled"
-                                  PreviewMouseWheel="TableScrollViewer_PreviewMouseWheel">
+                                  PreviewMouseWheel="TableScrollViewer_PreviewMouseWheel"
+                                  Padding="0,0,0,8">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
@@ -331,10 +332,10 @@
                                          IsChecked="{Binding MainVm.Power.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static root:LedMode.DiskWrite}}">
                                 <RadioButton.Style>
                                     <Style TargetType="RadioButton"
-                                            BasedOn="{StaticResource {x:Type RadioButton}}">
+                                           BasedOn="{StaticResource {x:Type RadioButton}}">
                                         <Style.Triggers>
                                             <Trigger Property="IsEnabled"
-                                                    Value="False">
+                                                     Value="False">
                                                 <Setter Property="ToolTip"
                                                         Value="Disabled: disk monitoring is unavailable on your device."/>
                                             </Trigger>
@@ -353,10 +354,10 @@
                                          IsChecked="{Binding MainVm.Power.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static root:LedMode.DiskRead}}">
                                 <RadioButton.Style>
                                     <Style TargetType="RadioButton"
-                                            BasedOn="{StaticResource {x:Type RadioButton}}">
+                                           BasedOn="{StaticResource {x:Type RadioButton}}">
                                         <Style.Triggers>
                                             <Trigger Property="IsEnabled"
-                                                    Value="False">
+                                                     Value="False">
                                                 <Setter Property="ToolTip"
                                                         Value="Disabled: disk monitoring is unavailable on your device."/>
                                             </Trigger>
@@ -425,10 +426,10 @@
                                          IsChecked="{Binding MainVm.Mute.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static root:LedMode.DiskWrite}}">
                                 <RadioButton.Style>
                                     <Style TargetType="RadioButton"
-                                            BasedOn="{StaticResource {x:Type RadioButton}}">
+                                           BasedOn="{StaticResource {x:Type RadioButton}}">
                                         <Style.Triggers>
                                             <Trigger Property="IsEnabled"
-                                                    Value="False">
+                                                     Value="False">
                                                 <Setter Property="ToolTip"
                                                         Value="Disabled: disk monitoring is unavailable on your device."/>
                                             </Trigger>
@@ -447,10 +448,10 @@
                                          IsChecked="{Binding MainVm.Mute.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static root:LedMode.DiskRead}}">
                                 <RadioButton.Style>
                                     <Style TargetType="RadioButton"
-                                            BasedOn="{StaticResource {x:Type RadioButton}}">
+                                           BasedOn="{StaticResource {x:Type RadioButton}}">
                                         <Style.Triggers>
                                             <Trigger Property="IsEnabled"
-                                                    Value="False">
+                                                     Value="False">
                                                 <Setter Property="ToolTip"
                                                         Value="Disabled: disk monitoring is unavailable on your device."/>
                                             </Trigger>
@@ -519,10 +520,10 @@
                                          IsChecked="{Binding MainVm.RedDot.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static root:LedMode.DiskWrite}}">
                                 <RadioButton.Style>
                                     <Style TargetType="RadioButton"
-                                            BasedOn="{StaticResource {x:Type RadioButton}}">
+                                           BasedOn="{StaticResource {x:Type RadioButton}}">
                                         <Style.Triggers>
                                             <Trigger Property="IsEnabled"
-                                                    Value="False">
+                                                     Value="False">
                                                 <Setter Property="ToolTip"
                                                         Value="Disabled: disk monitoring is unavailable on your device."/>
                                             </Trigger>
@@ -541,10 +542,10 @@
                                          IsChecked="{Binding MainVm.RedDot.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static root:LedMode.DiskRead}}">
                                 <RadioButton.Style>
                                     <Style TargetType="RadioButton"
-                                            BasedOn="{StaticResource {x:Type RadioButton}}">
+                                           BasedOn="{StaticResource {x:Type RadioButton}}">
                                         <Style.Triggers>
                                             <Trigger Property="IsEnabled"
-                                                    Value="False">
+                                                     Value="False">
                                                 <Setter Property="ToolTip"
                                                         Value="Disabled: disk monitoring is unavailable on your device."/>
                                             </Trigger>
@@ -613,10 +614,10 @@
                                          IsChecked="{Binding MainVm.Microphone.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static root:LedMode.DiskWrite}}">
                                 <RadioButton.Style>
                                     <Style TargetType="RadioButton"
-                                            BasedOn="{StaticResource {x:Type RadioButton}}">
+                                           BasedOn="{StaticResource {x:Type RadioButton}}">
                                         <Style.Triggers>
                                             <Trigger Property="IsEnabled"
-                                                    Value="False">
+                                                     Value="False">
                                                 <Setter Property="ToolTip"
                                                         Value="Disabled: disk monitoring is unavailable on your device."/>
                                             </Trigger>
@@ -635,10 +636,10 @@
                                          IsChecked="{Binding MainVm.Microphone.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static root:LedMode.DiskRead}}">
                                 <RadioButton.Style>
                                     <Style TargetType="RadioButton"
-                                            BasedOn="{StaticResource {x:Type RadioButton}}">
+                                           BasedOn="{StaticResource {x:Type RadioButton}}">
                                         <Style.Triggers>
                                             <Trigger Property="IsEnabled"
-                                                    Value="False">
+                                                     Value="False">
                                                 <Setter Property="ToolTip"
                                                         Value="Disabled: disk monitoring is unavailable on your device."/>
                                             </Trigger>
@@ -707,10 +708,10 @@
                                          IsChecked="{Binding MainVm.Sleep.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static root:LedMode.DiskWrite}}">
                                 <RadioButton.Style>
                                     <Style TargetType="RadioButton"
-                                            BasedOn="{StaticResource {x:Type RadioButton}}">
+                                           BasedOn="{StaticResource {x:Type RadioButton}}">
                                         <Style.Triggers>
                                             <Trigger Property="IsEnabled"
-                                                    Value="False">
+                                                     Value="False">
                                                 <Setter Property="ToolTip"
                                                         Value="Disabled: disk monitoring is unavailable on your device."/>
                                             </Trigger>
@@ -729,10 +730,10 @@
                                          IsChecked="{Binding MainVm.Sleep.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static root:LedMode.DiskRead}}">
                                 <RadioButton.Style>
                                     <Style TargetType="RadioButton"
-                                            BasedOn="{StaticResource {x:Type RadioButton}}">
+                                           BasedOn="{StaticResource {x:Type RadioButton}}">
                                         <Style.Triggers>
                                             <Trigger Property="IsEnabled"
-                                                    Value="False">
+                                                     Value="False">
                                                 <Setter Property="ToolTip"
                                                         Value="Disabled: disk monitoring is unavailable on your device."/>
                                             </Trigger>
@@ -801,10 +802,10 @@
                                          IsChecked="{Binding MainVm.FnLock.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static root:LedMode.DiskWrite}}">
                                 <RadioButton.Style>
                                     <Style TargetType="RadioButton"
-                                            BasedOn="{StaticResource {x:Type RadioButton}}">
+                                           BasedOn="{StaticResource {x:Type RadioButton}}">
                                         <Style.Triggers>
                                             <Trigger Property="IsEnabled"
-                                                    Value="False">
+                                                     Value="False">
                                                 <Setter Property="ToolTip"
                                                         Value="Disabled: disk monitoring is unavailable on your device."/>
                                             </Trigger>
@@ -823,10 +824,10 @@
                                          IsChecked="{Binding MainVm.FnLock.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static root:LedMode.DiskRead}}">
                                 <RadioButton.Style>
                                     <Style TargetType="RadioButton"
-                                            BasedOn="{StaticResource {x:Type RadioButton}}">
+                                           BasedOn="{StaticResource {x:Type RadioButton}}">
                                         <Style.Triggers>
                                             <Trigger Property="IsEnabled"
-                                                    Value="False">
+                                                     Value="False">
                                                 <Setter Property="ToolTip"
                                                         Value="Disabled: disk monitoring is unavailable on your device."/>
                                             </Trigger>
@@ -895,10 +896,10 @@
                                          IsChecked="{Binding MainVm.Camera.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static root:LedMode.DiskWrite}}">
                                 <RadioButton.Style>
                                     <Style TargetType="RadioButton"
-                                            BasedOn="{StaticResource {x:Type RadioButton}}">
+                                           BasedOn="{StaticResource {x:Type RadioButton}}">
                                         <Style.Triggers>
                                             <Trigger Property="IsEnabled"
-                                                    Value="False">
+                                                     Value="False">
                                                 <Setter Property="ToolTip"
                                                         Value="Disabled: disk monitoring is unavailable on your device."/>
                                             </Trigger>
@@ -917,10 +918,10 @@
                                          IsChecked="{Binding MainVm.Camera.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static root:LedMode.DiskRead}}">
                                 <RadioButton.Style>
                                     <Style TargetType="RadioButton"
-                                            BasedOn="{StaticResource {x:Type RadioButton}}">
+                                           BasedOn="{StaticResource {x:Type RadioButton}}">
                                         <Style.Triggers>
                                             <Trigger Property="IsEnabled"
-                                                    Value="False">
+                                                     Value="False">
                                                 <Setter Property="ToolTip"
                                                         Value="Disabled: disk monitoring is unavailable on your device."/>
                                             </Trigger>
@@ -1072,12 +1073,15 @@
                     <!-- ── App Settings tab ── -->
                     <TabItem Header="App Settings">
                         <StackPanel Margin="16,12">
-                            <TextBlock Text="Startup"
+                            <TextBlock Text="Settings"
                                        FontWeight="SemiBold"
                                        Margin="0,0,0,8"/>
                             <CheckBox Content="Start with Windows (runs minimised to tray, no UAC prompt)"
                                       IsChecked="{Binding SettingsVm.StartWithWindows}"
                                       Command="{Binding SettingsVm.ToggleStartupCommand}"
+                                      Margin="0,0,0,16"/>
+                            <CheckBox Content="Persist settings on change (auto-save when settings are modified)"
+                                      IsChecked="{Binding SettingsVm.PersistSettingsOnChange}"
                                       Margin="0,0,0,16"/>
                             <TextBlock Text="Driver"
                                        FontWeight="SemiBold"

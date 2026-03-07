@@ -20,14 +20,14 @@ public partial class DriverSetupWindow : FluentWindow
         InitButton.IsEnabled = false;
         StatusText.Visibility = Visibility.Collapsed;
 
-        if (InpOutDriver.TryOpen(out _))
+        if (LhmDriver.TryOpen(out _))
         {
             DriverReady = true;
             Close();
         }
         else
         {
-            StatusText.Text = "Failed to initialise the driver. Make sure inpoutx64.dll is next to the .exe and that you are running as Administrator.";
+            StatusText.Text = "Failed to initialise the driver. Make sure PawnIO is installed from https://pawnio.eu/ and that you are running as Administrator.";
             StatusText.Visibility = Visibility.Visible;
             InitButton.IsEnabled = true;
         }

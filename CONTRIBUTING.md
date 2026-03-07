@@ -6,6 +6,7 @@
 - A C# compatible IDE (Visual Studio 2022+, Rider, or VS Code with C# extensions)
 - NET 10 SDK
 - A ThinkPad laptop
+- **(Optional for bundling)** PawnIO installer from https://pawnio.eu/
 
 ## Setup
 
@@ -40,7 +41,7 @@ Press **Build → Build Solution** (or <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</
 dotnet build ModernThinkPadLEDsController/ModernThinkPadLEDsController.csproj
 ```
 
-The build output (including `inpoutx64.dll`) lands in:
+The build output lands in:
 
 ```
 ModernThinkPadLEDsController/bin/Debug/net10.0-windows/win-x64/
@@ -64,7 +65,22 @@ cd ModernThinkPadLEDsController/bin/Debug/net10.0-windows/win-x64
 Start-Process .\ModernThinkPadLEDsController.exe -Verb RunAs
 ```
 
-On first run, the **Driver Setup** window will appear. Click **Initialize Driver** to register the `inpoutx64.dll` kernel service. This is a one-time step; subsequent launches (including the "Start with Windows" scheduled task) are silent.
+On first run, if PawnIO is not installed, the **PawnIO Driver Setup** window will appear. The app will automatically install PawnIO if you've bundled the installer (see setup instructions). If the installer is not bundled, users will need to download and install PawnIO manually from https://pawnio.eu/.
+
+> **Note:** The application uses [PawnIO](https://pawnio.eu/) for hardware I/O access. PawnIO provides better security than legacy drivers by using scriptable kernel modules with restricted access.
+
+### Bundling PawnIO Installer (Optional)
+
+To bundle the PawnIO installer for automatic installation:
+
+1. Download the latest PawnIO installer from https://pawnio.eu/
+2. Rename it to `PawnIO-Setup.exe`
+3. Place it in `ModernThinkPadLEDsController/Resources/`
+4. Rebuild the project - the installer will be embedded automatically
+
+See [Resources/README-PawnIO.md](ModernThinkPadLEDsController/Resources/README-PawnIO.md) for license compliance and details.
+
+See [Resources/README-PawnIO.md](ModernThinkPadLEDsController/Resources/README-PawnIO.md) for details.
 
 ## Publishing
 
@@ -80,13 +96,13 @@ Output lands in:
 ModernThinkPadLEDsController/bin/Release/net10.0-windows/win-x64/publish/
 ```
 
-> **Note:** `inpoutx64.dll` is a native (C++) DLL and cannot be bundled inside the single-file executable. It will always appear as a separate file next to the `.exe` in the publish folder.
+> **Note:** The application requires [PawnIO](https://pawnio.eu/) to be installed on the target system for hardware access. Users should install PawnIO before running the application.
 
 ## Project Structure
 
 ```
 ModernThinkPadLEDsController/
-├── Hardware/           # InpOut driver P/Invoke wrapper, EC controller, LED controller
+├── Hardware/           # LibreHardwareMonitor-based driver wrapper, EC controller, LED controller
 ├── Monitoring/         # Background monitors (disk activity, keyboard backlight,
 │                       #   key lock, microphone mute, power events)
 ├── Services/           # Startup task manager, system-tray icon service
@@ -94,8 +110,7 @@ ModernThinkPadLEDsController/
 ├── Views/              # WPF windows (MainWindow, DriverSetupWindow)
 ├── App.xaml(.cs)       # Application entry point
 ├── AppSettings.cs      # Persisted user settings
-├── app.manifest        # UAC elevation + DPI awareness declarations
-└── inpoutx64.dll       # Native port I/O kernel driver (pre-built, x64 only)
+└── app.manifest        # UAC elevation + DPI awareness declarations
 ```
 
 ## Making Changes
