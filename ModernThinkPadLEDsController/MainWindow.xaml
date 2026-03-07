@@ -1094,8 +1094,16 @@
                             <TextBlock Text="Version"
                                        FontWeight="SemiBold"
                                        Margin="0,0,0,4"/>
-                            <TextBlock Text="{Binding SettingsVm.AppVersion}"
-                                       Opacity="0.6"/>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding SettingsVm.AppVersion}"
+                                           Opacity="0.6"
+                                           Margin="0,0,8,0"/>
+                                <TextBlock>
+                                    <Hyperlink Click="CheckForUpdate_Click">
+                                        Check for update
+                                    </Hyperlink>
+                                </TextBlock>
+                            </StackPanel>
                         </StackPanel>
                     </TabItem>
 

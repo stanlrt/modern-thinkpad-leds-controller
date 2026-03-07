@@ -12,6 +12,21 @@
                 <ui:ControlsDictionary/>
             </ResourceDictionary.MergedDictionaries>
 
+            <!-- ── Hyperlink: Use accent color instead of default blue ── -->
+            <Style TargetType="Hyperlink">
+                <Setter Property="Foreground"
+                        Value="{x:Static SystemParameters.WindowGlassBrush}"/>
+                <Setter Property="TextDecorations"
+                        Value="None"/>
+                <Style.Triggers>
+                    <Trigger Property="IsMouseOver"
+                             Value="True">
+                        <Setter Property="TextDecorations"
+                                Value="Underline"/>
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
             <!-- ── TabItem: WinUI3-style with accent underline on selected tab ── -->
             <Style TargetType="TabItem">
                 <Setter Property="Foreground"

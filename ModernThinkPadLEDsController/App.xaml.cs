@@ -47,15 +47,39 @@ public partial class App : System.Windows.Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
-        // ══════════════════════════════════════════════════════════════
-        // CRITICAL: Initialize logging FIRST before anything else
-        // This ensures all subsequent operations including errors are logged
-        // ══════════════════════════════════════════════════════════════
-        LoggingConfiguration.ConfigureSerilog();
+        // Emergency logging in case something fails before Serilog initializes
+        var emergencyLogPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "ModernThinkPadLEDsController",
+            "Logs",
+            "emergency.log");
+
+        void EmergencyLog(string message)
+        {
+            try
+            {
+                var dir = Path.GetDirectoryName(emergencyLogPath);
+                if (dir != null) Directory.CreateDirectory(dir);
+                File.AppendAllText(emergencyLogPath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] [App.OnStartup] {message}\n");
+            }
+            catch { }
+        }
 
         try
         {
+            EmergencyLog("=== OnStartup() called ===");
+            EmergencyLog($"Args: {string.Join(" ", e.Args)}");
+
+            // ══════════════════════════════════════════════════════════════
+            // CRITICAL: Initialize logging FIRST before anything else
+            // This ensures all subsequent operations including errors are logged
+            // ══════════════════════════════════════════════════════════════
+            EmergencyLog("Calling ConfigureSerilog()...");
+            LoggingConfiguration.ConfigureSerilog();
+            EmergencyLog("ConfigureSerilog() completed");
+
             base.OnStartup(e);
+            EmergencyLog("base.OnStartup() completed");
 
             // Build dependency injection host
             _host = CreateHostBuilder(e.Args).Build();
@@ -95,9 +119,18 @@ public partial class App : System.Windows.Application
             }
 
             _logger.LogInformation("Application startup completed successfully");
+            EmergencyLog("=== OnStartup() completed successfully ===");
         }
         catch (Exception ex)
         {
+            EmergencyLog($"FATAL EXCEPTION in OnStartup(): {ex.GetType().Name}: {ex.Message}");
+            EmergencyLog($"Stack Trace: {ex.StackTrace}");
+            if (ex.InnerException != null)
+            {
+                EmergencyLog($"Inner Exception: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
+                EmergencyLog($"Inner Stack Trace: {ex.InnerException.StackTrace}");
+            }
+
             // Catch any unhandled startup exceptions
             Log.Fatal(ex, "Fatal error during application startup");
 

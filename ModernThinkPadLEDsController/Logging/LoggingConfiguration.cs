@@ -17,59 +17,101 @@ public static class LoggingConfiguration
         "ModernThinkPadLEDsController",
         "Logs");
 
+    private static readonly string EmergencyLogPath = Path.Combine(LogDirectory, "emergency.log");
+
+    /// <summary>
+    /// Writes to emergency log file when Serilog hasn't been initialized yet
+    /// </summary>
+    private static void EmergencyLog(string message)
+    {
+        try
+        {
+            Directory.CreateDirectory(LogDirectory);
+            File.AppendAllText(EmergencyLogPath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}\n");
+        }
+        catch { /* If we can't log, we can't log */ }
+    }
+
     /// <summary>
     /// Configures Serilog with appropriate sinks and formatting for this application.
     /// </summary>
     public static void ConfigureSerilog()
     {
-        // Ensure log directory exists
-        Directory.CreateDirectory(LogDirectory);
+        try
+        {
+            EmergencyLog("=== ConfigureSerilog() called ===");
+            EmergencyLog($"Current Directory: {Environment.CurrentDirectory}");
+            EmergencyLog($"Process Path: {Environment.ProcessPath}");
+            EmergencyLog($"Log Directory: {LogDirectory}");
 
-        var logFilePath = Path.Combine(LogDirectory, "app-.log");
+            // Ensure log directory exists
+            Directory.CreateDirectory(LogDirectory);
+            EmergencyLog("Log directory created/verified");
 
-        Log.Logger = new LoggerConfiguration()
-            // Set minimum log level - Information for production, Debug for troubleshooting
-            .MinimumLevel.Debug()
-            .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
-            .MinimumLevel.Override("System", LogEventLevel.Warning)
+            // Ensure log directory exists
+            Directory.CreateDirectory(LogDirectory);
+            EmergencyLog("Log directory created/verified");
 
-            // Enrich logs with additional context
-            .Enrich.FromLogContext()
-            .Enrich.WithProcessId()
-            .Enrich.WithMachineName()
+            var logFilePath = Path.Combine(LogDirectory, "app-.log");
+            EmergencyLog($"Log file path: {logFilePath}");
 
-            // Console sink - useful when running with dotnet run
-            .WriteTo.Console(
-                outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
+            EmergencyLog("Configuring Serilog LoggerConfiguration...");
+            Log.Logger = new LoggerConfiguration()
+                // Set minimum log level - Information for production, Debug for troubleshooting
+                .MinimumLevel.Debug()
+                .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+                .MinimumLevel.Override("System", LogEventLevel.Warning)
 
-            // File sink - rolling daily, keep 30 days of logs
-            .WriteTo.File(
-                path: logFilePath,
-                rollingInterval: RollingInterval.Day,
-                retainedFileCountLimit: 30,
-                outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}] [{Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}",
-                shared: false,
-                flushToDiskInterval: TimeSpan.FromSeconds(1))
+                // Enrich logs with additional context
+                .Enrich.FromLogContext()
+                .Enrich.WithProcessId()
+                .Enrich.WithMachineName()
 
-            // Windows Event Log sink - important for MSI-installed apps
-            // This helps diagnose issues when the app is installed as a service or with elevated permissions
-            .WriteTo.EventLog(
-                source: "ModernThinkPadLEDsController",
-                logName: "Application",
-                restrictedToMinimumLevel: LogEventLevel.Warning,
-                manageEventSource: false) // Don't try to create event source (requires admin)
+                // Console sink - useful when running with dotnet run
+                .WriteTo.Console(
+                    outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
 
-            .CreateLogger();
+                // File sink - rolling daily, keep 30 days of logs
+                .WriteTo.File(
+                    path: logFilePath,
+                    rollingInterval: RollingInterval.Day,
+                    retainedFileCountLimit: 30,
+                    outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}] [{Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}",
+                    shared: false,
+                    flushToDiskInterval: TimeSpan.FromSeconds(1))
 
-        Log.Information("═══════════════════════════════════════════════════════════");
-        Log.Information("Modern ThinkPad LEDs Controller Starting");
-        Log.Information("Version: {Version}", GetAppVersion());
-        Log.Information("Log Directory: {LogDirectory}", LogDirectory);
-        Log.Information("OS Version: {OSVersion}", Environment.OSVersion);
-        Log.Information("Is 64-bit Process: {Is64Bit}", Environment.Is64BitProcess);
-        Log.Information("Command Line: {CommandLine}", Environment.CommandLine);
-        Log.Information("Current Directory: {CurrentDirectory}", Environment.CurrentDirectory);
-        Log.Information("═══════════════════════════════════════════════════════════");
+                // Windows Event Log sink - important for MSI-installed apps
+                // This helps diagnose issues when the app is installed as a service or with elevated permissions
+                .WriteTo.EventLog(
+                    source: "ModernThinkPadLEDsController",
+                    logName: "Application",
+                    restrictedToMinimumLevel: LogEventLevel.Warning,
+                    manageEventSource: false) // Don't try to create event source (requires admin)
+
+                .CreateLogger();
+
+            EmergencyLog("Serilog configured successfully");
+
+            Log.Information("═══════════════════════════════════════════════════════════");
+            Log.Information("Modern ThinkPad LEDs Controller Starting");
+            Log.Information("Version: {Version}", GetAppVersion());
+            Log.Information("Log Directory: {LogDirectory}", LogDirectory);
+            Log.Information("OS Version: {OSVersion}", Environment.OSVersion);
+            Log.Information("Is 64-bit Process: {Is64Bit}", Environment.Is64BitProcess);
+            Log.Information("Command Line: {CommandLine}", Environment.CommandLine);
+            Log.Information("Current Directory: {CurrentDirectory}", Environment.CurrentDirectory);
+            Log.Information("═══════════════════════════════════════════════════════════");
+
+            EmergencyLog("Initial log messages written successfully");
+        }
+        catch (Exception ex)
+        {
+            EmergencyLog($"FATAL ERROR configuring Serilog: {ex.GetType().Name}: {ex.Message}");
+            EmergencyLog($"Stack Trace: {ex.StackTrace}");
+
+            // Rethrow so the app shows the error
+            throw new InvalidOperationException("Failed to initialize logging system. See emergency.log for details.", ex);
+        }
     }
 
     /// <summary>

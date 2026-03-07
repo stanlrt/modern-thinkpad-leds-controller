@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -60,6 +61,16 @@ public partial class MainWindow : FluentWindow
     {
         // Don't handle - let the event bubble up to MainScrollViewer
         e.Handled = false;
+    }
+
+    // Open releases page when "Check for update" is clicked
+    private void CheckForUpdate_Click(object sender, RoutedEventArgs e)
+    {
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = "https://github.com/stanlrt/modern-thinkpad-leds-controller/releases",
+            UseShellExecute = true
+        });
     }
 
     // Constant for horizontal mouse wheel messages from precision touchpads
