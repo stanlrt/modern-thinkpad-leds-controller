@@ -115,8 +115,34 @@ public partial class PawnIOSetupWindow : FluentWindow
         // Embedded installer was launched - verify installation was successful
         if (PawnIOInstaller.IsPawnIOInstalled())
         {
-            InstalledSuccessfully = true;
-            Close();
+            try
+            {
+                // Get the exe path - works for both debug and release
+                var exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
+
+                if (!string.IsNullOrEmpty(exePath))
+                {
+                    // Restart the application
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = exePath,
+                        UseShellExecute = true
+                    });
+
+                    // Exit current instance
+                    System.Windows.Application.Current.Shutdown();
+                }
+                else
+                {
+                    InstalledSuccessfully = true;
+                    Close();
+                }
+            }
+            catch
+            {
+                InstalledSuccessfully = true;
+                Close();
+            }
         }
         else
         {

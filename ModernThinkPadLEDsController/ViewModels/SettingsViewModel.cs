@@ -116,7 +116,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     // Driver / app info (read-only, shown in App Settings tab)
     // -------------------------------------------------------------------------
 
-    public string DriverStatus { get; } = "InpOut x64 (WHQL-signed)";
+    public string DriverStatus { get; } = "PawnIO";
 
     public string AppVersion { get; } =
         System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "—";
