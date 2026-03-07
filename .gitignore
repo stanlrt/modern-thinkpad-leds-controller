@@ -59,4 +59,6 @@ desktop.ini
 *.wixpdb
 *.wixobj
 
+## PawnIO installer (downloaded automatically during release builds)
+PawnIO-Setup.exe
 mcp.json

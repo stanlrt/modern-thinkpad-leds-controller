@@ -4,7 +4,7 @@
                  xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
                  Title="PawnIO Driver Setup"
                  Width="500"
-                 Height="300"
+                 SizeToContent="Height"
                  WindowStartupLocation="CenterScreen"
                  ResizeMode="NoResize">
 
@@ -24,8 +24,7 @@
                    Margin="0,0,0,20"/>
 
         <!-- Description -->
-        <StackPanel Grid.Row="1"
-                    VerticalAlignment="Center">
+        <StackPanel Grid.Row="1">
             <TextBlock TextWrapping="Wrap"
                        Margin="0,0,0,15"
                        FontWeight="SemiBold">
@@ -62,21 +61,27 @@
         <!-- Buttons -->
         <StackPanel Grid.Row="3"
                     Orientation="Horizontal"
-                    HorizontalAlignment="Right">
+                    HorizontalAlignment="Right"
+                    Margin="0,40,0,0">
+            <ui:Button Content="Cancel"
+                       Height="36"
+                       VerticalContentAlignment="Center"
+                       Click="CancelButton_Click"/>
             <ui:Button x:Name="InstallButton"
                        Appearance="Primary"
-                       Margin="0,0,10,0"
+                       Margin="10,0,0,0"
                        Click="InstallButton_Click">
-                <StackPanel Orientation="Horizontal">
+                <StackPanel Orientation="Horizontal"
+                            VerticalAlignment="Center">
                     <TextBlock FontFamily="Segoe Fluent Icons"
                                Text="&#xE896;"
-                               Margin="0,0,8,0"/>
-                    <TextBlock Text="Download PawnIO"/>
+                               Margin="0,0,8,0"
+                               VerticalAlignment="Center"/>
+                    <TextBlock Text="Download PawnIO"
+                               VerticalAlignment="Center"/>
                 </StackPanel>
             </ui:Button>
 
-            <ui:Button Content="Cancel"
-                       Click="CancelButton_Click"/>
         </StackPanel>
     </Grid>
 </ui:FluentWindow>
