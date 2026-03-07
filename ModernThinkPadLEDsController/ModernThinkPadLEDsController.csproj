@@ -54,6 +54,9 @@
   <!-- Application icon -->
   <ItemGroup>
     <Resource Include="Resources\favicon.ico" />
+    <None Include="Resources\favicon.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

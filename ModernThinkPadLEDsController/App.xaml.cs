@@ -296,7 +296,6 @@ public partial class App : System.Windows.Application
             Dispatcher.Invoke(() =>
             {
                 _logger?.LogDebug("Disk state changed: {State}", state);
-                _tray!.SetDiskState(state);
                 _mainVm.OnDiskStateChanged(state);
             });
 
