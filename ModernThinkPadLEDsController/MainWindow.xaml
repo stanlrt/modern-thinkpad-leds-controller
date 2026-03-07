@@ -12,6 +12,7 @@
     MinHeight="400"
     WindowStartupLocation="CenterScreen"
     ShowInTaskbar="True"
+    Icon="pack://application:,,,/Resources/favicon.ico"
     Closing="Window_Closing">
 
     <ui:FluentWindow.Resources>

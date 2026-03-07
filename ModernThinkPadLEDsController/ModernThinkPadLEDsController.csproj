@@ -10,6 +10,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <ApplicationIcon>Resources\favicon.ico</ApplicationIcon>
 
     <!-- Single-file publish settings -->
     <PublishSingleFile>true</PublishSingleFile>
@@ -48,6 +49,11 @@
   <!-- Download PawnIO-Setup.exe from https://pawnio.eu/ and place in Resources/ folder -->
   <ItemGroup>
     <EmbeddedResource Include="Resources\PawnIO-Setup.exe" Condition="Exists('Resources\PawnIO-Setup.exe')" />
+  </ItemGroup>
+
+  <!-- Application icon -->
+  <ItemGroup>
+    <Resource Include="Resources\favicon.ico" />
   </ItemGroup>
 
 </Project>

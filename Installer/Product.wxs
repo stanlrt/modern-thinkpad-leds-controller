@@ -13,9 +13,9 @@
 
     <MediaTemplate EmbedCab="yes" />
 
-    <!-- Icon for Add/Remove Programs -->
-    <Icon Id="AppIcon.exe" SourceFile="$(PublishDir)/ModernThinkPadLEDsController.exe" />
-    <Property Id="ARPPRODUCTICON" Value="AppIcon.exe" />
+    <!-- Icon for Add/Remove Programs and shortcuts -->
+    <Icon Id="AppIcon.ico" SourceFile="$(ProjectDir)/../ModernThinkPadLEDsController/Resources/favicon.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon.ico" />
 
     <!-- Properties for startup and launch -->
     <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Start with Windows (can be changed later in Task Manager)" />
@@ -45,7 +45,8 @@
             Id="StartMenuShortcut"
             Name="Modern ThinkPad LEDs Controller"
             Target="[INSTALLFOLDER]ModernThinkPadLEDsController.exe"
-            WorkingDirectory="INSTALLFOLDER" />
+            WorkingDirectory="INSTALLFOLDER"
+            Icon="AppIcon.ico" />
           <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall"/>
           <RegistryValue Root="HKCU" Key="Software\ModernThinkPadLEDsController" Name="installed" Type="integer" Value="1" KeyPath="yes"/>
         </Component>
