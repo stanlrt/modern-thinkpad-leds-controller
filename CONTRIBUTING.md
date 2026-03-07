@@ -6,7 +6,7 @@
 - A C# compatible IDE (Visual Studio 2022+, Rider, or VS Code with C# extensions)
 - NET 10 SDK
 - A ThinkPad laptop
-- **(Optional for bundling)** PawnIO installer from https://pawnio.eu/
+- PawnIO (unless you want to test the "missing PawnIO" user flow)
 
 ## Setup
 
@@ -19,7 +19,7 @@
 
 2. Open the solution
 
-   Open `ModernThinkPadLEDsController.slnx` in Visual Studio or Rider.
+   Open `ModernThinkPadLEDsController.slnx` in your IDE.
 
 3. **Restore NuGet packages**
 
@@ -41,33 +41,11 @@ Press **Build → Build Solution** (or <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</
 dotnet build ModernThinkPadLEDsController/ModernThinkPadLEDsController.csproj
 ```
 
-The build output lands in:
-
-```
-ModernThinkPadLEDsController/bin/Debug/net10.0-windows/win-x64/
-```
-
 ## Running
 
-> **The app must always be launched as Administrator.** The UAC prompt appears automatically thanks to the `requireAdministrator` entry in `app.manifest`.
+**The app must always be launched as Administrator.** The UAC prompt appears automatically thanks to the `requireAdministrator` entry in `app.manifest`.
 
-### Via IDE
-
-In Visual Studio, right-click the project → **Debug → Start New Instance** (Visual Studio runs elevated when the manifest requests it). Alternatively, launch Visual Studio itself as Administrator.
-
-### Via CLI (from the build output folder)
-
-```shell
-# Navigate to the build output first
-cd ModernThinkPadLEDsController/bin/Debug/net10.0-windows/win-x64
-
-# Run as Administrator (Start-Process with -Verb RunAs in PowerShell)
-Start-Process .\ModernThinkPadLEDsController.exe -Verb RunAs
-```
-
-On first run, if PawnIO is not installed, the **PawnIO Driver Setup** window will appear. The app will automatically install PawnIO if you've bundled the installer (see setup instructions). If the installer is not bundled, users will need to download and install PawnIO manually from https://pawnio.eu/.
-
-> **Note:** The application uses [PawnIO](https://pawnio.eu/) for hardware I/O access. PawnIO provides better security than legacy drivers by using scriptable kernel modules with restricted access.
+On first run, if PawnIO is not installed, the **PawnIO Driver Setup** window will appear.
 
 ### Bundling PawnIO Installer (Optional)
 

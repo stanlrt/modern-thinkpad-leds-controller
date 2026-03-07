@@ -22,6 +22,22 @@ jobs:
         with:
           dotnet-version: "10.0.x"
 
+      - name: Download PawnIO installer for bundling
+        shell: pwsh
+        run: |
+          $url = "https://github.com/namazso/PawnIO.Setup/releases/latest/download/PawnIO_setup.exe"
+          $destinationDirectory = "ModernThinkPadLEDsController/Resources"
+          $destinationPath = Join-Path $destinationDirectory "PawnIO-Setup.exe"
+
+          New-Item -ItemType Directory -Path $destinationDirectory -Force | Out-Null
+          Invoke-WebRequest -Uri $url -OutFile $destinationPath
+
+          if (-not (Test-Path $destinationPath)) {
+            throw "Failed to download PawnIO installer to $destinationPath"
+          }
+
+          Write-Host "PawnIO installer downloaded to $destinationPath"
+
       - name: Restore dependencies
         run: dotnet restore ModernThinkPadLEDsController/ModernThinkPadLEDsController.csproj
 
