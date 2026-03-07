@@ -21,6 +21,8 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "10.0.x"
+          cache: true
+          cache-dependency-path: '**/packages.lock.json'
 
       - name: Download PawnIO installer for bundling
         shell: pwsh
@@ -51,6 +53,12 @@ jobs:
           /p:SelfContained=true
           /p:RuntimeIdentifier=win-x64
           /p:PublishReadyToRun=true
+
+      - name: Cache .NET Tools
+        uses: actions/cache@v4
+        with:
+          path: ~/.dotnet/tools
+          key: ${{ runner.os }}-dotnet-tools-wix-6.0.2
 
       - name: Install WiX Toolset v6
         run: |
