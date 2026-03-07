@@ -2,11 +2,6 @@
 
 This folder contains the WiX Toolset configuration for building the MSI installer.
 
-## Files
-
-- **Product.wxs** - WiX source file defining the installer structure
-- **License.rtf** - License agreement shown during installation
-
 ## Building Locally
 
 To build the MSI installer locally:
@@ -40,12 +35,9 @@ The MSI will be created in the current directory.
 - Installs to `C:\Program Files\Modern ThinkPad LEDs Controller\`
 - Creates a Start Menu shortcut
 - Registers in Add/Remove Programs for clean uninstall
-- Requires administrator privileges (perMachine install)
-
-> **Note:** The application requires [PawnIO](https://pawnio.eu/) to be installed for hardware access. Users must install PawnIO separately if not already installed.
+- Requires administrator privileges (`perMachine` install)
 
 ## Important Notes
 
 - The `UpgradeCode` GUID in Product.wxs must remain constant across versions
-- This ensures Windows recognizes upgrades and properly replaces old versions
 - Each build gets a unique `Product Id="*"` automatically

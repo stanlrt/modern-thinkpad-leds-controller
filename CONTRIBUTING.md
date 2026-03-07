@@ -21,64 +21,15 @@
 
    Open `ModernThinkPadLEDsController.slnx` in your IDE.
 
-3. **Restore NuGet packages**
-
-   This happens automatically when you open the solution. To do it manually:
+3. Restore NuGet packages
 
    ```shell
    dotnet restore
    ```
 
-## Building
-
-### Via IDE
-
-Press **Build → Build Solution** (or <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> in Visual Studio).
-
-### Via CLI
-
-```shell
-dotnet build ModernThinkPadLEDsController/ModernThinkPadLEDsController.csproj
-```
-
-## Running
-
-**The app must always be launched as Administrator.** The UAC prompt appears automatically thanks to the `requireAdministrator` entry in `app.manifest`.
-
-On first run, if PawnIO is not installed, the **PawnIO Driver Setup** window will appear.
-
-### Bundling PawnIO Installer (Optional)
-
-To bundle the PawnIO installer for automatic installation:
-
-1. Download the latest PawnIO installer from https://pawnio.eu/
-2. Rename it to `PawnIO-Setup.exe`
-3. Place it in `ModernThinkPadLEDsController/Resources/`
-4. Rebuild the project - the installer will be embedded automatically
-
-See [Resources/README-PawnIO.md](ModernThinkPadLEDsController/Resources/README-PawnIO.md) for license compliance and details.
-
-See [Resources/README-PawnIO.md](ModernThinkPadLEDsController/Resources/README-PawnIO.md) for details.
-
-## Publishing
-
-The project is configured for a **self-contained, single-file** `win-x64` executable:
-
-```shell
-dotnet publish ModernThinkPadLEDsController/ModernThinkPadLEDsController.csproj -c Release
-```
-
-Output lands in:
-
-```
-ModernThinkPadLEDsController/bin/Release/net10.0-windows/win-x64/publish/
-```
-
-> **Note:** The application requires [PawnIO](https://pawnio.eu/) to be installed on the target system for hardware access. Users should install PawnIO before running the application.
-
 ## Project Structure
 
-```
+```txt
 ModernThinkPadLEDsController/
 ├── Hardware/           # LibreHardwareMonitor-based driver wrapper, EC controller, LED controller
 ├── Monitoring/         # Background monitors (disk activity, keyboard backlight,
@@ -91,25 +42,9 @@ ModernThinkPadLEDsController/
 └── app.manifest        # UAC elevation + DPI awareness declarations
 ```
 
-## Making Changes
+## Running
 
-1. **Fork** the repository and create a branch from `main`:
-
-   ```shell
-   git checkout -b feature/your-feature-name
-   ```
-
-2. Make your changes, keeping the existing code style and MVVM patterns.
-
-3. Verify the build is clean:
-
-   ```shell
-   dotnet build
-   ```
-
-4. Test on real ThinkPad hardware if your change touches `Hardware/` or `Monitoring/`.
-
-5. Open a **Pull Request** against `main` with a clear description of what was changed and why.
+On first run, if PawnIO is not installed, the **PawnIO Driver Setup** window will appear.
 
 ## Creating a Release
 
@@ -118,7 +53,7 @@ Releases are automated via GitHub Actions. When you push a version tag, a workfl
 ### Release Process
 
 1. **Ensure `main` branch is ready**
-   
+
    Make sure all desired changes are merged and tested.
 
 2. **Create and push a version tag**
@@ -137,14 +72,7 @@ Releases are automated via GitHub Actions. When you push a version tag, a workfl
      - Auto-generated release notes
      - `ModernThinkPadLEDsController-v1.0.0-win-x64.msi` download
 
-### Version Numbering Guidelines
-
-- `v1.0.0` - First stable release
-- `v1.1.0` - New features (minor version bump)
-- `v1.0.1` - Bug fixes only (patch version bump)
-- `v2.0.0` - Breaking changes (major version bump)
-
-### Building MSI Locally (Optional)
+### Building MSI Locally
 
 To test the installer before releasing:
 
