@@ -36,6 +36,9 @@ public sealed class HotkeyService : IDisposable
 
     private HwndSource? _source;
     private IntPtr _hwnd = IntPtr.Zero;
+    private bool _isRegistered;
+    private int _currentModifiers;
+    private int _currentVirtualKey;
 
     /// <summary>
     /// Registers the hotkey against <paramref name="window"/>'s HWND.
@@ -50,7 +53,20 @@ public sealed class HotkeyService : IDisposable
         _hwnd = new WindowInteropHelper(window).Handle;
         _source = HwndSource.FromHwnd(_hwnd);
         _source?.AddHook(WndProc);
-        return RegisterHotKey(_hwnd, HotkeyId, modifiers, virtualKey);
+
+        bool registered = RegisterHotKey(_hwnd, HotkeyId, modifiers, virtualKey);
+        if (registered)
+        {
+            _isRegistered = true;
+            _currentModifiers = modifiers;
+            _currentVirtualKey = virtualKey;
+        }
+        else
+        {
+            _isRegistered = false;
+        }
+
+        return registered;
     }
 
     /// <summary>
@@ -61,11 +77,47 @@ public sealed class HotkeyService : IDisposable
     {
         if (_hwnd == IntPtr.Zero) return false;
 
+        if (_isRegistered && modifiers == _currentModifiers && virtualKey == _currentVirtualKey)
+            return true;
+
+        if (!_isRegistered)
+        {
+            bool initialRegistrationSucceeded = RegisterHotKey(_hwnd, HotkeyId, modifiers, virtualKey);
+            if (initialRegistrationSucceeded)
+            {
+                _isRegistered = true;
+                _currentModifiers = modifiers;
+                _currentVirtualKey = virtualKey;
+            }
+
+            return initialRegistrationSucceeded;
+        }
+
+        int previousModifiers = _currentModifiers;
+        int previousVirtualKey = _currentVirtualKey;
+
         // Unregister old hotkey
         UnregisterHotKey(_hwnd, HotkeyId);
 
         // Register new hotkey
-        return RegisterHotKey(_hwnd, HotkeyId, modifiers, virtualKey);
+        bool registered = RegisterHotKey(_hwnd, HotkeyId, modifiers, virtualKey);
+        if (registered)
+        {
+            _currentModifiers = modifiers;
+            _currentVirtualKey = virtualKey;
+            return true;
+        }
+
+        bool restored = RegisterHotKey(_hwnd, HotkeyId, previousModifiers, previousVirtualKey);
+        _isRegistered = restored;
+
+        if (restored)
+        {
+            _currentModifiers = previousModifiers;
+            _currentVirtualKey = previousVirtualKey;
+        }
+
+        return false;
     }
 
     private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
@@ -80,7 +132,7 @@ public sealed class HotkeyService : IDisposable
 
     public void Dispose()
     {
-        if (_hwnd != IntPtr.Zero)
+        if (_hwnd != IntPtr.Zero && _isRegistered)
             UnregisterHotKey(_hwnd, HotkeyId);
 
         _source?.RemoveHook(WndProc);
