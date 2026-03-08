@@ -3,6 +3,7 @@
                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                  xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
                  Title="PawnIO Driver Setup"
+                 Icon="pack://application:,,,/Resources/favicon.ico"
                  Width="500"
                  SizeToContent="Height"
                  WindowStartupLocation="CenterScreen"

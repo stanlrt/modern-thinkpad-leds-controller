@@ -27,8 +27,20 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <ui:TitleBar Grid.Row="0"
-                     Title="Modern ThinkPad LEDs Controller"/>
+        <ui:TitleBar Grid.Row="0">
+            <ui:TitleBar.Header>
+                <StackPanel Orientation="Horizontal"
+                            VerticalAlignment="Center">
+                    <Image Source="pack://application:,,,/Resources/favicon.ico"
+                           Width="20"
+                           Height="20"
+                           Margin="16,0,0,0"/>
+                    <TextBlock Text="Modern ThinkPad LEDs Controller"
+                               Margin="8,0,0,0"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+            </ui:TitleBar.Header>
+        </ui:TitleBar>
 
         <!-- Main vertical scroll for entire page -->
         <ScrollViewer Grid.Row="1"
