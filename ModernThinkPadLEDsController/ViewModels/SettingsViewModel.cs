@@ -1,8 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using ModernThinkPadLEDsController.Hardware;
-using ModernThinkPadLEDsController.Monitoring;
 using ModernThinkPadLEDsController.Services;
 
 namespace ModernThinkPadLEDsController.ViewModels;
@@ -10,10 +8,7 @@ namespace ModernThinkPadLEDsController.ViewModels;
 public sealed partial class SettingsViewModel : ObservableObject
 {
     private readonly AppSettings _settings;
-    private readonly LedBehaviorService _ledBehavior;
-    private readonly DiskActivityMonitor _disk;
-    private readonly LedController _leds;
-    private readonly PowerEventListener _powerListener;
+    private readonly ISettingsRuntimeService _runtime;
     private Action? _saveSettingsCallback;
 
     // Flag to prevent triggering saves during initial load
@@ -26,20 +21,20 @@ public sealed partial class SettingsViewModel : ObservableObject
     [SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Called by CommunityToolkit.Mvvm source generator")]
     partial void OnBlinkIntervalMsChanged(int value)
     {
-        _ledBehavior.UpdateBlinkInterval(value);
+        _runtime.UpdateBlinkInterval(value);
         _settings.BlinkIntervalMs = value;
         TriggerSave();
     }
 
 
     [ObservableProperty]
-    private int _hddPollIntervalMs;
+    private int _diskPollIntervalMs;
 
     [SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Called by CommunityToolkit.Mvvm source generator")]
-    partial void OnHddPollIntervalMsChanged(int value)
+    partial void OnDiskPollIntervalMsChanged(int value)
     {
-        _disk.UpdateInterval(value);
-        _settings.HddPollIntervalMs = value;
+        _runtime.UpdateDiskPollInterval(value);
+        _settings.DiskPollIntervalMs = value;
         TriggerSave();
     }
 
@@ -60,7 +55,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     [SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Called by CommunityToolkit.Mvvm source generator")]
     partial void OnKeyboardBrightnessLevelChanged(int value)
     {
-        _leds.SetKeyboardBacklightRaw((byte)value);
+        _runtime.SetKeyboardBrightnessLevel(value);
         _settings.SavedKeyboardBacklight = value;
 
         // Update warning visibility and percentage display when level changes
@@ -90,10 +85,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     {
         _settings.DimLedsWhenFullscreen = value;
 
-        if (value)
-            _powerListener.StartFullscreenPolling();
-        else
-            _powerListener.StopFullscreenPolling();
+        _runtime.SetFullscreenPollingEnabled(value);
 
         TriggerSave();
     }
@@ -101,18 +93,24 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private bool _startWithWindows;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasStartupTaskWarning))]
+    private string? _startupTaskWarningMessage;
+
+    public bool HasStartupTaskWarning => !string.IsNullOrWhiteSpace(StartupTaskWarningMessage);
+
     [RelayCommand]
     private void ToggleStartup()
     {
-        if (StartWithWindows)
+        StartupTaskOperationResult result = _runtime.SetStartupEnabled(StartWithWindows);
+        if (!result.Success)
         {
-            bool ok = StartupTaskManager.Register(Environment.ProcessPath ?? "");
-            if (!ok) StartWithWindows = false;
+            StartWithWindows = !StartWithWindows;
+            StartupTaskWarningMessage = result.ErrorMessage;
+            return;
         }
-        else
-        {
-            StartupTaskManager.Unregister();
-        }
+
+        StartupTaskWarningMessage = null;
     }
 
     [ObservableProperty]
@@ -135,16 +133,10 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     public SettingsViewModel(
         AppSettings settings,
-        LedBehaviorService ledBehavior,
-        DiskActivityMonitor disk,
-        LedController leds,
-        PowerEventListener powerListener)
+        ISettingsRuntimeService runtime)
     {
         _settings = settings;
-        _ledBehavior = ledBehavior;
-        _disk = disk;
-        _leds = leds;
-        _powerListener = powerListener;
+        _runtime = runtime;
     }
 
     /// <summary>
@@ -157,22 +149,23 @@ public sealed partial class SettingsViewModel : ObservableObject
 
         // Use property setters - partial methods will sync to _settings but won't trigger save
         BlinkIntervalMs = _settings.BlinkIntervalMs;
-        HddPollIntervalMs = _settings.HddPollIntervalMs;
+        DiskPollIntervalMs = _settings.DiskPollIntervalMs;
         RememberKeyboardBacklight = _settings.RememberKeyboardBacklight;
 
-        // Load keyboard brightness level, or read current hardware value if not set
-        if (_settings.SavedKeyboardBacklight == 0 && _leds.GetKeyboardBacklightRaw(out byte currentLevel))
+        // Load keyboard brightness level, or read current hardware value if not set.
+        if (_settings.SavedKeyboardBacklight is null && _runtime.TryGetCurrentKeyboardBrightness(out byte currentLevel))
         {
             KeyboardBrightnessLevel = currentLevel;
         }
         else
         {
-            KeyboardBrightnessLevel = _settings.SavedKeyboardBacklight;
+            KeyboardBrightnessLevel = _settings.SavedKeyboardBacklight ?? 0;
         }
 
         DimLedsWhenFullscreen = _settings.DimLedsWhenFullscreen;
         PersistSettingsOnChange = _settings.PersistSettingsOnChange;
-        StartWithWindows = StartupTaskManager.IsRegistered();
+        StartWithWindows = _runtime.IsStartupEnabled();
+        StartupTaskWarningMessage = null;
 
         _isLoading = false;
     }

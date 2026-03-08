@@ -205,7 +205,7 @@
                                         <ToolTip>
                                             <TextBlock MaxWidth="240"
                                                        TextWrapping="Wrap"
-                                                       Text="LED turns on whenever a disk write is detected (HDD, SSD, NVMe, ...). Configure the polling interval in the Disk tab below."/>
+                                                       Text="LED turns on whenever disk write activity is detected. Configure the polling interval in the Disk tab below."/>
                                         </ToolTip>
                                     </Border.ToolTip>
                                     <TextBlock Text="?"
@@ -238,7 +238,7 @@
                                         <ToolTip>
                                             <TextBlock MaxWidth="240"
                                                        TextWrapping="Wrap"
-                                                       Text="LED turns on whenever a disk read is detected (HDD, SSD, NVMe, ...). Configure the polling interval in the Disk tab below."/>
+                                                       Text="LED turns on whenever disk read activity is detected. Configure the polling interval in the Disk tab below."/>
                                         </ToolTip>
                                     </Border.ToolTip>
                                     <TextBlock Text="?"
@@ -1085,10 +1085,10 @@
                                 <Slider Minimum="10"
                                         Maximum="1000"
                                         Width="200"
-                                        Value="{Binding SettingsVm.HddPollIntervalMs}"
+                                        Value="{Binding SettingsVm.DiskPollIntervalMs}"
                                         TickFrequency="10"
                                         IsSnapToTickEnabled="True"/>
-                                <TextBlock Text="{Binding SettingsVm.HddPollIntervalMs, StringFormat={}{0} ms}"
+                                <TextBlock Text="{Binding SettingsVm.DiskPollIntervalMs, StringFormat={}{0} ms}"
                                            VerticalAlignment="Center"
                                            Width="60"
                                            Margin="8,0,0,0"/>
@@ -1166,6 +1166,14 @@
                                       Command="{Binding SettingsVm.ToggleStartupCommand}"
                                       Margin="0,0,0,16"
                                       Padding="0,4"/>
+                            <Border CornerRadius="4"
+                                    Padding="12,8"
+                                    Margin="0,0,0,16"
+                                    Background="{DynamicResource SystemFillColorCautionBackgroundBrush}"
+                                    Visibility="{Binding SettingsVm.HasStartupTaskWarning, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Text="{Binding SettingsVm.StartupTaskWarningMessage}"
+                                           TextWrapping="Wrap"/>
+                            </Border>
                             <CheckBox Content="Auto-save settings on change (if off, the app will revert to the last saved config when restarted)"
                                       IsChecked="{Binding SettingsVm.PersistSettingsOnChange}"
                                       Margin="0,0,0,16"

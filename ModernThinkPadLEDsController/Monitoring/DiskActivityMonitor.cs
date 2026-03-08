@@ -6,7 +6,7 @@ namespace ModernThinkPadLEDsController.Monitoring;
 public enum DiskActivityState { Idle, Read, Write, ReadWrite }
 
 // DiskActivityMonitor replaces the BackgroundWorker + PerformanceCounter loop
-// in the legacy Form1.workerHDD_DoWork. It runs on a background thread and
+// from the legacy WinForms app. It runs on a background thread and
 // fires StateChanged whenever the disk activity state changes.
 //
 // PerformanceCounter is a Windows system counter — the same data you see
@@ -66,7 +66,7 @@ public sealed class DiskActivityMonitor : IDisposable
         _cts = null;
     }
 
-    // Call when the user changes the HDD poll interval slider.
+    // Call when the user changes the disk poll interval slider.
     public void UpdateInterval(int ms) => Interlocked.Exchange(ref _intervalMs, ms);
 
     private async Task MonitorLoop(CancellationToken ct)

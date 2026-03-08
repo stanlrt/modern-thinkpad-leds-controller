@@ -39,10 +39,10 @@ public sealed class AppSettings
     public int HotkeyVirtualKey { get; set; } = 0x4B;  // VK_K
 
     public int BlinkIntervalMs { get; set; } = 500;
-    public int HddPollIntervalMs { get; set; } = 300;
+    public int DiskPollIntervalMs { get; set; } = 300;
 
     public bool RememberKeyboardBacklight { get; set; }
-    public int SavedKeyboardBacklight { get; set; } // Raw brightness value (0-255)
+    public int? SavedKeyboardBacklight { get; set; } // Raw brightness value (0-255); null means no saved value yet
 
     public bool DimLedsWhenFullscreen { get; set; }
     public bool SuppressDiskCounterWarning { get; set; }
@@ -55,7 +55,9 @@ public sealed class AppSettings
             if (File.Exists(FilePath))
             {
                 string json = File.ReadAllText(FilePath);
-                return JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+                var settings = JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+                settings.MigrateLegacyDiskPollInterval(json);
+                return settings;
             }
         }
         catch { /* first run or corrupt file — use defaults */ }
@@ -72,5 +74,28 @@ public sealed class AppSettings
             File.WriteAllText(FilePath, JsonSerializer.Serialize(this, options));
         }
         catch { /* saving is best-effort — never crash the app */ }
+    }
+
+    private void MigrateLegacyDiskPollInterval(string json)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            var root = document.RootElement;
+
+            if (root.TryGetProperty(nameof(DiskPollIntervalMs), out _))
+                return;
+
+            if (root.TryGetProperty("HddPollIntervalMs", out var legacyInterval) &&
+                legacyInterval.ValueKind == JsonValueKind.Number &&
+                legacyInterval.TryGetInt32(out int legacyIntervalMs))
+            {
+                DiskPollIntervalMs = legacyIntervalMs;
+            }
+        }
+        catch (JsonException)
+        {
+            // Ignore migration errors and keep the parsed/default value.
+        }
     }
 }

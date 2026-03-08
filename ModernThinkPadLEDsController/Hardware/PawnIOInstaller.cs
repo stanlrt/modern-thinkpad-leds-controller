@@ -22,7 +22,13 @@ public static class PawnIOInstaller
     {
         try
         {
-            return LhmDriver.TryOpen(out var driver) && driver != null;
+            if (!LhmDriver.TryOpen(out var driver) || driver is null)
+                return false;
+
+            using (driver)
+            {
+                return true;
+            }
         }
         catch (Exception ex)
         {

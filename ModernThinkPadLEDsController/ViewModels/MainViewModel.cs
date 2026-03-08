@@ -34,7 +34,7 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(DiskMonitoringUnavailable))]
     [NotifyPropertyChangedFor(nameof(DiskRadiosEnabled))]
-    private bool _diskMonitoringAvailable = true;
+    private bool _diskMonitoringAvailable;
 
     public bool DiskMonitoringUnavailable => !DiskMonitoringAvailable;
 

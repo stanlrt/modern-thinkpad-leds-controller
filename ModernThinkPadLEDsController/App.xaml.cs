@@ -1,6 +1,7 @@
 using System.Windows;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Windows.Interop;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -125,6 +126,7 @@ public partial class App : System.Windows.Application
 
             InitializeServicesAndUI();
             WireUpEventHandlers();
+            EnsureMainWindowHandle();
             StartMonitors();
 
             bool startMinimized = e.Args.Contains("--minimized");
@@ -191,12 +193,13 @@ public partial class App : System.Windows.Application
                 services.AddSingleton<EcController>();
                 services.AddSingleton<LedController>();
                 services.AddSingleton<LedBehaviorService>();
+                services.AddSingleton<ISettingsRuntimeService, SettingsRuntimeService>();
 
                 // Monitoring services
                 services.AddSingleton<DiskActivityMonitor>(sp =>
                 {
                     var settings = sp.GetRequiredService<AppSettings>();
-                    var monitor = new DiskActivityMonitor(settings.HddPollIntervalMs);
+                    var monitor = new DiskActivityMonitor(settings.DiskPollIntervalMs);
                     monitor.TryInitialize(); // Initialize on creation
                     return monitor;
                 });
@@ -280,12 +283,11 @@ public partial class App : System.Windows.Application
 
             _logger?.LogDebug("Found existing window handle: {Handle}", hWnd);
 
-            // If the window is minimized, restore it
             if (IsIconic(hWnd))
-            {
                 _logger?.LogDebug("Window is minimized - restoring");
-                ShowWindow(hWnd, SW_RESTORE);
-            }
+
+            // Restore also covers the tray-hidden case better than only checking iconic state.
+            ShowWindow(hWnd, SW_RESTORE);
 
             // Bring the window to the foreground
             bool success = SetForegroundWindow(hWnd);
@@ -331,10 +333,7 @@ public partial class App : System.Windows.Application
     {
         _logger?.LogInformation("Initializing services and UI");
 
-        // Check if disk monitoring is available
-        // Note: DiskActivityMonitor.TryInitialize() was already called during service registration
-        // We just need to check if it's working
-        bool diskOk = true; // Assume it worked; monitor will log if it didn't
+        bool diskMonitoringAvailable = _diskMonitor?.IsAvailable == true;
 
         // Load settings into view models
         _mainVm!.LoadFromSettings();
@@ -342,7 +341,7 @@ public partial class App : System.Windows.Application
         _logger?.LogDebug("Settings loaded into view models");
 
         // Configure ViewModels
-        _mainVm.DiskMonitoringAvailable = diskOk;
+        _mainVm.DiskMonitoringAvailable = diskMonitoringAvailable;
         _ledBehavior!.ApplyAll();
         _logger?.LogInformation("LED configurations applied");
 
@@ -358,10 +357,14 @@ public partial class App : System.Windows.Application
 
         _logger?.LogDebug("Main window ready");
 
-        if (_mainVm.HasDiskModeLeds)
+        if (_mainVm.HasDiskModeLeds && diskMonitoringAvailable)
         {
             _diskMonitor?.Start();
             _logger?.LogInformation("Disk monitoring started (has disk mode LEDs)");
+        }
+        else if (!diskMonitoringAvailable)
+        {
+            _logger?.LogWarning("Disk performance counters are unavailable - disk LED modes are disabled");
         }
     }
 
@@ -387,7 +390,7 @@ public partial class App : System.Windows.Application
         Dispatcher.Invoke(() =>
         {
             _logger?.LogDebug("Disk mode LEDs changed: {HasDiskModes}", hasDiskModes);
-            if (hasDiskModes)
+            if (hasDiskModes && _diskMonitor!.IsAvailable)
                 _diskMonitor!.Start();
             else
                 _diskMonitor!.Stop();
@@ -505,8 +508,8 @@ public partial class App : System.Windows.Application
         Dispatcher.Invoke(() =>
         {
             _logger?.LogInformation("System resumed - restarting monitors");
-            if (_settings!.RememberKeyboardBacklight)
-                _settingsVm!.KeyboardBrightnessLevel = _settings.SavedKeyboardBacklight;
+            if (_settings!.RememberKeyboardBacklight && _settings.SavedKeyboardBacklight is int savedKeyboardBacklight)
+                _settingsVm!.KeyboardBrightnessLevel = savedKeyboardBacklight;
             if (_mainVm!.HasDiskModeLeds)
                 _diskMonitor!.Start();
             _kbdMonitor!.Start();
@@ -518,8 +521,8 @@ public partial class App : System.Windows.Application
         Dispatcher.Invoke(() =>
         {
             _logger?.LogDebug("Lid state changed: {IsOpen}", isOpen);
-            if (isOpen && _settings!.RememberKeyboardBacklight)
-                _settingsVm!.KeyboardBrightnessLevel = _settings.SavedKeyboardBacklight;
+            if (isOpen && _settings!.RememberKeyboardBacklight && _settings.SavedKeyboardBacklight is int savedKeyboardBacklight)
+                _settingsVm!.KeyboardBrightnessLevel = savedKeyboardBacklight;
         });
     }
 
@@ -583,6 +586,15 @@ public partial class App : System.Windows.Application
         _mainWindow.WindowState = WindowState.Normal;
         _mainWindow.Activate();
         _logger?.LogInformation("Main window shown and activated");
+    }
+
+    private void EnsureMainWindowHandle()
+    {
+        if (_mainWindow is null)
+            return;
+
+        IntPtr handle = new WindowInteropHelper(_mainWindow).EnsureHandle();
+        _logger?.LogDebug("Main window handle ensured: {Handle}", handle);
     }
 
     private void RequestExit()
