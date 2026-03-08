@@ -1118,16 +1118,28 @@
                                         IsSnapToTickEnabled="True"
                                         Value="{Binding SettingsVm.KeyboardBrightnessLevel}"/>
                                 <TextBlock Grid.Column="1"
-                                           Text="{Binding SettingsVm.KeyboardBrightnessLevel, StringFormat={}{0} %}"
+                                           Text="{Binding SettingsVm.KeyboardBrightnessPercent, StringFormat={}{0} %}"
                                            VerticalAlignment="Center"
                                            TextAlignment="Right"
                                            Margin="8,0,0,0"/>
                             </StackPanel>
-                            <TextBlock Text="Some ThinkPads only support predefined levels. Value will be rounded to the nearest."
+
+                            <!-- Warning for low brightness values -->
+                            <Border CornerRadius="4"
+                                    Padding="12,8"
+                                    Margin="0,8,0,8"
+                                    Background="{DynamicResource SystemFillColorCautionBackgroundBrush}"
+                                    Visibility="{Binding SettingsVm.ShowKeyboardBrightnessWarning, Converter={StaticResource BoolToVis}}">
+                                <TextBlock TextWrapping="Wrap">
+                                    <Run Text="⚠️ Warning: Values below 25% may appear completely off on some ThinkPad models."/>
+                                </TextBlock>
+                            </Border>
+
+                            <TextBlock Text="Some ThinkPads only support few predefined levels. Value will get floored."
                                        FontSize="11"
                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                        TextWrapping="Wrap"
-                                       Margin="0,8,0,16"/>
+                                       Margin="0,0,0,16"/>
 
                             <TextBlock Text="Additional options"
                                        FontWeight="SemiBold"

@@ -27,13 +27,25 @@ public sealed class KeyboardBacklightMonitor : IDisposable
 
     private CancellationTokenSource? _cts;
     private byte _lastSeen = 0;
+    private bool _hasObservedLevel;
 
     public KeyboardBacklightMonitor(LedController leds) => _leds = leds;
 
     public void Start()
     {
+        _cts?.Cancel();
         _cts?.Dispose();
         _cts = new CancellationTokenSource();
+
+        // Read initial level synchronously BEFORE starting the async polling loop
+        // This ensures CurrentLevel is valid immediately when fullscreen polling starts
+        if (_leds.GetKeyboardBacklightRaw(out byte initialLevel))
+        {
+            _lastSeen = initialLevel;
+            _hasObservedLevel = true;
+            _history.Enqueue(initialLevel);
+        }
+
         _ = Task.Run(() => PollLoop(_cts.Token));
     }
 
@@ -61,12 +73,17 @@ public sealed class KeyboardBacklightMonitor : IDisposable
     // save the level into AppSettings on shutdown).
     public byte CurrentLevel => _lastSeen;
 
+    // True after at least one successful hardware read.
+    public bool HasObservedLevel => _hasObservedLevel;
+
     private async Task PollLoop(CancellationToken ct)
     {
         while (!ct.IsCancellationRequested)
         {
             if (_leds.GetKeyboardBacklightRaw(out byte level))
             {
+                _hasObservedLevel = true;
+
                 if (_history.Count >= HistorySize)
                     _history.Dequeue();
                 _history.Enqueue(level);

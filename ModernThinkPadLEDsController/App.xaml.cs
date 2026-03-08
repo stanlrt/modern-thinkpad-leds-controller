@@ -525,7 +525,14 @@ public partial class App : System.Windows.Application
         Dispatcher.Invoke(() =>
         {
             _logger?.LogDebug("Fullscreen state changed: {IsFullscreen}", isFullscreen);
-            _mainVm!.OnFullscreenChanged(isFullscreen, _kbdMonitor!.CurrentLevel);
+
+            // Ignore events until we've successfully read at least one backlight value.
+            // Level 0 is valid while dimmed, so it cannot be used as an initialization sentinel.
+            if (!_kbdMonitor!.HasObservedLevel)
+                return;
+
+            byte currentLevel = _kbdMonitor.CurrentLevel;
+            _mainVm!.OnFullscreenChanged(isFullscreen, currentLevel);
         });
     }
 
@@ -533,7 +540,8 @@ public partial class App : System.Windows.Application
     {
         _logger?.LogInformation("Starting monitors");
 
-        if (_settings!.RememberKeyboardBacklight)
+        // Start keyboard monitor if either feature that needs it is enabled
+        if (_settings!.RememberKeyboardBacklight || _settings.DimLedsWhenFullscreen)
         {
             _kbdMonitor!.Start();
             _logger?.LogDebug("Keyboard backlight monitor started");

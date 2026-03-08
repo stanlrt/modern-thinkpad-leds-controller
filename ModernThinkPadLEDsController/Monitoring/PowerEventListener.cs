@@ -32,6 +32,8 @@ public sealed class PowerEventListener : IDisposable
 
     private System.Windows.Threading.DispatcherTimer? _fullscreenTimer;
     private bool _wasFullscreen;
+    private bool _isFirstFullscreenCheck;
+    private IntPtr _attachedWindowHandle = IntPtr.Zero;
 
     private IntPtr _lidHandle = IntPtr.Zero;
     private IntPtr _monitorHandle = IntPtr.Zero;
@@ -59,6 +61,15 @@ public sealed class PowerEventListener : IDisposable
     [StructLayout(LayoutKind.Sequential)]
     private struct RECT { public int left, top, right, bottom; }
 
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MONITORINFO
+    {
+        public int cbSize;
+        public RECT rcMonitor;
+        public RECT rcWork;
+        public uint dwFlags;
+    }
+
     [DllImport("User32.dll", SetLastError = true)]
     private static extern IntPtr RegisterPowerSettingNotification(
         IntPtr hRecipient, ref Guid PowerSettingGuid, int Flags);
@@ -70,19 +81,49 @@ public sealed class PowerEventListener : IDisposable
     private static extern IntPtr GetForegroundWindow();
 
     [DllImport("user32.dll")]
-    private static extern bool GetWindowRect(HandleRef hWnd, ref RECT rect);
+    private static extern bool IsWindowVisible(IntPtr hWnd);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool GetWindowRect(IntPtr hWnd, out RECT rect);
 
     [DllImport("user32.dll")]
-    private static extern int GetSystemMetrics(int nIndex);
+    private static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint dwFlags);
 
-    private const int SM_CXSCREEN = 0;
-    private const int SM_CYSCREEN = 1;
+    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    private static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO lpmi);
+
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongPtr", SetLastError = true)]
+    private static extern IntPtr GetWindowLongPtr64(IntPtr hWnd, int nIndex);
+
+    [DllImport("user32.dll", EntryPoint = "GetWindowLong", SetLastError = true)]
+    private static extern IntPtr GetWindowLongPtr32(IntPtr hWnd, int nIndex);
+
+    [DllImport("shell32.dll")]
+    private static extern int SHQueryUserNotificationState(out QUERY_USER_NOTIFICATION_STATE pquns);
+
+    private const int GWL_STYLE = -16;
+    private const long WS_CAPTION = 0x00C00000L;
+    private const long WS_THICKFRAME = 0x00040000L;
+    private const uint MONITOR_DEFAULTTONEAREST = 2;
+    private const int FullscreenBoundsTolerance = 2;
+
+    private enum QUERY_USER_NOTIFICATION_STATE
+    {
+        QUNS_NOT_PRESENT = 1,              // No user is logged in
+        QUNS_BUSY = 2,                      // User is busy (screen saver, full screen app, etc)
+        QUNS_RUNNING_D3D_FULL_SCREEN = 3,  // A D3D fullscreen app is running
+        QUNS_PRESENTATION_MODE = 4,         // Presentation mode is enabled
+        QUNS_ACCEPTS_NOTIFICATIONS = 5,     // Normal state - notifications allowed
+        QUNS_QUIET_TIME = 6,               // Quiet hours
+        QUNS_APP = 7                       // An app has focus
+    }
 
     // Attach() must be called after the main Window has loaded (so its HWND exists).
     // WindowInteropHelper retrieves the underlying Win32 window handle from a WPF Window.
     public void Attach(Window window)
     {
         var helper = new WindowInteropHelper(window);
+        _attachedWindowHandle = helper.Handle;
         _source = HwndSource.FromHwnd(helper.Handle);
         _source.AddHook(WndProcHook);
 
@@ -98,37 +139,93 @@ public sealed class PowerEventListener : IDisposable
     // at a fixed interval, avoiding any threading complexity.
     public void StartFullscreenPolling()
     {
-        _fullscreenTimer = new System.Windows.Threading.DispatcherTimer
+        // Mark first check to skip firing events during initialization
+        _isFirstFullscreenCheck = true;
+
+        if (_fullscreenTimer is null)
         {
-            Interval = TimeSpan.FromMilliseconds(500)
-        };
-        _fullscreenTimer.Tick += (_, _) => CheckFullscreen();
+            _fullscreenTimer = new System.Windows.Threading.DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(500)
+            };
+            _fullscreenTimer.Tick += OnFullscreenTimerTick;
+        }
+
+        _fullscreenTimer.Stop();
         _fullscreenTimer.Start();
     }
 
     public void StopFullscreenPolling() => _fullscreenTimer?.Stop();
 
+    private void OnFullscreenTimerTick(object? sender, EventArgs e) => CheckFullscreen();
+
     private void CheckFullscreen()
     {
         bool isFull = IsForegroundFullscreen();
+
+        // On first check, just initialize state without firing events
+        if (_isFirstFullscreenCheck)
+        {
+            _wasFullscreen = isFull;
+            _isFirstFullscreenCheck = false;
+            return;
+        }
+
         if (isFull == _wasFullscreen) return;
+
         _wasFullscreen = isFull;
         FullscreenChanged?.Invoke(isFull);
     }
 
-    private static bool IsForegroundFullscreen()
+    private bool IsForegroundFullscreen()
     {
-        IntPtr hwnd = GetForegroundWindow();
-        if (hwnd == IntPtr.Zero) return false;
+        int result = SHQueryUserNotificationState(out QUERY_USER_NOTIFICATION_STATE state);
 
-        var rect = new RECT();
-        GetWindowRect(new HandleRef(null, hwnd), ref rect);
+        // Exclusive fullscreen apps report through the shell API.
+        if (result == 0 && state == QUERY_USER_NOTIFICATION_STATE.QUNS_RUNNING_D3D_FULL_SCREEN)
+            return true;
 
-        int screenW = GetSystemMetrics(SM_CXSCREEN);
-        int screenH = GetSystemMetrics(SM_CYSCREEN);
+        // Borderless fullscreen apps (for example Electron/Chromium players) don't always
+        // use exclusive mode, so fall back to foreground-window vs monitor-bounds matching.
+        IntPtr foregroundWindow = GetForegroundWindow();
+        if (foregroundWindow == IntPtr.Zero || foregroundWindow == _attachedWindowHandle)
+            return false;
 
-        return rect.left <= 0 && rect.top <= 0 &&
-               rect.right >= screenW && rect.bottom >= screenH;
+        if (!IsWindowVisible(foregroundWindow))
+            return false;
+
+        IntPtr monitor = MonitorFromWindow(foregroundWindow, MONITOR_DEFAULTTONEAREST);
+        if (monitor == IntPtr.Zero)
+            return false;
+
+        MONITORINFO monitorInfo = new() { cbSize = Marshal.SizeOf<MONITORINFO>() };
+        if (!GetMonitorInfo(monitor, ref monitorInfo))
+            return false;
+
+        if (!GetWindowRect(foregroundWindow, out RECT windowRect))
+            return false;
+
+        if (!CoversMonitor(windowRect, monitorInfo.rcMonitor))
+            return false;
+
+        long style = GetWindowStyle(foregroundWindow);
+        bool hasStandardChrome = (style & (WS_CAPTION | WS_THICKFRAME)) != 0;
+        return !hasStandardChrome;
+    }
+
+    private static bool CoversMonitor(RECT windowRect, RECT monitorRect)
+    {
+        return Math.Abs(windowRect.left - monitorRect.left) <= FullscreenBoundsTolerance
+            && Math.Abs(windowRect.top - monitorRect.top) <= FullscreenBoundsTolerance
+            && Math.Abs(windowRect.right - monitorRect.right) <= FullscreenBoundsTolerance
+            && Math.Abs(windowRect.bottom - monitorRect.bottom) <= FullscreenBoundsTolerance;
+    }
+
+    private static long GetWindowStyle(IntPtr hWnd)
+    {
+        return IntPtr.Size == 8
+            ? GetWindowLongPtr64(hWnd, GWL_STYLE).ToInt64()
+            : GetWindowLongPtr32(hWnd, GWL_STYLE).ToInt32();
     }
 
     // This method is called by the WPF message pump for EVERY message the window gets.

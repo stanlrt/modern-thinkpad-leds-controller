@@ -62,8 +62,25 @@ public sealed partial class SettingsViewModel : ObservableObject
     {
         _leds.SetKeyboardBacklightRaw((byte)value);
         _settings.SavedKeyboardBacklight = value;
+
+        // Update warning visibility and percentage display when level changes
+        OnPropertyChanged(nameof(ShowKeyboardBrightnessWarning));
+        OnPropertyChanged(nameof(KeyboardBrightnessPercent));
+
         TriggerSave();
     }
+
+    /// <summary>
+    /// Returns the keyboard brightness as a percentage (0-100%).
+    /// </summary>
+    [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Property depends on KeyboardBrightnessLevel instance state")]
+    public int KeyboardBrightnessPercent => KeyboardBrightnessLevel * 100 / 255;
+
+    /// <summary>
+    /// Returns true if keyboard brightness is set to a low value that may appear off on some ThinkPads.
+    /// </summary>
+    [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Property depends on KeyboardBrightnessLevel instance state")]
+    public bool ShowKeyboardBrightnessWarning => KeyboardBrightnessLevel > 0 && KeyboardBrightnessLevel < 64;
 
     [ObservableProperty]
     private bool _dimLedsWhenFullscreen;
