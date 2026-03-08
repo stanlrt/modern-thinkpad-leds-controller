@@ -89,6 +89,21 @@ public sealed partial class MainViewModel : ObservableObject
 
     private bool _isFullscreen;
     private byte _preFullscreenBacklight = 0;
+    private bool _hasPreFullscreenBacklight;
+    private DiskActivityState _lastDiskState = DiskActivityState.Idle;
+    private bool _lastMicrophoneMuted;
+    private bool _hasObservedMicrophoneMuteState;
+    private bool _lastSpeakerMuted;
+    private bool _hasObservedSpeakerMuteState;
+
+    private static readonly Led[] FullscreenManagedLeds =
+    [
+        Led.Power,
+        Led.Mute,
+        Led.Microphone,
+        Led.FnLock,
+        Led.Camera,
+    ];
 
     // Helper method to get the current hotkey cycle state
     private LedState? GetCurrentHotkeyCycleState()
@@ -191,6 +206,8 @@ public sealed partial class MainViewModel : ObservableObject
 
     public void OnDiskStateChanged(DiskActivityState state)
     {
+        _lastDiskState = state;
+
         if (_isFullscreen) return;
 
         bool reading = state is DiskActivityState.Read or DiskActivityState.ReadWrite;
@@ -208,6 +225,9 @@ public sealed partial class MainViewModel : ObservableObject
     // the physical mic button — automatically switch back to Default mode so the OS regains control.
     public void OnMicrophoneMuteChanged(bool isMuted)
     {
+        _lastMicrophoneMuted = isMuted;
+        _hasObservedMicrophoneMuteState = true;
+
         if (_isFullscreen) return;
 
         if (Microphone.Mode == LedMode.Default)
@@ -228,6 +248,9 @@ public sealed partial class MainViewModel : ObservableObject
     // the physical mute button — automatically switch back to Default mode so the OS regains control.
     public void OnSpeakerMuteChanged(bool isMuted)
     {
+        _lastSpeakerMuted = isMuted;
+        _hasObservedSpeakerMuteState = true;
+
         if (_isFullscreen) return;
 
         if (Mute.Mode == LedMode.Default)
@@ -249,27 +272,122 @@ public sealed partial class MainViewModel : ObservableObject
         // Only dim if the setting is enabled
         if (!_settings.DimLedsWhenFullscreen) return;
 
+        if (_isFullscreen == isFullscreen) return;
+
         _isFullscreen = isFullscreen;
 
         if (isFullscreen)
         {
             _preFullscreenBacklight = currentBacklight;
+            _hasPreFullscreenBacklight = true;
             _blinkMonitor.Pause(); // Pause blinking in fullscreen
             _leds.SetKeyboardBacklightRaw(0);
-            _leds.SetLed(Led.Power, LedState.Off, customId: Power.CustomRegisterId);
-            _leds.SetLed(Led.Mute, LedState.Off, customId: Mute.CustomRegisterId);
-            _leds.SetLed(Led.Microphone, LedState.Off, customId: Microphone.CustomRegisterId);
-            _leds.SetLed(Led.FnLock, LedState.Off, customId: FnLock.CustomRegisterId);
-            _leds.SetLed(Led.Camera, LedState.Off, customId: Camera.CustomRegisterId);
+
+            foreach (Led led in FullscreenManagedLeds)
+            {
+                if (ShouldDimLedForFullscreen(led))
+                {
+                    _leds.SetLed(led, LedState.Off, customId: _mappings[led].CustomRegisterId);
+                }
+            }
         }
         else
         {
-            if (_preFullscreenBacklight != 0)
+            if (_hasPreFullscreenBacklight)
                 _leds.SetKeyboardBacklightRaw(_preFullscreenBacklight);
 
-            _leds.SetLed(Led.Power, LedState.On, customId: Power.CustomRegisterId);
+            foreach (Led led in FullscreenManagedLeds)
+            {
+                ApplyCurrentLedState(led);
+            }
+
             _blinkMonitor.Resume(); // Resume blinking after fullscreen
         }
+    }
+
+    private bool ShouldDimLedForFullscreen(Led led)
+    {
+        LedMapping map = _mappings[led];
+        if (map.Mode != LedMode.Default)
+            return true;
+
+        return led switch
+        {
+            Led.Mute => _hasObservedSpeakerMuteState,
+            Led.Microphone => _hasObservedMicrophoneMuteState,
+            _ => false,
+        };
+    }
+
+    private void ApplyCurrentLedState(Led led)
+    {
+        LedMapping map = _mappings[led];
+        _blinkMonitor.RemoveBlinkingLed(led);
+
+        switch (map.Mode)
+        {
+            case LedMode.Default:
+                ApplyDefaultLedState(led, map);
+                break;
+            case LedMode.On:
+                _leds.SetLed(led, LedState.On, customId: map.CustomRegisterId);
+                break;
+            case LedMode.Off:
+                _leds.SetLed(led, LedState.Off, customId: map.CustomRegisterId);
+                break;
+            case LedMode.Blink:
+                _blinkMonitor.AddBlinkingLed(led, map.CustomRegisterId);
+                break;
+            case LedMode.HotkeyControlled:
+                ApplyHotkeyControlledState(led, map);
+                break;
+            case LedMode.DiskRead:
+            case LedMode.DiskWrite:
+                ApplyDiskActivityLedState(led, map);
+                break;
+        }
+    }
+
+    private void ApplyDefaultLedState(Led led, LedMapping map)
+    {
+        switch (led)
+        {
+            case Led.Mute when _hasObservedSpeakerMuteState:
+                _leds.SetLed(led, _lastSpeakerMuted ? LedState.On : LedState.Off, customId: map.CustomRegisterId);
+                break;
+            case Led.Microphone when _hasObservedMicrophoneMuteState:
+                _leds.SetLed(led, _lastMicrophoneMuted ? LedState.On : LedState.Off, customId: map.CustomRegisterId);
+                break;
+        }
+    }
+
+    private void ApplyHotkeyControlledState(Led led, LedMapping map)
+    {
+        LedState? state = GetCurrentHotkeyCycleState();
+        if (!state.HasValue)
+            return;
+
+        if (state.Value == LedState.Blink)
+        {
+            _blinkMonitor.AddBlinkingLed(led, map.CustomRegisterId);
+            return;
+        }
+
+        _leds.SetLed(led, state.Value, customId: map.CustomRegisterId);
+    }
+
+    private void ApplyDiskActivityLedState(Led led, LedMapping map)
+    {
+        bool reading = _lastDiskState is DiskActivityState.Read or DiskActivityState.ReadWrite;
+        bool writing = _lastDiskState is DiskActivityState.Write or DiskActivityState.ReadWrite;
+        bool shouldBeOn = map.Mode switch
+        {
+            LedMode.DiskRead => reading,
+            LedMode.DiskWrite => writing,
+            _ => false,
+        };
+
+        _leds.SetLed(led, shouldBeOn ? LedState.On : LedState.Off, customId: map.CustomRegisterId);
     }
 
     // Called by HotkeyService when Win+Shift+K is pressed.
@@ -284,6 +402,8 @@ public sealed partial class MainViewModel : ObservableObject
 
         _hotkeyCycleIndex = (_hotkeyCycleIndex + 1) % states.Count;
         LedState next = states[_hotkeyCycleIndex];
+
+        if (_isFullscreen) return;
 
         foreach (var (led, map) in _mappings)
         {
