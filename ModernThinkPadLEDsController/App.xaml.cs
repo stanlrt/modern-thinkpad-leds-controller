@@ -398,14 +398,66 @@ public partial class App : System.Windows.Application
         _logger?.LogDebug("Main window source initialized");
         _powerListener!.Attach(window);
         _hotkey = new HotkeyService();
-        _hotkey.Register(window);
+        bool hotkeySuccess = _hotkey.Register(window, _settings!.HotkeyModifiers, _settings.HotkeyVirtualKey);
         _hotkey.HotkeyPressed += OnHotkeyPressed;
-        _logger?.LogInformation("Hotkey service initialized");
+
+        if (hotkeySuccess)
+        {
+            _logger?.LogInformation("Hotkey service initialized with {Modifiers:X} + {VirtualKey:X}",
+                _settings.HotkeyModifiers, _settings.HotkeyVirtualKey);
+        }
+        else
+        {
+            _logger?.LogWarning("Hotkey {Modifiers:X} + {VirtualKey:X} is already in use - hotkey disabled",
+                _settings.HotkeyModifiers, _settings.HotkeyVirtualKey);
+        }
     }
 
     private void OnHotkeyPressed()
     {
         Dispatcher.Invoke(() => _mainVm!.OnHotkeyPressed());
+    }
+
+    // -------------------------------------------------------------------------
+    // Hotkey management
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Updates the registered hotkey and saves it to settings.
+    /// </summary>
+    /// <returns>True if the hotkey was registered successfully; false if already in use</returns>
+    public bool UpdateHotkey(int modifiers, int virtualKey, string displayText)
+    {
+        _logger?.LogInformation("Updating hotkey to {Display} (modifiers={Modifiers:X}, vk={VirtualKey:X})",
+            displayText, modifiers, virtualKey);
+
+        bool success = _hotkey?.UpdateHotkey(modifiers, virtualKey) ?? false;
+
+        if (success)
+        {
+            _settings!.HotkeyModifiers = modifiers;
+            _settings.HotkeyVirtualKey = virtualKey;
+
+            if (_settings.PersistSettingsOnChange)
+            {
+                _settings.Save();
+                _logger?.LogDebug("Hotkey settings saved");
+            }
+        }
+        else
+        {
+            _logger?.LogWarning("Failed to register hotkey {Display} - already in use", displayText);
+        }
+
+        return success;
+    }
+
+    /// <summary>
+    /// Gets the current hotkey display text from settings.
+    /// </summary>
+    public string GetHotkeyDisplayText()
+    {
+        return _mainVm!.FormatHotkeyDisplay(_settings!.HotkeyModifiers, _settings.HotkeyVirtualKey);
     }
 
     private void OnDiskStateChanged(DiskActivityState state)

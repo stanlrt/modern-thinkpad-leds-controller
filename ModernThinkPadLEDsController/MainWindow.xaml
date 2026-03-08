@@ -953,26 +953,50 @@
                     <!-- ── Hotkey tab ── -->
                     <TabItem Header="Hotkey">
                         <StackPanel Margin="10,12">
-                            <TextBlock Text="Shortcut"
-                                       FontWeight="SemiBold"
-                                       Margin="0,0,0,8"/>
-                            <Border CornerRadius="4"
-                                    Padding="12,6"
-                                    Margin="0,0,0,14"
-                                    Background="{DynamicResource ControlFillColorDefaultBrush}"
-                                    HorizontalAlignment="Left">
-                                <TextBlock Text="Win + Shift + K"
-                                           FontFamily="Consolas"
-                                           FontSize="14"
-                                           HorizontalAlignment="Left"/>
-                            </Border>
                             <TextBlock Text="LEDs assigned to 'Hotkey' cycle through the selected states each time the shortcut is pressed."
                                        Opacity="0.6"
                                        TextWrapping="Wrap"
-                                       Margin="0,0,0,14"/>
+                                       Margin="0,0,0,16"/>
+                            <Border x:Name="HotkeyBorder"
+                                    CornerRadius="4"
+                                    Padding="12,6"
+                                    Margin="0,0,0,8"
+                                    Background="{DynamicResource ControlFillColorDefaultBrush}"
+                                    HorizontalAlignment="Left"
+                                    Cursor="Hand"
+                                    MouseDown="OnHotkeyBorderClick">
+                                <TextBox x:Name="HotkeyTextBox"
+                                         Text="{Binding MainVm.HotkeyDisplayText, Mode=OneWay}"
+                                         FontFamily="Consolas"
+                                         FontSize="14"
+                                         BorderThickness="0"
+                                         Background="Transparent"
+                                         IsReadOnly="True"
+                                         IsTabStop="False"
+                                         Cursor="Hand"
+                                         PreviewKeyDown="OnHotkeyCapture"
+                                         GotFocus="OnHotkeyFocused"
+                                         LostFocus="OnHotkeyLostFocus"
+                                         MinWidth="150"
+                                         HorizontalAlignment="Left"/>
+                            </Border>
+                            <TextBlock Text="Click to change the hotkey combination"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       Margin="0,0,0,6"/>
+
+                            <!-- Warning box for hotkey issues -->
+                            <Border CornerRadius="4"
+                                    Padding="12,8"
+                                    Margin="0,0,0,14"
+                                    Background="{DynamicResource SystemFillColorCautionBackgroundBrush}"
+                                    Visibility="{Binding MainVm.HasHotkeyWarning, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Text="{Binding MainVm.HotkeyWarningMessage}"
+                                           TextWrapping="Wrap"/>
+                            </Border>
                             <TextBlock Text="Cycle through..."
                                        FontWeight="SemiBold"
-                                       Margin="0,0,0,8"/>
+                                       Margin="0,16,0,8"/>
                             <CheckBox Content="On"
                                       IsChecked="{Binding MainVm.HotkeyCycleOn}"
                                       Margin="-8,0,0,6"

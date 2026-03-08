@@ -49,11 +49,25 @@ public sealed partial class MainViewModel : ObservableObject
 
     private bool _previousHadDiskModes = false;
 
-    // --- Hotkey cycle config (Win+Shift+K) ---
+    // --- Hotkey cycle config ---
     // Which states should LEDs in HotkeyControlled mode cycle through?
     [ObservableProperty] private bool _hotkeyCycleOn = true;
     [ObservableProperty] private bool _hotkeyCycleOff = true;
     [ObservableProperty] private bool _hotkeyCycleBlink = false;
+
+    // Display text for the current hotkey combination (e.g., "Win + Shift + K")
+    [ObservableProperty] private string _hotkeyDisplayText = "Win + Shift + K";
+
+    // Flag to indicate when user is recording a new hotkey
+    [ObservableProperty] private bool _isRecordingHotkey = false;
+
+    // Warning message for hotkey issues (e.g., no modifiers, conflicts)
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasHotkeyWarning))]
+    private string? _hotkeyWarningMessage = null;
+
+    // Whether to show the warning box
+    public bool HasHotkeyWarning => !string.IsNullOrEmpty(HotkeyWarningMessage);
 
     partial void OnHotkeyCycleOnChanged(bool value)
     {
@@ -356,6 +370,9 @@ public sealed partial class MainViewModel : ObservableObject
         HotkeyCycleOff = _settings.HotkeyCycleOff;
         HotkeyCycleBlink = _settings.HotkeyCycleBlink;
 
+        // Initialize hotkey display text
+        HotkeyDisplayText = FormatHotkeyDisplay(_settings.HotkeyModifiers, _settings.HotkeyVirtualKey);
+
         // Update tracking variable after loading modes
         _previousHadDiskModes = HasDiskModeLeds;
         OnPropertyChanged(nameof(HasDiskModeLeds));
@@ -400,6 +417,60 @@ public sealed partial class MainViewModel : ObservableObject
     public void SetSaveCallback(Action callback)
     {
         _saveSettingsCallback = callback;
+    }
+
+    // -------------------------------------------------------------------------
+    // Hotkey display formatting
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Formats Win32 modifier flags and virtual key code into a human-readable string.
+    /// </summary>
+    public string FormatHotkeyDisplay(int modifiers, int virtualKey)
+    {
+        var parts = new List<string>();
+
+        if ((modifiers & 0x0002) != 0) parts.Add("Ctrl");  // MOD_CONTROL
+        if ((modifiers & 0x0001) != 0) parts.Add("Alt");   // MOD_ALT
+        if ((modifiers & 0x0004) != 0) parts.Add("Shift"); // MOD_SHIFT
+        if ((modifiers & 0x0008) != 0) parts.Add("Win");   // MOD_WIN
+
+        // Convert virtual key code to key name
+        string keyName = GetKeyName(virtualKey);
+        parts.Add(keyName);
+
+        return string.Join(" + ", parts);
+    }
+
+    private string GetKeyName(int virtualKey)
+    {
+        // Common keys
+        if (virtualKey >= 0x41 && virtualKey <= 0x5A) // A-Z
+            return ((char)virtualKey).ToString();
+        if (virtualKey >= 0x30 && virtualKey <= 0x39) // 0-9
+            return ((char)virtualKey).ToString();
+        if (virtualKey >= 0x70 && virtualKey <= 0x87) // F1-F24
+            return $"F{virtualKey - 0x6F}";
+
+        return virtualKey switch
+        {
+            0x08 => "Backspace",
+            0x09 => "Tab",
+            0x0D => "Enter",
+            0x1B => "Escape",
+            0x20 => "Space",
+            0x21 => "PageUp",
+            0x22 => "PageDown",
+            0x23 => "End",
+            0x24 => "Home",
+            0x25 => "Left",
+            0x26 => "Up",
+            0x27 => "Right",
+            0x28 => "Down",
+            0x2D => "Insert",
+            0x2E => "Delete",
+            _ => $"Key{virtualKey:X}"
+        };
     }
 
     public void UpdateBlinkInterval(int intervalMs)

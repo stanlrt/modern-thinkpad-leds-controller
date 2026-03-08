@@ -5,7 +5,7 @@ using System.Windows.Interop;
 namespace ModernThinkPadLEDsController.Services;
 
 /// <summary>
-/// Registers <kbd>Win</+Shift+K</kbd> as a system-wide hotkey and raises <see cref="HotkeyPressed"/>
+/// Registers a configurable system-wide hotkey and raises <see cref="HotkeyPressed"/>
 /// each time the user presses the combination.
 ///
 /// Uses the Win32 RegisterHotKey / UnregisterHotKey API wired through an HwndSource hook
@@ -14,12 +14,11 @@ namespace ModernThinkPadLEDsController.Services;
 /// </summary>
 public sealed class HotkeyService : IDisposable
 {
-    // Win32 modifier flags
-    private const int MOD_SHIFT = 0x0004;
-    private const int MOD_WIN = 0x0008;
-
-    // Virtual-key code for K
-    private const int VK_K = 0x4B;
+    // Win32 modifier flags (public for external use)
+    public const int MOD_ALT = 0x0001;
+    public const int MOD_CONTROL = 0x0002;
+    public const int MOD_SHIFT = 0x0004;
+    public const int MOD_WIN = 0x0008;
 
     // Arbitrary unique hotkey id — must not clash with other RegisterHotKey calls in the process.
     private const int HotkeyId = 0x3A9C;
@@ -32,7 +31,7 @@ public sealed class HotkeyService : IDisposable
     [DllImport("user32.dll")]
     private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
 
-    /// <summary>Raised on the UI thread each time Win+Shift+K is pressed.</summary>
+    /// <summary>Raised on the UI thread each time the configured hotkey is pressed.</summary>
     public event Action? HotkeyPressed;
 
     private HwndSource? _source;
@@ -42,12 +41,31 @@ public sealed class HotkeyService : IDisposable
     /// Registers the hotkey against <paramref name="window"/>'s HWND.
     /// Call this after <c>SourceInitialized</c> so the HWND exists.
     /// </summary>
-    public void Register(Window window)
+    /// <param name="window">The window to register the hotkey for</param>
+    /// <param name="modifiers">Modifier keys (MOD_ALT, MOD_CONTROL, MOD_SHIFT, MOD_WIN)</param>
+    /// <param name="virtualKey">Virtual key code (e.g., 0x4B for K)</param>
+    /// <returns>True if the hotkey was registered successfully; false if it's already in use</returns>
+    public bool Register(Window window, int modifiers, int virtualKey)
     {
         _hwnd = new WindowInteropHelper(window).Handle;
         _source = HwndSource.FromHwnd(_hwnd);
         _source?.AddHook(WndProc);
-        RegisterHotKey(_hwnd, HotkeyId, MOD_WIN | MOD_SHIFT, VK_K);
+        return RegisterHotKey(_hwnd, HotkeyId, modifiers, virtualKey);
+    }
+
+    /// <summary>
+    /// Updates the registered hotkey to a new combination.
+    /// </summary>
+    /// <returns>True if the new hotkey was registered successfully; false if it's already in use</returns>
+    public bool UpdateHotkey(int modifiers, int virtualKey)
+    {
+        if (_hwnd == IntPtr.Zero) return false;
+
+        // Unregister old hotkey
+        UnregisterHotKey(_hwnd, HotkeyId);
+
+        // Register new hotkey
+        return RegisterHotKey(_hwnd, HotkeyId, modifiers, virtualKey);
     }
 
     private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)

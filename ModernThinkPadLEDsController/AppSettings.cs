@@ -33,6 +33,11 @@ public sealed class AppSettings
     public bool HotkeyCycleOff { get; set; } = true;
     public bool HotkeyCycleBlink { get; set; } = false;
 
+    // Hotkey configuration: modifier keys and virtual key code
+    // Defaults to Win + Shift + K (MOD_WIN | MOD_SHIFT = 0x000C, VK_K = 0x4B)
+    public int HotkeyModifiers { get; set; } = 0x000C; // MOD_WIN | MOD_SHIFT
+    public int HotkeyVirtualKey { get; set; } = 0x4B;  // VK_K
+
     public int BlinkIntervalMs { get; set; } = 500;
     public int HddPollIntervalMs { get; set; } = 300;
 
