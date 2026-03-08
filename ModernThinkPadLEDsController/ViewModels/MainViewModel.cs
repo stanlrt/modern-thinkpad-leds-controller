@@ -14,6 +14,7 @@ public sealed partial class MainViewModel : ObservableObject
 {
     private readonly LedController _leds;
     private readonly AppSettings _settings;
+    private readonly LedBlinkMonitor _blinkMonitor;
     private Action? _saveSettingsCallback;
 
     // One LedMapping per LED. The View binds to e.g. Power.Mode, RedDot.Mode, etc.
@@ -99,6 +100,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         _leds = leds;
         _settings = settings;
+        _blinkMonitor = new LedBlinkMonitor(leds, settings.BlinkIntervalMs);
         Leds = [Power, Mute, RedDot, Microphone, Sleep, FnLock, Camera];
         _mappings = new Dictionary<Led, LedMapping>
         {
@@ -118,11 +120,21 @@ public sealed partial class MainViewModel : ObservableObject
             {
                 if (e.PropertyName == nameof(LedMapping.Mode))
                 {
+                    // Remove from blink monitor first in case it was blinking
+                    _blinkMonitor.RemoveBlinkingLed(led);
+
                     switch (map.Mode)
                     {
-                        case LedMode.On: _leds.SetLed(led, LedState.On, customId: map.CustomRegisterId); break;
-                        case LedMode.Off: _leds.SetLed(led, LedState.Off, customId: map.CustomRegisterId); break;
-                        case LedMode.Blink: _leds.SetLed(led, LedState.Blink, customId: map.CustomRegisterId); break;
+                        case LedMode.On:
+                            _leds.SetLed(led, LedState.On, customId: map.CustomRegisterId);
+                            break;
+                        case LedMode.Off:
+                            _leds.SetLed(led, LedState.Off, customId: map.CustomRegisterId);
+                            break;
+                        case LedMode.Blink:
+                            // Use software blinking for all LEDs since hardware blink doesn't work on all LEDs
+                            _blinkMonitor.AddBlinkingLed(led, map.CustomRegisterId);
+                            break;
                         case LedMode.HotkeyControlled:
                             var state = GetCurrentHotkeyCycleState();
                             if (state.HasValue)
@@ -143,6 +155,12 @@ public sealed partial class MainViewModel : ObservableObject
                 }
                 else if (e.PropertyName == nameof(LedMapping.CustomRegisterId))
                 {
+                    // If the LED is currently blinking, update the blink monitor with the new custom ID
+                    if (map.Mode == LedMode.Blink)
+                    {
+                        _blinkMonitor.RemoveBlinkingLed(led);
+                        _blinkMonitor.AddBlinkingLed(led, map.CustomRegisterId);
+                    }
                     TriggerSaveIfEnabled();
                 }
             };
@@ -219,6 +237,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (isFullscreen)
         {
             _preFullscreenBacklight = currentBacklight;
+            _blinkMonitor.Pause(); // Pause blinking in fullscreen
             _leds.SetKeyboardBacklight(KeyboardBacklight.Off);
             _leds.SetLed(Led.Power, LedState.Off, customId: Power.CustomRegisterId);
             _leds.SetLed(Led.Mute, LedState.Off, customId: Mute.CustomRegisterId);
@@ -232,6 +251,7 @@ public sealed partial class MainViewModel : ObservableObject
                 _leds.SetKeyboardBacklight(_preFullscreenBacklight);
 
             _leds.SetLed(Led.Power, LedState.On, customId: Power.CustomRegisterId);
+            _blinkMonitor.Resume(); // Resume blinking after fullscreen
         }
     }
 
@@ -251,7 +271,19 @@ public sealed partial class MainViewModel : ObservableObject
         foreach (var (led, map) in _mappings)
         {
             if (map.Mode == LedMode.HotkeyControlled)
-                _leds.SetLed(led, next, customId: map.CustomRegisterId);
+            {
+                if (next == LedState.Blink)
+                {
+                    // Use software blinking
+                    _blinkMonitor.AddBlinkingLed(led, map.CustomRegisterId);
+                }
+                else
+                {
+                    // Remove from blink monitor if it was blinking
+                    _blinkMonitor.RemoveBlinkingLed(led);
+                    _leds.SetLed(led, next, customId: map.CustomRegisterId);
+                }
+            }
         }
     }
 
@@ -266,13 +298,30 @@ public sealed partial class MainViewModel : ObservableObject
         {
             switch (map.Mode)
             {
-                case LedMode.On: _leds.SetLed(led, LedState.On, customId: map.CustomRegisterId); break;
-                case LedMode.Off: _leds.SetLed(led, LedState.Off, customId: map.CustomRegisterId); break;
-                case LedMode.Blink: _leds.SetLed(led, LedState.Blink, customId: map.CustomRegisterId); break;
+                case LedMode.On:
+                    _leds.SetLed(led, LedState.On, customId: map.CustomRegisterId);
+                    break;
+                case LedMode.Off:
+                    _leds.SetLed(led, LedState.Off, customId: map.CustomRegisterId);
+                    break;
+                case LedMode.Blink:
+                    // Use software blinking for all LEDs
+                    _blinkMonitor.AddBlinkingLed(led, map.CustomRegisterId);
+                    break;
                 case LedMode.HotkeyControlled:
                     var state = GetCurrentHotkeyCycleState();
                     if (state.HasValue)
-                        _leds.SetLed(led, state.Value, customId: map.CustomRegisterId);
+                    {
+                        if (state.Value == LedState.Blink)
+                        {
+                            // Use software blinking
+                            _blinkMonitor.AddBlinkingLed(led, map.CustomRegisterId);
+                        }
+                        else
+                        {
+                            _leds.SetLed(led, state.Value, customId: map.CustomRegisterId);
+                        }
+                    }
                     break;
             }
         }
@@ -348,5 +397,10 @@ public sealed partial class MainViewModel : ObservableObject
     public void SetSaveCallback(Action callback)
     {
         _saveSettingsCallback = callback;
+    }
+
+    public void UpdateBlinkInterval(int intervalMs)
+    {
+        _blinkMonitor.SetBlinkInterval(intervalMs);
     }
 }

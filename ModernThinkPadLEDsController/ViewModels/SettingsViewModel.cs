@@ -12,10 +12,23 @@ public sealed partial class SettingsViewModel : ObservableObject
     private readonly AppSettings _settings;
     private readonly DiskActivityMonitor _disk;
     private readonly LedController _leds;
+    private readonly MainViewModel _mainVm;
     private Action? _saveSettingsCallback;
 
     // Flag to prevent triggering saves during initial load
     private bool _isLoading;
+
+
+    [ObservableProperty]
+    private int _blinkIntervalMs;
+
+    [SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Called by CommunityToolkit.Mvvm source generator")]
+    partial void OnBlinkIntervalMsChanged(int value)
+    {
+        _mainVm.UpdateBlinkInterval(value);
+        _settings.BlinkIntervalMs = value;
+        TriggerSave();
+    }
 
 
     [ObservableProperty]
@@ -92,11 +105,13 @@ public sealed partial class SettingsViewModel : ObservableObject
     public SettingsViewModel(
         AppSettings settings,
         DiskActivityMonitor disk,
-        LedController leds)
+        LedController leds,
+        MainViewModel mainVm)
     {
         _settings = settings;
         _disk = disk;
         _leds = leds;
+        _mainVm = mainVm;
     }
 
     /// <summary>
@@ -108,6 +123,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         _isLoading = true;
 
         // Use property setters - partial methods will sync to _settings but won't trigger save
+        BlinkIntervalMs = _settings.BlinkIntervalMs;
         HddPollIntervalMs = _settings.HddPollIntervalMs;
         RememberKeyboardBacklight = _settings.RememberKeyboardBacklight;
         DimLedsWhenFullscreen = _settings.DimLedsWhenFullscreen;

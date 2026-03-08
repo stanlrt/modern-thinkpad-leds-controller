@@ -756,7 +756,7 @@
                             <!-- ── Fn Lock ── -->
                             <TextBlock Grid.Row="6"
                                        Grid.Column="0"
-                                       Text="Fn Lock"
+                                       Text="Fn/Caps Lock"
                                        VerticalAlignment="Center"
                                        Margin="4,6,20,6"/>
                             <RadioButton Grid.Row="6"
@@ -982,6 +982,33 @@
                             <CheckBox Content="Blink"
                                       IsChecked="{Binding MainVm.HotkeyCycleBlink}"
                                       Margin="-8,0,0,0"/>
+                        </StackPanel>
+                    </TabItem>
+
+                    <!-- ── Blinking tab ── -->
+                    <TabItem Header="Blinking">
+                        <StackPanel Margin="10,12">
+                            <TextBlock Text="Blink interval"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,8"/>
+                            <StackPanel Orientation="Horizontal"
+                                        VerticalAlignment="Center">
+                                <Slider Minimum="100"
+                                        Maximum="2000"
+                                        Width="200"
+                                        Value="{Binding SettingsVm.BlinkIntervalMs}"
+                                        TickFrequency="50"
+                                        IsSnapToTickEnabled="True"/>
+                                <TextBlock Text="{Binding SettingsVm.BlinkIntervalMs, StringFormat={}{0} ms}"
+                                           VerticalAlignment="Center"
+                                           Width="60"
+                                           Margin="8,0,0,0"/>
+                            </StackPanel>
+                            <TextBlock Text="Controls how fast LEDs blink when set to Blink mode. Lower values = faster blinking."
+                                       FontSize="11"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,8,0,0"/>
                         </StackPanel>
                     </TabItem>
 

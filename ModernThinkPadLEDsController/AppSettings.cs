@@ -33,6 +33,7 @@ public sealed class AppSettings
     public bool HotkeyCycleOff { get; set; } = true;
     public bool HotkeyCycleBlink { get; set; } = false;
 
+    public int BlinkIntervalMs { get; set; } = 500;
     public int HddPollIntervalMs { get; set; } = 300;
 
     public bool RememberKeyboardBacklight { get; set; }
