@@ -11,6 +11,7 @@ It offers a **nicer WPF UI**, and more importantly **ditches the dated, unsecure
 It also adds:
 
 - a proper hotkey feature
+- blinking for all LEDs (does not rely on HW support)
 - full keyboard backlight level control
 - custom LED register addresses config
 - support for modern LEDs

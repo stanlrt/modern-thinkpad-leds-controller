@@ -24,6 +24,7 @@ public sealed class EcController
     private const byte EC_CTRLPORT_WRITE = 0x81;  // Command: we want to WRITE a register
 
     private readonly IPortIO _io;
+    private readonly object _transactionLock = new();
 
     public EcController(IPortIO io)
     {
@@ -49,7 +50,14 @@ public sealed class EcController
 
             Thread.Sleep(tick);
         }
-        return true; // timed out but we continue — matches legacy behaviour
+
+        Log.Warning(
+            "EC WaitPortStatus timed out after {TimeoutMs} ms for bits 0x{Bits:X2} expecting {State}",
+            timeout,
+            bits,
+            onoff ? "set" : "clear");
+
+        return false;
     }
 
     private bool WritePort(ushort port, byte data)
@@ -71,46 +79,52 @@ public sealed class EcController
     {
         data = 0xFF;
 
-        if (!WaitPortStatus(EC_STAT_IBF | EC_STAT_OBF))
+        lock (_transactionLock)
         {
-            Log.Warning("EC ReadByte(0x{Offset:X2}) - Failed to wait for buffers clear", offset);
-            return false;
+            if (!WaitPortStatus(EC_STAT_IBF | EC_STAT_OBF))
+            {
+                Log.Warning("EC ReadByte(0x{Offset:X2}) - Failed to wait for buffers clear", offset);
+                return false;
+            }
+            if (!WritePort(EC_CTRLPORT, EC_CTRLPORT_READ)) return false;
+            if (!WaitPortStatus(EC_STAT_IBF)) return false;
+            if (!WritePort(EC_DATAPORT, offset)) return false;
+            if (!WaitPortStatus(EC_STAT_IBF)) return false;
+
+            bool success = ReadPort(EC_DATAPORT, out data);
+            if (success)
+                Log.Verbose("EC ReadByte(0x{Offset:X2}) = 0x{Data:X2}", offset, data);
+            else
+                Log.Warning("EC ReadByte(0x{Offset:X2}) failed", offset);
+
+            return success;
         }
-        if (!WritePort(EC_CTRLPORT, EC_CTRLPORT_READ)) return false;
-        if (!WaitPortStatus(EC_STAT_IBF)) return false;
-        if (!WritePort(EC_DATAPORT, offset)) return false;
-        if (!WaitPortStatus(EC_STAT_IBF)) return false;
-
-        bool success = ReadPort(EC_DATAPORT, out data);
-        if (success)
-            Log.Verbose("EC ReadByte(0x{Offset:X2}) = 0x{Data:X2}", offset, data);
-        else
-            Log.Warning("EC ReadByte(0x{Offset:X2}) failed", offset);
-
-        return success;
     }
 
     // Write one byte to EC register 'offset'.
     // Similar 5-step handshake — extra step to deliver the data byte.
     public bool WriteByte(byte offset, byte data)
     {
-        if (!WaitPortStatus(EC_STAT_IBF | EC_STAT_OBF))
+        lock (_transactionLock)
         {
-            Log.Warning("EC WriteByte(0x{Offset:X2}, 0x{Data:X2}) - Failed to wait for buffers clear", offset, data);
-            return false;
+            if (!WaitPortStatus(EC_STAT_IBF | EC_STAT_OBF))
+            {
+                Log.Warning("EC WriteByte(0x{Offset:X2}, 0x{Data:X2}) - Failed to wait for buffers clear", offset, data);
+                return false;
+            }
+            if (!WritePort(EC_CTRLPORT, EC_CTRLPORT_WRITE)) return false;
+            if (!WaitPortStatus(EC_STAT_IBF)) return false;
+            if (!WritePort(EC_DATAPORT, offset)) return false;
+            if (!WaitPortStatus(EC_STAT_IBF)) return false;
+            if (!WritePort(EC_DATAPORT, data)) return false;
+
+            bool success = WaitPortStatus(EC_STAT_IBF);
+            if (success)
+                Log.Verbose("EC WriteByte(0x{Offset:X2}, 0x{Data:X2}) SUCCESS", offset, data);
+            else
+                Log.Warning("EC WriteByte(0x{Offset:X2}, 0x{Data:X2}) FAILED", offset, data);
+
+            return success;
         }
-        if (!WritePort(EC_CTRLPORT, EC_CTRLPORT_WRITE)) return false;
-        if (!WaitPortStatus(EC_STAT_IBF)) return false;
-        if (!WritePort(EC_DATAPORT, offset)) return false;
-        if (!WaitPortStatus(EC_STAT_IBF)) return false;
-        if (!WritePort(EC_DATAPORT, data)) return false;
-
-        bool success = WaitPortStatus(EC_STAT_IBF);
-        if (success)
-            Log.Verbose("EC WriteByte(0x{Offset:X2}, 0x{Data:X2}) SUCCESS", offset, data);
-        else
-            Log.Warning("EC WriteByte(0x{Offset:X2}, 0x{Data:X2}) FAILED", offset, data);
-
-        return success;
     }
 }
