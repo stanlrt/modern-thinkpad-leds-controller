@@ -173,6 +173,11 @@ public sealed class LedBehaviorService : IDisposable
         _blinkMonitor.SetBlinkInterval(intervalMs);
     }
 
+    public void DisableHardwareActivity()
+    {
+        _blinkMonitor.ClearAll();
+    }
+
     private IReadOnlyDictionary<Led, LedMapping> Mappings =>
         _mappings ?? throw new InvalidOperationException("LedBehaviorService.Initialize must be called before use.");
 

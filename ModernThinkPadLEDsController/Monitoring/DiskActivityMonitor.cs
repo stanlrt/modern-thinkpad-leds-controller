@@ -13,6 +13,8 @@ public enum DiskActivityState { Idle, Read, Write, ReadWrite }
 // in Task Manager's disk graph. It reads the "_Total" disk bytes per second.
 public sealed class DiskActivityMonitor : IDisposable
 {
+    public const int MinIntervalMs = 100;
+
     // StateChanged fires on the background thread. The caller must dispatch
     // back to the UI thread if they want to update UI properties.
     public event Action<DiskActivityState>? StateChanged;
@@ -28,7 +30,7 @@ public sealed class DiskActivityMonitor : IDisposable
 
     public DiskActivityMonitor(int intervalMs = 300)
     {
-        _intervalMs = intervalMs;
+        _intervalMs = Math.Max(MinIntervalMs, intervalMs);
     }
 
     // Call TryInitialize() once at startup. Returns false if the Windows
@@ -67,10 +69,12 @@ public sealed class DiskActivityMonitor : IDisposable
     }
 
     // Call when the user changes the disk poll interval slider.
-    public void UpdateInterval(int ms) => Interlocked.Exchange(ref _intervalMs, ms);
+    public void UpdateInterval(int ms) => Interlocked.Exchange(ref _intervalMs, Math.Max(MinIntervalMs, ms));
 
     private async Task MonitorLoop(CancellationToken ct)
     {
+        DiskActivityState? lastState = null;
+
         while (!ct.IsCancellationRequested)
         {
             float r = _readCounter!.NextValue();
@@ -85,7 +89,11 @@ public sealed class DiskActivityMonitor : IDisposable
                 _ => DiskActivityState.Idle,
             };
 
-            StateChanged?.Invoke(state);
+            if (lastState != state)
+            {
+                lastState = state;
+                StateChanged?.Invoke(state);
+            }
 
             try { await Task.Delay(_intervalMs, ct); }
             catch (OperationCanceledException) { break; }

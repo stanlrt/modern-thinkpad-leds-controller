@@ -45,6 +45,7 @@ public sealed class AppSettings
     public bool DimLedsWhenFullscreen { get; set; }
     public bool SuppressDiskCounterWarning { get; set; }
     public bool PersistSettingsOnChange { get; set; } = true;
+    public bool EnableHardwareAccess { get; set; } = true;
 
     public static AppSettings Load()
     {

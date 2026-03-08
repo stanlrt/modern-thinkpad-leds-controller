@@ -18,6 +18,8 @@ namespace ModernThinkPadLEDsController;
 /// <summary>Root app manager.</summary>
 public partial class App : System.Windows.Application
 {
+    private static readonly string[] SafeModeArguments = ["--safe-mode", "--no-hardware"];
+
     // Win32 API imports for activating existing window instance
     [DllImport("user32.dll")]
     private static extern bool SetForegroundWindow(IntPtr hWnd);
@@ -36,21 +38,9 @@ public partial class App : System.Windows.Application
     // Dependency injection host for managing services and logging
     private IHost? _host;
     private ILogger<App>? _logger;
-
-    // We keep references for services we need to access after construction.
-    // DI host handles disposal automatically on shutdown.
-    private DiskActivityMonitor? _diskMonitor;
-    private KeyboardBacklightMonitor? _kbdMonitor;
-    private MicrophoneMuteMonitor? _micMonitor;
-    private SpeakerMuteMonitor? _speakerMonitor;
-    private PowerEventListener? _powerListener;
-    private HotkeyService? _hotkey;
-    private LedBehaviorService? _ledBehavior;
-    private TrayIconService? _tray;
-    private AppSettings? _settings;
-    private MainViewModel? _mainVm;
-    private SettingsViewModel? _settingsVm;
-    private MainWindow? _mainWindow;
+    private ApplicationCoordinator? _app;
+    private ShellCoordinator? _shell;
+    private SettingsCoordinator? _settingsCoordinator;
 
     // A named Mutex prevents two instances of the app running simultaneously.
     private Mutex? _singleInstanceMutex;
@@ -97,9 +87,11 @@ public partial class App : System.Windows.Application
             // Build dependency injection host
             _host = CreateHostBuilder(e.Args).Build();
             _logger = _host.Services.GetRequiredService<ILogger<App>>();
+            var hardwareAccess = _host.Services.GetRequiredService<HardwareAccessController>();
 
-            _logger.LogInformation("Application startup initiated");
+            _logger.LogDebug("Application startup initiated");
             _logger.LogDebug("Command line arguments: {Args}", string.Join(" ", e.Args));
+            _logger.LogInformation("Hardware access status: {Status}", hardwareAccess.GetStatusDescription());
             LoggingConfiguration.LogEnvironmentDetails();
 
             // Global exception handlers to prevent silent crashes
@@ -114,33 +106,22 @@ public partial class App : System.Windows.Application
             try
             {
                 ResolveServices();
+                _app!.ExitRequested += RequestExit;
             }
             catch (InvalidOperationException ex) when (ex.Message.Contains("LHM driver"))
             {
-                _logger.LogError("Failed to initialize driver - showing PawnIO setup window");
+                _logger.LogError(ex, "Failed to initialize driver - showing PawnIO setup window");
                 var setup = new PawnIOSetupWindow();
                 setup.ShowDialog();
                 Shutdown();
                 return;
             }
 
-            InitializeServicesAndUI();
-            WireUpEventHandlers();
-            EnsureMainWindowHandle();
-            StartMonitors();
+            _app.Initialize();
+            _app.EnsureMainWindowHandle();
 
             bool startMinimized = e.Args.Contains("--minimized");
-            _logger.LogInformation("Start minimized: {StartMinimized}", startMinimized);
-
-            if (!startMinimized)
-            {
-                _mainWindow!.Show();
-                _logger.LogInformation("Main window shown");
-            }
-            else
-            {
-                _logger.LogInformation("Started minimized to system tray");
-            }
+            _app.Start(startMinimized);
 
             _logger.LogInformation("Application startup completed successfully");
             EmergencyLog("=== OnStartup() completed successfully ===");
@@ -178,20 +159,44 @@ public partial class App : System.Windows.Application
             .ConfigureLogging()
             .ConfigureServices((context, services) =>
             {
-                services.AddSingleton<AppSettings>(sp => AppSettings.Load());
+                AppSettings settings = AppSettings.Load();
+                bool startedInSafeMode = args.Any(IsSafeModeArgument);
+                bool startWithHardwareAccess = settings.EnableHardwareAccess && !startedInSafeMode;
+                string? startupReason = null;
+                if (!startWithHardwareAccess)
+                {
+                    startupReason = startedInSafeMode
+                        ? "Started with --safe-mode."
+                        : "Disabled in app settings.";
+                }
+
+                services.AddSingleton(settings);
+                services.AddSingleton(new HardwareAccessController(
+                    isEnabled: startWithHardwareAccess,
+                    driverLoaded: startWithHardwareAccess,
+                    startupReason: startupReason));
 
                 // Hardware layer - driver must be validated before use
-                services.AddSingleton<LhmDriver>(sp =>
+                if (startWithHardwareAccess)
                 {
-                    if (!LhmDriver.TryOpen(out var driver) || driver is null)
-                        throw new InvalidOperationException("Failed to initialize LHM driver");
-                    return driver;
-                });
-                // Register LhmDriver as IPortIO so EcController can resolve it
-                services.AddSingleton<IPortIO>(sp => sp.GetRequiredService<LhmDriver>());
+                    services.AddSingleton<LhmDriver>(sp =>
+                    {
+                        if (!LhmDriver.TryOpen(out var driver) || driver is null)
+                            throw new InvalidOperationException("Failed to initialize LHM driver");
+                        return driver;
+                    });
+
+                    // Register LhmDriver as IPortIO so EcController can resolve it
+                    services.AddSingleton<IPortIO>(sp => sp.GetRequiredService<LhmDriver>());
+                }
+                else
+                {
+                    services.AddSingleton<IPortIO, NoOpPortIO>();
+                }
 
                 services.AddSingleton<EcController>();
                 services.AddSingleton<LedController>();
+                services.AddSingleton<HotkeyService>();
                 services.AddSingleton<LedBehaviorService>();
                 services.AddSingleton<ISettingsRuntimeService, SettingsRuntimeService>();
 
@@ -222,7 +227,18 @@ public partial class App : System.Windows.Application
 
                 // Main window
                 services.AddSingleton<MainWindow>();
+                services.AddSingleton<MainUiController>();
+                services.AddSingleton<SettingsCoordinator>();
+                services.AddSingleton<MonitoringHub>();
+                services.AddSingleton<ShellCoordinator>();
+                services.AddSingleton<HardwareRuntimeCoordinator>();
+                services.AddSingleton<ApplicationCoordinator>();
             });
+    }
+
+    private static bool IsSafeModeArgument(string arg)
+    {
+        return SafeModeArguments.Any(safeModeArg => string.Equals(arg, safeModeArg, StringComparison.OrdinalIgnoreCase));
     }
 
     private bool TryInitializeSingleInstance()
@@ -310,118 +326,11 @@ public partial class App : System.Windows.Application
         _logger?.LogInformation("Resolving services from DI container");
 
         // Resolve all services - this triggers construction and validation
-        // Note: LhmDriver is resolved implicitly through dependencies, no need to store reference
-        _settings = _host!.Services.GetRequiredService<AppSettings>();
-        _diskMonitor = _host.Services.GetRequiredService<DiskActivityMonitor>();
-        _kbdMonitor = _host.Services.GetRequiredService<KeyboardBacklightMonitor>();
-        _micMonitor = _host.Services.GetRequiredService<MicrophoneMuteMonitor>();
-        _speakerMonitor = _host.Services.GetRequiredService<SpeakerMuteMonitor>();
-        _powerListener = _host.Services.GetRequiredService<PowerEventListener>();
-        _ledBehavior = _host.Services.GetRequiredService<LedBehaviorService>();
-        _tray = _host.Services.GetRequiredService<TrayIconService>();
-        _mainVm = _host.Services.GetRequiredService<MainViewModel>();
-        _settingsVm = _host.Services.GetRequiredService<SettingsViewModel>();
-        _mainWindow = _host.Services.GetRequiredService<MainWindow>();
+        _app = _host!.Services.GetRequiredService<ApplicationCoordinator>();
+        _shell = _host.Services.GetRequiredService<ShellCoordinator>();
+        _settingsCoordinator = _host.Services.GetRequiredService<SettingsCoordinator>();
 
         _logger?.LogInformation("All services resolved successfully");
-    }
-
-    /// <summary>
-    /// Initialize services that need post-construction setup.
-    /// </summary>
-    private void InitializeServicesAndUI()
-    {
-        _logger?.LogInformation("Initializing services and UI");
-
-        bool diskMonitoringAvailable = _diskMonitor?.IsAvailable == true;
-
-        // Load settings into view models
-        _mainVm!.LoadFromSettings();
-        _settingsVm!.LoadFromSettings();
-        _logger?.LogDebug("Settings loaded into view models");
-
-        // Configure ViewModels
-        _mainVm.DiskMonitoringAvailable = diskMonitoringAvailable;
-        _ledBehavior!.ApplyAll();
-        _logger?.LogInformation("LED configurations applied");
-
-        // Wire up save callbacks for automatic persistence
-        _mainVm.SetSaveCallback(SaveSettings);
-        _settingsVm.SetSaveCallback(SaveSettings);
-        _logger?.LogDebug("Save callbacks configured");
-
-        // Configure tray icon
-        _tray!.ShowWindowRequested += ShowMainWindow;
-        _tray.ExitRequested += RequestExit;
-        _logger?.LogInformation("System tray icon configured");
-
-        _logger?.LogDebug("Main window ready");
-
-        if (_mainVm.HasDiskModeLeds && diskMonitoringAvailable)
-        {
-            _diskMonitor?.Start();
-            _logger?.LogInformation("Disk monitoring started (has disk mode LEDs)");
-        }
-        else if (!diskMonitoringAvailable)
-        {
-            _logger?.LogWarning("Disk performance counters are unavailable - disk LED modes are disabled");
-        }
-    }
-
-    private void WireUpEventHandlers()
-    {
-        _logger?.LogDebug("Wiring up event handlers");
-
-        _mainVm!.DiskModeLedsChanged += OnDiskModeLedsChanged;
-        _mainWindow!.SourceInitialized += OnMainWindowSourceInitialized;
-        _diskMonitor!.StateChanged += OnDiskStateChanged;
-        _micMonitor!.MuteStateChanged += OnMicrophoneMuteStateChanged;
-        _speakerMonitor!.MuteStateChanged += OnSpeakerMuteStateChanged;
-        _powerListener!.SystemSuspending += OnSystemSuspending;
-        _powerListener.SystemResumed += OnSystemResumed;
-        _powerListener.LidStateChanged += OnLidStateChanged;
-        _powerListener.FullscreenChanged += OnFullscreenChanged;
-
-        _logger?.LogInformation("Event handlers wired up successfully");
-    }
-
-    private void OnDiskModeLedsChanged(bool hasDiskModes)
-    {
-        Dispatcher.Invoke(() =>
-        {
-            _logger?.LogDebug("Disk mode LEDs changed: {HasDiskModes}", hasDiskModes);
-            if (hasDiskModes && _diskMonitor!.IsAvailable)
-                _diskMonitor!.Start();
-            else
-                _diskMonitor!.Stop();
-        });
-    }
-
-    private void OnMainWindowSourceInitialized(object? sender, EventArgs e)
-    {
-        if (sender is not MainWindow window) return;
-
-        _logger?.LogDebug("Main window source initialized");
-        _powerListener!.Attach(window);
-        _hotkey = new HotkeyService();
-        bool hotkeySuccess = _hotkey.Register(window, _settings!.HotkeyModifiers, _settings.HotkeyVirtualKey);
-        _hotkey.HotkeyPressed += OnHotkeyPressed;
-
-        if (hotkeySuccess)
-        {
-            _logger?.LogInformation("Hotkey service initialized with {Modifiers:X} + {VirtualKey:X}",
-                _settings.HotkeyModifiers, _settings.HotkeyVirtualKey);
-        }
-        else
-        {
-            _logger?.LogWarning("Hotkey {Modifiers:X} + {VirtualKey:X} is already in use - hotkey disabled",
-                _settings.HotkeyModifiers, _settings.HotkeyVirtualKey);
-        }
-    }
-
-    private void OnHotkeyPressed()
-    {
-        Dispatcher.Invoke(() => _ledBehavior!.OnHotkeyPressed());
     }
 
     // -------------------------------------------------------------------------
@@ -434,28 +343,7 @@ public partial class App : System.Windows.Application
     /// <returns>True if the hotkey was registered successfully; false if already in use</returns>
     public bool UpdateHotkey(int modifiers, int virtualKey, string displayText)
     {
-        _logger?.LogInformation("Updating hotkey to {Display} (modifiers={Modifiers:X}, vk={VirtualKey:X})",
-            displayText, modifiers, virtualKey);
-
-        bool success = _hotkey?.UpdateHotkey(modifiers, virtualKey) ?? false;
-
-        if (success)
-        {
-            _settings!.HotkeyModifiers = modifiers;
-            _settings.HotkeyVirtualKey = virtualKey;
-
-            if (_settings.PersistSettingsOnChange)
-            {
-                _settings.Save();
-                _logger?.LogDebug("Hotkey settings saved");
-            }
-        }
-        else
-        {
-            _logger?.LogWarning("Failed to register hotkey {Display} - already in use", displayText);
-        }
-
-        return success;
+        return _shell?.UpdateHotkey(modifiers, virtualKey, displayText) ?? false;
     }
 
     /// <summary>
@@ -463,138 +351,7 @@ public partial class App : System.Windows.Application
     /// </summary>
     public string GetHotkeyDisplayText()
     {
-        return _mainVm!.FormatHotkeyDisplay(_settings!.HotkeyModifiers, _settings.HotkeyVirtualKey);
-    }
-
-    private void OnDiskStateChanged(DiskActivityState state)
-    {
-        Dispatcher.Invoke(() =>
-        {
-            _logger?.LogDebug("Disk state changed: {State}", state);
-            _ledBehavior!.OnDiskStateChanged(state);
-        });
-    }
-
-    private void OnMicrophoneMuteStateChanged(bool isMuted)
-    {
-        Dispatcher.Invoke(() =>
-        {
-            _logger?.LogDebug("Microphone mute state changed: {IsMuted}", isMuted);
-            _ledBehavior!.ObserveMicrophoneMuteState(isMuted);
-        });
-    }
-
-    private void OnSpeakerMuteStateChanged(bool isMuted)
-    {
-        Dispatcher.Invoke(() =>
-        {
-            _logger?.LogDebug("Speaker mute state changed: {IsMuted}", isMuted);
-            _ledBehavior!.ObserveSpeakerMuteState(isMuted);
-        });
-    }
-
-    private void OnSystemSuspending()
-    {
-        Dispatcher.Invoke(() =>
-        {
-            _logger?.LogInformation("System suspending - stopping monitors");
-            _kbdMonitor!.Stop();
-            _diskMonitor!.Stop();
-        });
-    }
-
-    private void OnSystemResumed()
-    {
-        Dispatcher.Invoke(() =>
-        {
-            _logger?.LogInformation("System resumed - restarting monitors");
-            if (_settings!.RememberKeyboardBacklight && _settings.SavedKeyboardBacklight is int savedKeyboardBacklight)
-                _settingsVm!.KeyboardBrightnessLevel = savedKeyboardBacklight;
-            if (_mainVm!.HasDiskModeLeds)
-                _diskMonitor!.Start();
-            _kbdMonitor!.Start();
-        });
-    }
-
-    private void OnLidStateChanged(bool isOpen)
-    {
-        Dispatcher.Invoke(() =>
-        {
-            _logger?.LogDebug("Lid state changed: {IsOpen}", isOpen);
-            if (isOpen && _settings!.RememberKeyboardBacklight && _settings.SavedKeyboardBacklight is int savedKeyboardBacklight)
-                _settingsVm!.KeyboardBrightnessLevel = savedKeyboardBacklight;
-        });
-    }
-
-    private void OnFullscreenChanged(bool isFullscreen)
-    {
-        Dispatcher.Invoke(() =>
-        {
-            _logger?.LogDebug("Fullscreen state changed: {IsFullscreen}", isFullscreen);
-
-            // Ignore events until we've successfully read at least one backlight value.
-            // Level 0 is valid while dimmed, so it cannot be used as an initialization sentinel.
-            if (!_kbdMonitor!.HasObservedLevel)
-                return;
-
-            byte currentLevel = _kbdMonitor.CurrentLevel;
-            _ledBehavior!.OnFullscreenChanged(isFullscreen, currentLevel);
-        });
-    }
-
-    private void StartMonitors()
-    {
-        _logger?.LogInformation("Starting monitors");
-
-        // Start keyboard monitor if either feature that needs it is enabled
-        if (_settings!.RememberKeyboardBacklight || _settings.DimLedsWhenFullscreen)
-        {
-            _kbdMonitor!.Start();
-            _logger?.LogDebug("Keyboard backlight monitor started");
-        }
-
-        if (_settings.DimLedsWhenFullscreen)
-        {
-            _powerListener!.StartFullscreenPolling();
-            _logger?.LogDebug("Fullscreen polling started");
-        }
-
-        _micMonitor!.Start();
-        _logger?.LogDebug("Microphone mute monitor started");
-
-        var isMuted = _micMonitor.QueryMuted();
-        _ledBehavior!.ObserveMicrophoneMuteState(isMuted);
-        _logger?.LogDebug("Initial microphone mute state: {IsMuted}", isMuted);
-
-        _speakerMonitor!.Start();
-        _logger?.LogDebug("Speaker mute monitor started");
-
-        var speakerMuted = _speakerMonitor.QueryMuted();
-        _ledBehavior!.ObserveSpeakerMuteState(speakerMuted);
-        _logger?.LogDebug("Initial speaker mute state: {IsMuted}", speakerMuted);
-    }
-
-    private void ShowMainWindow()
-    {
-        _logger?.LogDebug("ShowMainWindow requested");
-        if (_mainWindow is null)
-        {
-            _logger?.LogWarning("Cannot show main window - window is null");
-            return;
-        }
-        _mainWindow.Show();
-        _mainWindow.WindowState = WindowState.Normal;
-        _mainWindow.Activate();
-        _logger?.LogInformation("Main window shown and activated");
-    }
-
-    private void EnsureMainWindowHandle()
-    {
-        if (_mainWindow is null)
-            return;
-
-        IntPtr handle = new WindowInteropHelper(_mainWindow).EnsureHandle();
-        _logger?.LogDebug("Main window handle ensured: {Handle}", handle);
+        return _shell?.GetHotkeyDisplayText() ?? string.Empty;
     }
 
     private void RequestExit()
@@ -604,9 +361,9 @@ public partial class App : System.Windows.Application
         try
         {
             // Only save if auto-save is enabled; otherwise discard temporary changes
-            if (_settings?.PersistSettingsOnChange == true)
+            if (_settingsCoordinator?.PersistSettingsOnChange ?? false)
             {
-                SaveSettings();
+                _settingsCoordinator.SaveCurrentSettings();
             }
             else
             {
@@ -632,23 +389,7 @@ public partial class App : System.Windows.Application
         {
             _logger?.LogError(ex, "Error during shutdown sequence");
             LoggingConfiguration.CloseAndFlush();
-            throw;
-        }
-    }
-
-    private void SaveSettings()
-    {
-        try
-        {
-            _logger?.LogDebug("Saving settings");
-            _mainVm?.SaveToSettings();
-            // SettingsViewModel auto-syncs to _settings via partial methods, no SaveToSettings needed
-            _settings?.Save();
-            _logger?.LogDebug("Settings saved successfully");
-        }
-        catch (Exception ex)
-        {
-            _logger?.LogError(ex, "Failed to save settings");
+            throw new InvalidOperationException("Error during shutdown sequence", ex);
         }
     }
 

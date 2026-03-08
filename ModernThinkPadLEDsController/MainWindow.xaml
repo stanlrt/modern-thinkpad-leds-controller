@@ -1080,11 +1080,11 @@
                             <StackPanel Orientation="Horizontal"
                                         VerticalAlignment="Center"
                                         Visibility="{Binding MainVm.HasDiskModeLeds, Converter={StaticResource BoolToVis}}">
-                                <Slider Minimum="10"
+                                <Slider Minimum="100"
                                         Maximum="1000"
                                         Width="200"
                                         Value="{Binding SettingsVm.DiskPollIntervalMs}"
-                                        TickFrequency="10"
+                                        TickFrequency="50"
                                         IsSnapToTickEnabled="True"/>
                                 <TextBlock Text="{Binding SettingsVm.DiskPollIntervalMs, StringFormat={}{0} ms}"
                                            VerticalAlignment="Center"
@@ -1176,6 +1176,18 @@
                                       IsChecked="{Binding SettingsVm.PersistSettingsOnChange}"
                                       Margin="0,0,0,16"
                                       Padding="0,4"/>
+                            <CheckBox Content="Enable hardware access to PawnIO and the EC (turning off applies immediately; turning back on requires restart)"
+                                      IsChecked="{Binding SettingsVm.EnableHardwareAccess}"
+                                      Margin="0,0,0,12"
+                                      Padding="0,4"/>
+                            <Border CornerRadius="4"
+                                    Padding="12,8"
+                                    Margin="0,0,0,16"
+                                    Background="{DynamicResource SystemFillColorCautionBackgroundBrush}"
+                                    Visibility="{Binding SettingsVm.HasHardwareAccessWarning, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Text="{Binding SettingsVm.HardwareAccessWarningMessage}"
+                                           TextWrapping="Wrap"/>
+                            </Border>
                             <TextBlock Text="Driver"
                                        FontWeight="SemiBold"
                                        Margin="0,0,0,4"/>

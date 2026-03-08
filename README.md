@@ -29,3 +29,23 @@ It also adds:
 8. You can close the app. It will minimise to the taskbar tray.
 
 ![screenshot](./screenshot.png)
+
+## A note about BSODs
+
+### Risks
+
+This app makes no guarantee that it will not cause BSODs. It directly communicates with the EC registers. I cannot assure that it is bug-free, nor that PawnIO is. I am not responsible in any way for any damage to your system.
+
+### Safe mode
+
+If you need to troubleshoot instability, start the app with `--safe-mode` or `--no-hardware`.
+
+- The UI still opens.
+- PawnIO is not loaded.
+- No EC reads or writes are attempted.
+
+You can also turn hardware access off from the App Settings tab. Turning it off applies immediately for the current session and persists for the next launch. Turning it back on requires a restart.
+
+### Recovery
+
+In case you face a BSOD, here is my recommendation. Since the issue will likely be linked to the EC regs, you must fully drain them. This can usually be performed by unplugging your computer from a power source other than its battery, and disconnecting the battery from the components, either using the pinhole or by long-pressing the power button. Instructions depend on your computer build/laptop model.

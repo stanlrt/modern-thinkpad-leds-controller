@@ -1,6 +1,8 @@
 using System.Diagnostics.CodeAnalysis;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using ModernThinkPadLEDsController.Hardware;
+using ModernThinkPadLEDsController.Monitoring;
 using ModernThinkPadLEDsController.Services;
 
 namespace ModernThinkPadLEDsController.ViewModels;
@@ -140,7 +142,31 @@ public sealed partial class SettingsViewModel : ObservableObject
         _settings.PersistSettingsOnChange = value;
         // Don't trigger save for this property change itself to avoid potential issues
     }
-    public string DriverStatus { get; } = "PawnIO";
+
+    [ObservableProperty]
+    private bool _enableHardwareAccess;
+
+    [SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Called by CommunityToolkit.Mvvm source generator")]
+    partial void OnEnableHardwareAccessChanged(bool value)
+    {
+        if (_isLoading)
+            return;
+
+        HardwareAccessPreferenceChangeResult result = _runtime.SetHardwareAccessEnabled(value);
+        _settings.EnableHardwareAccess = value;
+        DriverStatus = _runtime.GetHardwareAccessStatus();
+        HardwareAccessWarningMessage = result.Message;
+        TriggerSave();
+    }
+
+    [ObservableProperty]
+    private string _driverStatus = "PawnIO";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasHardwareAccessWarning))]
+    private string? _hardwareAccessWarningMessage;
+
+    public bool HasHardwareAccessWarning => !string.IsNullOrWhiteSpace(HardwareAccessWarningMessage);
 
     public string AppVersion { get; } =
         System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "—";
@@ -168,7 +194,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         try
         {
             BlinkIntervalMs = _settings.BlinkIntervalMs;
-            DiskPollIntervalMs = _settings.DiskPollIntervalMs;
+            DiskPollIntervalMs = Math.Max(DiskActivityMonitor.MinIntervalMs, _settings.DiskPollIntervalMs);
             RememberKeyboardBacklight = _settings.RememberKeyboardBacklight;
 
             // When no brightness has been persisted yet, read the current hardware level
@@ -185,6 +211,9 @@ public sealed partial class SettingsViewModel : ObservableObject
 
             DimLedsWhenFullscreen = _settings.DimLedsWhenFullscreen;
             PersistSettingsOnChange = _settings.PersistSettingsOnChange;
+            EnableHardwareAccess = _settings.EnableHardwareAccess;
+            DriverStatus = _runtime.GetHardwareAccessStatus();
+            HardwareAccessWarningMessage = null;
             StartWithWindows = _runtime.IsStartupEnabled();
             StartupTaskWarningMessage = null;
         }

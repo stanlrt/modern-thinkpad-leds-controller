@@ -10,25 +10,36 @@ public interface ISettingsRuntimeService
     bool TryGetCurrentKeyboardBrightness(out byte level);
     void SetKeyboardBrightnessLevel(int level);
     void SetFullscreenPollingEnabled(bool enabled);
+    HardwareAccessPreferenceChangeResult SetHardwareAccessEnabled(bool enabled);
+    string GetHardwareAccessStatus();
     bool IsStartupEnabled();
     StartupTaskOperationResult SetStartupEnabled(bool enabled);
 }
 
 public sealed class SettingsRuntimeService : ISettingsRuntimeService
 {
+    private readonly AppSettings _settings;
+    private readonly HardwareAccessController _hardwareAccess;
     private readonly LedBehaviorService _ledBehavior;
     private readonly DiskActivityMonitor _diskMonitor;
+    private readonly KeyboardBacklightMonitor _keyboardBacklightMonitor;
     private readonly LedController _ledController;
     private readonly PowerEventListener _powerListener;
 
     public SettingsRuntimeService(
+        AppSettings settings,
+        HardwareAccessController hardwareAccess,
         LedBehaviorService ledBehavior,
         DiskActivityMonitor diskMonitor,
+        KeyboardBacklightMonitor keyboardBacklightMonitor,
         LedController ledController,
         PowerEventListener powerListener)
     {
+        _settings = settings;
+        _hardwareAccess = hardwareAccess;
         _ledBehavior = ledBehavior;
         _diskMonitor = diskMonitor;
+        _keyboardBacklightMonitor = keyboardBacklightMonitor;
         _ledController = ledController;
         _powerListener = powerListener;
     }
@@ -55,10 +66,45 @@ public sealed class SettingsRuntimeService : ISettingsRuntimeService
 
     public void SetFullscreenPollingEnabled(bool enabled)
     {
+        if (!_hardwareAccess.IsEnabled)
+            return;
+
         if (enabled)
             _powerListener.StartFullscreenPolling();
         else
             _powerListener.StopFullscreenPolling();
+    }
+
+    public HardwareAccessPreferenceChangeResult SetHardwareAccessEnabled(bool enabled)
+    {
+        _settings.EnableHardwareAccess = enabled;
+
+        if (enabled)
+        {
+            if (_hardwareAccess.IsEnabled)
+                return new HardwareAccessPreferenceChangeResult(true, null);
+
+            return new HardwareAccessPreferenceChangeResult(
+                false,
+                "Hardware access is saved for the next launch. Restart the app to load PawnIO and touch the EC again.");
+        }
+
+        bool disabledNow = _hardwareAccess.DisableForSession();
+        _diskMonitor.Stop();
+        _keyboardBacklightMonitor.Stop();
+        _powerListener.StopFullscreenPolling();
+        _ledBehavior.DisableHardwareActivity();
+
+        return new HardwareAccessPreferenceChangeResult(
+            disabledNow,
+            disabledNow
+                ? "Hardware access is disabled immediately for this session and will stay off on the next launch."
+                : null);
+    }
+
+    public string GetHardwareAccessStatus()
+    {
+        return _hardwareAccess.GetStatusDescription();
     }
 
     public bool IsStartupEnabled()
