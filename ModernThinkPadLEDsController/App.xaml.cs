@@ -480,7 +480,7 @@ public partial class App : System.Windows.Application
         Dispatcher.Invoke(() =>
         {
             _logger?.LogDebug("Microphone mute state changed: {IsMuted}", isMuted);
-            _ledBehavior!.OnMicrophoneMuteChanged(isMuted);
+            _ledBehavior!.ObserveMicrophoneMuteState(isMuted);
         });
     }
 
@@ -489,7 +489,7 @@ public partial class App : System.Windows.Application
         Dispatcher.Invoke(() =>
         {
             _logger?.LogDebug("Speaker mute state changed: {IsMuted}", isMuted);
-            _ledBehavior!.OnSpeakerMuteChanged(isMuted);
+            _ledBehavior!.ObserveSpeakerMuteState(isMuted);
         });
     }
 
@@ -563,14 +563,14 @@ public partial class App : System.Windows.Application
         _logger?.LogDebug("Microphone mute monitor started");
 
         var isMuted = _micMonitor.QueryMuted();
-        _ledBehavior!.OnMicrophoneMuteChanged(isMuted);
+        _ledBehavior!.ObserveMicrophoneMuteState(isMuted);
         _logger?.LogDebug("Initial microphone mute state: {IsMuted}", isMuted);
 
         _speakerMonitor!.Start();
         _logger?.LogDebug("Speaker mute monitor started");
 
         var speakerMuted = _speakerMonitor.QueryMuted();
-        _ledBehavior!.OnSpeakerMuteChanged(speakerMuted);
+        _ledBehavior!.ObserveSpeakerMuteState(speakerMuted);
         _logger?.LogDebug("Initial speaker mute state: {IsMuted}", speakerMuted);
     }
 

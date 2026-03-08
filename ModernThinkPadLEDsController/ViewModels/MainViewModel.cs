@@ -166,9 +166,10 @@ public sealed partial class MainViewModel : ObservableObject
             FnLock.CustomRegisterId = _settings.FnLockCustomId;
             Camera.CustomRegisterId = _settings.CameraCustomId;
 
-            HotkeyCycleOn = _settings.HotkeyCycleOn;
-            HotkeyCycleOff = _settings.HotkeyCycleOff;
-            HotkeyCycleBlink = _settings.HotkeyCycleBlink;
+            HotkeyCycleOptions hotkeyCycleOptions = _settings.HotkeyCycleOptions;
+            HotkeyCycleOn = (hotkeyCycleOptions & HotkeyCycleOptions.On) != 0;
+            HotkeyCycleOff = (hotkeyCycleOptions & HotkeyCycleOptions.Off) != 0;
+            HotkeyCycleBlink = (hotkeyCycleOptions & HotkeyCycleOptions.Blink) != 0;
 
             HotkeyDisplayText = FormatHotkeyDisplay(_settings.HotkeyModifiers, _settings.HotkeyVirtualKey);
 
@@ -199,9 +200,7 @@ public sealed partial class MainViewModel : ObservableObject
         _settings.FnLockCustomId = FnLock.CustomRegisterId;
         _settings.CameraCustomId = Camera.CustomRegisterId;
 
-        _settings.HotkeyCycleOn = HotkeyCycleOn;
-        _settings.HotkeyCycleOff = HotkeyCycleOff;
-        _settings.HotkeyCycleBlink = HotkeyCycleBlink;
+        _settings.HotkeyCycleOptions = GetHotkeyCycleOptions();
     }
 
     // -------------------------------------------------------------------------
@@ -245,7 +244,16 @@ public sealed partial class MainViewModel : ObservableObject
 
     private void UpdateHotkeyCycleBehavior()
     {
-        _ledBehavior.UpdateHotkeyCycleOptions(HotkeyCycleOn, HotkeyCycleOff, HotkeyCycleBlink);
+        _ledBehavior.UpdateHotkeyCycleOptions(GetHotkeyCycleOptions());
+    }
+
+    private HotkeyCycleOptions GetHotkeyCycleOptions()
+    {
+        HotkeyCycleOptions options = HotkeyCycleOptions.None;
+        if (HotkeyCycleOn) options |= HotkeyCycleOptions.On;
+        if (HotkeyCycleOff) options |= HotkeyCycleOptions.Off;
+        if (HotkeyCycleBlink) options |= HotkeyCycleOptions.Blink;
+        return options;
     }
 
     private static string GetKeyName(int virtualKey)

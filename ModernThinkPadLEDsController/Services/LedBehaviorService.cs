@@ -12,9 +12,7 @@ public sealed class LedBehaviorService : IDisposable
 
     private IReadOnlyDictionary<Led, LedMapping>? _mappings;
 
-    private bool _hotkeyCycleOn = true;
-    private bool _hotkeyCycleOff = true;
-    private bool _hotkeyCycleBlink;
+    private HotkeyCycleOptions _hotkeyCycleOptions = HotkeyCycleOptions.On | HotkeyCycleOptions.Off;
     private int _hotkeyCycleIndex = -1;
 
     private bool _isFullscreen;
@@ -47,11 +45,9 @@ public sealed class LedBehaviorService : IDisposable
         _mappings = mappings;
     }
 
-    public void UpdateHotkeyCycleOptions(bool cycleOn, bool cycleOff, bool cycleBlink)
+    public void UpdateHotkeyCycleOptions(HotkeyCycleOptions hotkeyCycleOptions)
     {
-        _hotkeyCycleOn = cycleOn;
-        _hotkeyCycleOff = cycleOff;
-        _hotkeyCycleBlink = cycleBlink;
+        _hotkeyCycleOptions = hotkeyCycleOptions;
     }
 
     public void OnLedModeChanged(Led led)
@@ -77,42 +73,34 @@ public sealed class LedBehaviorService : IDisposable
         }
     }
 
-    public void OnMicrophoneMuteChanged(bool isMuted)
+    public void ObserveMicrophoneMuteState(bool isMuted)
     {
-        _lastMicrophoneMuted = isMuted;
-        _hasObservedMicrophoneMuteState = true;
-
-        if (_isFullscreen) return;
-
-        LedMapping map = Mappings[Led.Microphone];
-        if (map.Mode == LedMode.Default)
-        {
-            _leds.SetLed(Led.Microphone, isMuted ? LedState.On : LedState.Off, customId: map.CustomRegisterId);
-        }
-        else
-        {
-            map.Mode = LedMode.Default;
-            _leds.SetLed(Led.Microphone, isMuted ? LedState.On : LedState.Off, customId: map.CustomRegisterId);
-        }
+        UpdateObservedMuteState(Led.Microphone, isMuted);
     }
 
-    public void OnSpeakerMuteChanged(bool isMuted)
+    public void ObserveSpeakerMuteState(bool isMuted)
     {
-        _lastSpeakerMuted = isMuted;
-        _hasObservedSpeakerMuteState = true;
+        UpdateObservedMuteState(Led.Mute, isMuted);
+    }
 
-        if (_isFullscreen) return;
+    // Mute observations update cached OS state first, then recompute the LED.
+    // Only Default mode follows that cached state; explicit user modes are reapplied.
+    private void UpdateObservedMuteState(Led led, bool isMuted)
+    {
+        bool isMicrophone = led == Led.Microphone;
 
-        LedMapping map = Mappings[Led.Mute];
-        if (map.Mode == LedMode.Default)
+        if (isMicrophone)
         {
-            _leds.SetLed(Led.Mute, isMuted ? LedState.On : LedState.Off, customId: map.CustomRegisterId);
+            _lastMicrophoneMuted = isMuted;
+            _hasObservedMicrophoneMuteState = true;
         }
         else
         {
-            map.Mode = LedMode.Default;
-            _leds.SetLed(Led.Mute, isMuted ? LedState.On : LedState.Off, customId: map.CustomRegisterId);
+            _lastSpeakerMuted = isMuted;
+            _hasObservedSpeakerMuteState = true;
         }
+
+        ApplyLedStateRespectingFullscreen(led);
     }
 
     public void OnFullscreenChanged(bool isFullscreen, byte currentBacklight)
@@ -203,9 +191,9 @@ public sealed class LedBehaviorService : IDisposable
     private List<LedState> BuildHotkeyCycleStates()
     {
         List<LedState> states = new(3);
-        if (_hotkeyCycleOn) states.Add(LedState.On);
-        if (_hotkeyCycleOff) states.Add(LedState.Off);
-        if (_hotkeyCycleBlink) states.Add(LedState.Blink);
+        if ((_hotkeyCycleOptions & HotkeyCycleOptions.On) != 0) states.Add(LedState.On);
+        if ((_hotkeyCycleOptions & HotkeyCycleOptions.Off) != 0) states.Add(LedState.Off);
+        if ((_hotkeyCycleOptions & HotkeyCycleOptions.Blink) != 0) states.Add(LedState.Blink);
         return states;
     }
 

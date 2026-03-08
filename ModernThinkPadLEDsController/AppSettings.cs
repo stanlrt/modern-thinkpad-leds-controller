@@ -29,9 +29,7 @@ public sealed class AppSettings
     public byte? FnLockCustomId { get; set; }
     public byte? CameraCustomId { get; set; }
 
-    public bool HotkeyCycleOn { get; set; } = true;
-    public bool HotkeyCycleOff { get; set; } = true;
-    public bool HotkeyCycleBlink { get; set; } = false;
+    public HotkeyCycleOptions HotkeyCycleOptions { get; set; } = HotkeyCycleOptions.On | HotkeyCycleOptions.Off;
 
     // Hotkey configuration: modifier keys and virtual key code
     // Defaults to Win + Shift + K (MOD_WIN | MOD_SHIFT = 0x000C, VK_K = 0x4B)
@@ -57,6 +55,7 @@ public sealed class AppSettings
                 string json = File.ReadAllText(FilePath);
                 var settings = JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
                 settings.MigrateLegacyDiskPollInterval(json);
+                settings.MigrateLegacyHotkeyCycleOptions(json);
                 return settings;
             }
         }
@@ -92,6 +91,52 @@ public sealed class AppSettings
             {
                 DiskPollIntervalMs = legacyIntervalMs;
             }
+        }
+        catch (JsonException)
+        {
+            // Ignore migration errors and keep the parsed/default value.
+        }
+    }
+
+    private void MigrateLegacyHotkeyCycleOptions(string json)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            var root = document.RootElement;
+
+            if (root.TryGetProperty(nameof(HotkeyCycleOptions), out _))
+                return;
+
+            bool foundLegacyValue = false;
+            HotkeyCycleOptions options = HotkeyCycleOptions.None;
+
+            if (root.TryGetProperty("HotkeyCycleOn", out var onProperty) &&
+                onProperty.ValueKind is JsonValueKind.True or JsonValueKind.False)
+            {
+                foundLegacyValue = true;
+                if (onProperty.GetBoolean())
+                    options |= HotkeyCycleOptions.On;
+            }
+
+            if (root.TryGetProperty("HotkeyCycleOff", out var offProperty) &&
+                offProperty.ValueKind is JsonValueKind.True or JsonValueKind.False)
+            {
+                foundLegacyValue = true;
+                if (offProperty.GetBoolean())
+                    options |= HotkeyCycleOptions.Off;
+            }
+
+            if (root.TryGetProperty("HotkeyCycleBlink", out var blinkProperty) &&
+                blinkProperty.ValueKind is JsonValueKind.True or JsonValueKind.False)
+            {
+                foundLegacyValue = true;
+                if (blinkProperty.GetBoolean())
+                    options |= HotkeyCycleOptions.Blink;
+            }
+
+            if (foundLegacyValue)
+                HotkeyCycleOptions = options;
         }
         catch (JsonException)
         {
