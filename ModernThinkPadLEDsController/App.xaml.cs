@@ -52,7 +52,7 @@ public partial class App : System.Windows.Application
     private MainWindow? _mainWindow;
 
     // A named Mutex prevents two instances of the app running simultaneously.
-    private System.Threading.Mutex? _singleInstanceMutex;
+    private Mutex? _singleInstanceMutex;
     private bool _mutexOwned = false;
 
     protected override void OnStartup(StartupEventArgs e)

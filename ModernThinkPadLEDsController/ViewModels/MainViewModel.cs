@@ -15,6 +15,7 @@ public sealed partial class MainViewModel : ObservableObject
     private readonly LedBehaviorService _ledBehavior;
     private readonly AppSettings _settings;
     private Action? _saveSettingsCallback;
+    private bool _isLoading;
 
     // One LedMapping per LED. The View binds to e.g. Power.Mode, RedDot.Mode, etc.
     public LedMapping Power { get; } = new() { Name = "Power" };
@@ -145,30 +146,39 @@ public sealed partial class MainViewModel : ObservableObject
 
     public void LoadFromSettings()
     {
-        Power.Mode = _settings.PowerMode;
-        Mute.Mode = _settings.MuteMode;
-        RedDot.Mode = _settings.RedDotMode;
-        Microphone.Mode = _settings.MicrophoneMode;
-        Sleep.Mode = _settings.SleepMode;
-        FnLock.Mode = _settings.FnLockMode;
-        Camera.Mode = _settings.CameraMode;
+        _isLoading = true;
 
-        Power.CustomRegisterId = _settings.PowerCustomId;
-        Mute.CustomRegisterId = _settings.MuteCustomId;
-        RedDot.CustomRegisterId = _settings.RedDotCustomId;
-        Microphone.CustomRegisterId = _settings.MicrophoneCustomId;
-        Sleep.CustomRegisterId = _settings.SleepCustomId;
-        FnLock.CustomRegisterId = _settings.FnLockCustomId;
-        Camera.CustomRegisterId = _settings.CameraCustomId;
+        try
+        {
+            Power.Mode = _settings.PowerMode;
+            Mute.Mode = _settings.MuteMode;
+            RedDot.Mode = _settings.RedDotMode;
+            Microphone.Mode = _settings.MicrophoneMode;
+            Sleep.Mode = _settings.SleepMode;
+            FnLock.Mode = _settings.FnLockMode;
+            Camera.Mode = _settings.CameraMode;
 
-        HotkeyCycleOn = _settings.HotkeyCycleOn;
-        HotkeyCycleOff = _settings.HotkeyCycleOff;
-        HotkeyCycleBlink = _settings.HotkeyCycleBlink;
+            Power.CustomRegisterId = _settings.PowerCustomId;
+            Mute.CustomRegisterId = _settings.MuteCustomId;
+            RedDot.CustomRegisterId = _settings.RedDotCustomId;
+            Microphone.CustomRegisterId = _settings.MicrophoneCustomId;
+            Sleep.CustomRegisterId = _settings.SleepCustomId;
+            FnLock.CustomRegisterId = _settings.FnLockCustomId;
+            Camera.CustomRegisterId = _settings.CameraCustomId;
 
-        HotkeyDisplayText = FormatHotkeyDisplay(_settings.HotkeyModifiers, _settings.HotkeyVirtualKey);
+            HotkeyCycleOn = _settings.HotkeyCycleOn;
+            HotkeyCycleOff = _settings.HotkeyCycleOff;
+            HotkeyCycleBlink = _settings.HotkeyCycleBlink;
 
-        _previousHadDiskModes = HasDiskModeLeds;
-        OnPropertyChanged(nameof(HasDiskModeLeds));
+            HotkeyDisplayText = FormatHotkeyDisplay(_settings.HotkeyModifiers, _settings.HotkeyVirtualKey);
+
+            _previousHadDiskModes = HasDiskModeLeds;
+            OnPropertyChanged(nameof(HasDiskModeLeds));
+        }
+        finally
+        {
+            _isLoading = false;
+        }
     }
 
     public void SaveToSettings()
@@ -200,7 +210,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     private void TriggerSaveIfEnabled()
     {
-        if (_settings.PersistSettingsOnChange)
+        if (!_isLoading && _settings.PersistSettingsOnChange)
         {
             SaveToSettings();
             _saveSettingsCallback?.Invoke();
