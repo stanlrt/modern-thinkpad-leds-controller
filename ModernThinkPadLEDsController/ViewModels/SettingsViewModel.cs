@@ -21,6 +21,9 @@ public sealed partial class SettingsViewModel : ObservableObject
     [SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Called by CommunityToolkit.Mvvm source generator")]
     partial void OnBlinkIntervalMsChanged(int value)
     {
+        if (_isLoading)
+            return;
+
         _runtime.UpdateBlinkInterval(value);
         _settings.BlinkIntervalMs = value;
         TriggerSave();
@@ -33,6 +36,9 @@ public sealed partial class SettingsViewModel : ObservableObject
     [SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Called by CommunityToolkit.Mvvm source generator")]
     partial void OnDiskPollIntervalMsChanged(int value)
     {
+        if (_isLoading)
+            return;
+
         _runtime.UpdateDiskPollInterval(value);
         _settings.DiskPollIntervalMs = value;
         TriggerSave();
@@ -45,6 +51,9 @@ public sealed partial class SettingsViewModel : ObservableObject
     [SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Called by CommunityToolkit.Mvvm source generator")]
     partial void OnRememberKeyboardBacklightChanged(bool value)
     {
+        if (_isLoading)
+            return;
+
         _settings.RememberKeyboardBacklight = value;
         TriggerSave();
     }
@@ -55,12 +64,15 @@ public sealed partial class SettingsViewModel : ObservableObject
     [SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Called by CommunityToolkit.Mvvm source generator")]
     partial void OnKeyboardBrightnessLevelChanged(int value)
     {
-        _runtime.SetKeyboardBrightnessLevel(value);
-        _settings.SavedKeyboardBacklight = value;
-
         // Update warning visibility and percentage display when level changes
         OnPropertyChanged(nameof(ShowKeyboardBrightnessWarning));
         OnPropertyChanged(nameof(KeyboardBrightnessPercent));
+
+        if (_isLoading)
+            return;
+
+        _runtime.SetKeyboardBrightnessLevel(value);
+        _settings.SavedKeyboardBacklight = value;
 
         TriggerSave();
     }
@@ -83,6 +95,9 @@ public sealed partial class SettingsViewModel : ObservableObject
     [SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Called by CommunityToolkit.Mvvm source generator")]
     partial void OnDimLedsWhenFullscreenChanged(bool value)
     {
+        if (_isLoading)
+            return;
+
         _settings.DimLedsWhenFullscreen = value;
 
         _runtime.SetFullscreenPollingEnabled(value);
@@ -119,6 +134,9 @@ public sealed partial class SettingsViewModel : ObservableObject
     [SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Called by CommunityToolkit.Mvvm source generator")]
     partial void OnPersistSettingsOnChangeChanged(bool value)
     {
+        if (_isLoading)
+            return;
+
         _settings.PersistSettingsOnChange = value;
         // Don't trigger save for this property change itself to avoid potential issues
     }
@@ -140,34 +158,40 @@ public sealed partial class SettingsViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Load settings from AppSettings. Sets _isLoading flag to prevent
-    /// triggering saves during initialization.
+    /// Load settings from AppSettings without triggering runtime effects.
+    /// Startup orchestration applies the effective runtime state explicitly after load.
     /// </summary>
     public void LoadFromSettings()
     {
         _isLoading = true;
 
-        // Use property setters - partial methods will sync to _settings but won't trigger save
-        BlinkIntervalMs = _settings.BlinkIntervalMs;
-        DiskPollIntervalMs = _settings.DiskPollIntervalMs;
-        RememberKeyboardBacklight = _settings.RememberKeyboardBacklight;
-
-        // Load keyboard brightness level, or read current hardware value if not set.
-        if (_settings.SavedKeyboardBacklight is null && _runtime.TryGetCurrentKeyboardBrightness(out byte currentLevel))
+        try
         {
-            KeyboardBrightnessLevel = currentLevel;
+            BlinkIntervalMs = _settings.BlinkIntervalMs;
+            DiskPollIntervalMs = _settings.DiskPollIntervalMs;
+            RememberKeyboardBacklight = _settings.RememberKeyboardBacklight;
+
+            // When no brightness has been persisted yet, read the current hardware level
+            // to seed the UI without writing the value back to hardware during startup.
+            if (_settings.SavedKeyboardBacklight is null && _runtime.TryGetCurrentKeyboardBrightness(out byte currentLevel))
+            {
+                _settings.SavedKeyboardBacklight = currentLevel;
+                KeyboardBrightnessLevel = currentLevel;
+            }
+            else
+            {
+                KeyboardBrightnessLevel = _settings.SavedKeyboardBacklight ?? 0;
+            }
+
+            DimLedsWhenFullscreen = _settings.DimLedsWhenFullscreen;
+            PersistSettingsOnChange = _settings.PersistSettingsOnChange;
+            StartWithWindows = _runtime.IsStartupEnabled();
+            StartupTaskWarningMessage = null;
         }
-        else
+        finally
         {
-            KeyboardBrightnessLevel = _settings.SavedKeyboardBacklight ?? 0;
+            _isLoading = false;
         }
-
-        DimLedsWhenFullscreen = _settings.DimLedsWhenFullscreen;
-        PersistSettingsOnChange = _settings.PersistSettingsOnChange;
-        StartWithWindows = _runtime.IsStartupEnabled();
-        StartupTaskWarningMessage = null;
-
-        _isLoading = false;
     }
 
     public void SetSaveCallback(Action callback)

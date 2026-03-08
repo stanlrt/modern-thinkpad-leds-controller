@@ -99,6 +99,9 @@ public sealed partial class MainViewModel : ObservableObject
             {
                 if (e.PropertyName == nameof(LedMapping.Mode))
                 {
+                    if (_isLoading)
+                        return;
+
                     _ledBehavior.OnLedModeChanged(led);
 
                     bool hasDiskModesNow = HasDiskModeLeds;
@@ -113,6 +116,9 @@ public sealed partial class MainViewModel : ObservableObject
                 }
                 else if (e.PropertyName == nameof(LedMapping.CustomRegisterId))
                 {
+                    if (_isLoading)
+                        return;
+
                     _ledBehavior.OnCustomRegisterIdChanged(led);
                     TriggerSaveIfEnabled();
                 }

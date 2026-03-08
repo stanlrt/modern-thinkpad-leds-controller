@@ -959,7 +959,6 @@
                                        Margin="0,0,0,16"/>
                             <Border x:Name="HotkeyBorder"
                                     CornerRadius="4"
-                                    Padding="12,6"
                                     Margin="0,0,0,8"
                                     Background="{DynamicResource ControlFillColorDefaultBrush}"
                                     HorizontalAlignment="Left"
@@ -977,7 +976,6 @@
                                          PreviewKeyDown="OnHotkeyCapture"
                                          GotFocus="OnHotkeyFocused"
                                          LostFocus="OnHotkeyLostFocus"
-                                         MinWidth="150"
                                          HorizontalAlignment="Left"/>
                             </Border>
                             <TextBlock Text="Click to change the hotkey combination"
