@@ -44,6 +44,7 @@ public partial class App : System.Windows.Application
     private SpeakerMuteMonitor? _speakerMonitor;
     private PowerEventListener? _powerListener;
     private HotkeyService? _hotkey;
+    private LedBehaviorService? _ledBehavior;
     private TrayIconService? _tray;
     private AppSettings? _settings;
     private MainViewModel? _mainVm;
@@ -189,6 +190,7 @@ public partial class App : System.Windows.Application
 
                 services.AddSingleton<EcController>();
                 services.AddSingleton<LedController>();
+                services.AddSingleton<LedBehaviorService>();
 
                 // Monitoring services
                 services.AddSingleton<DiskActivityMonitor>(sp =>
@@ -313,6 +315,7 @@ public partial class App : System.Windows.Application
         _micMonitor = _host.Services.GetRequiredService<MicrophoneMuteMonitor>();
         _speakerMonitor = _host.Services.GetRequiredService<SpeakerMuteMonitor>();
         _powerListener = _host.Services.GetRequiredService<PowerEventListener>();
+        _ledBehavior = _host.Services.GetRequiredService<LedBehaviorService>();
         _tray = _host.Services.GetRequiredService<TrayIconService>();
         _mainVm = _host.Services.GetRequiredService<MainViewModel>();
         _settingsVm = _host.Services.GetRequiredService<SettingsViewModel>();
@@ -340,7 +343,7 @@ public partial class App : System.Windows.Application
 
         // Configure ViewModels
         _mainVm.DiskMonitoringAvailable = diskOk;
-        _mainVm.ApplyAll();
+        _ledBehavior!.ApplyAll();
         _logger?.LogInformation("LED configurations applied");
 
         // Wire up save callbacks for automatic persistence
@@ -415,7 +418,7 @@ public partial class App : System.Windows.Application
 
     private void OnHotkeyPressed()
     {
-        Dispatcher.Invoke(() => _mainVm!.OnHotkeyPressed());
+        Dispatcher.Invoke(() => _ledBehavior!.OnHotkeyPressed());
     }
 
     // -------------------------------------------------------------------------
@@ -465,7 +468,7 @@ public partial class App : System.Windows.Application
         Dispatcher.Invoke(() =>
         {
             _logger?.LogDebug("Disk state changed: {State}", state);
-            _mainVm!.OnDiskStateChanged(state);
+            _ledBehavior!.OnDiskStateChanged(state);
         });
     }
 
@@ -474,7 +477,7 @@ public partial class App : System.Windows.Application
         Dispatcher.Invoke(() =>
         {
             _logger?.LogDebug("Microphone mute state changed: {IsMuted}", isMuted);
-            _mainVm!.OnMicrophoneMuteChanged(isMuted);
+            _ledBehavior!.OnMicrophoneMuteChanged(isMuted);
         });
     }
 
@@ -483,7 +486,7 @@ public partial class App : System.Windows.Application
         Dispatcher.Invoke(() =>
         {
             _logger?.LogDebug("Speaker mute state changed: {IsMuted}", isMuted);
-            _mainVm!.OnSpeakerMuteChanged(isMuted);
+            _ledBehavior!.OnSpeakerMuteChanged(isMuted);
         });
     }
 
@@ -532,7 +535,7 @@ public partial class App : System.Windows.Application
                 return;
 
             byte currentLevel = _kbdMonitor.CurrentLevel;
-            _mainVm!.OnFullscreenChanged(isFullscreen, currentLevel);
+            _ledBehavior!.OnFullscreenChanged(isFullscreen, currentLevel);
         });
     }
 
@@ -557,14 +560,14 @@ public partial class App : System.Windows.Application
         _logger?.LogDebug("Microphone mute monitor started");
 
         var isMuted = _micMonitor.QueryMuted();
-        _mainVm!.OnMicrophoneMuteChanged(isMuted);
+        _ledBehavior!.OnMicrophoneMuteChanged(isMuted);
         _logger?.LogDebug("Initial microphone mute state: {IsMuted}", isMuted);
 
         _speakerMonitor!.Start();
         _logger?.LogDebug("Speaker mute monitor started");
 
         var speakerMuted = _speakerMonitor.QueryMuted();
-        _mainVm.OnSpeakerMuteChanged(speakerMuted);
+        _ledBehavior!.OnSpeakerMuteChanged(speakerMuted);
         _logger?.LogDebug("Initial speaker mute state: {IsMuted}", speakerMuted);
     }
 

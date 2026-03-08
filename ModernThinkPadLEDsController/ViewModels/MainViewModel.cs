@@ -1,20 +1,19 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using ModernThinkPadLEDsController.Hardware;
-using ModernThinkPadLEDsController.Monitoring;
+using ModernThinkPadLEDsController.Services;
 
 namespace ModernThinkPadLEDsController.ViewModels;
 
 // MainViewModel is the data layer behind MainWindow.
 //
 // In MVVM (Model-View-ViewModel):
-//   Model      = AppSettings, LedController (the real data / hardware)
+//   Model      = AppSettings
 //   View       = MainWindow.xaml (pure layout, no logic)
 //   ViewModel  = this class (exposes properties and commands the View binds to)
 public sealed partial class MainViewModel : ObservableObject
 {
-    private readonly LedController _leds;
+    private readonly LedBehaviorService _ledBehavior;
     private readonly AppSettings _settings;
-    private readonly LedBlinkMonitor _blinkMonitor;
     private Action? _saveSettingsCallback;
 
     // One LedMapping per LED. The View binds to e.g. Power.Mode, RedDot.Mode, etc.
@@ -47,89 +46,36 @@ public sealed partial class MainViewModel : ObservableObject
     // Event fired when the disk mode LED count changes (0 to 1+ or 1+ to 0)
     public event Action<bool>? DiskModeLedsChanged;
 
-    private bool _previousHadDiskModes = false;
+    private bool _previousHadDiskModes;
 
     // --- Hotkey cycle config ---
     // Which states should LEDs in HotkeyControlled mode cycle through?
     [ObservableProperty] private bool _hotkeyCycleOn = true;
     [ObservableProperty] private bool _hotkeyCycleOff = true;
-    [ObservableProperty] private bool _hotkeyCycleBlink = false;
+    [ObservableProperty] private bool _hotkeyCycleBlink;
 
     // Display text for the current hotkey combination (e.g., "Win + Shift + K")
     [ObservableProperty] private string _hotkeyDisplayText = "Win + Shift + K";
 
     // Flag to indicate when user is recording a new hotkey
-    [ObservableProperty] private bool _isRecordingHotkey = false;
+    [ObservableProperty] private bool _isRecordingHotkey;
 
     // Warning message for hotkey issues (e.g., no modifiers, conflicts)
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasHotkeyWarning))]
-    private string? _hotkeyWarningMessage = null;
+    private string? _hotkeyWarningMessage;
 
     // Whether to show the warning box
     public bool HasHotkeyWarning => !string.IsNullOrEmpty(HotkeyWarningMessage);
 
-    partial void OnHotkeyCycleOnChanged(bool value)
-    {
-        TriggerSaveIfEnabled();
-    }
-
-    partial void OnHotkeyCycleOffChanged(bool value)
-    {
-        TriggerSaveIfEnabled();
-    }
-
-    partial void OnHotkeyCycleBlinkChanged(bool value)
-    {
-        TriggerSaveIfEnabled();
-    }
-
-    // Tracks position within the cycle sequence; -1 means "not yet pressed".
-    private int _hotkeyCycleIndex = -1;
-
-    private bool _isFullscreen;
-    private byte _preFullscreenBacklight = 0;
-    private bool _hasPreFullscreenBacklight;
-    private DiskActivityState _lastDiskState = DiskActivityState.Idle;
-    private bool _lastMicrophoneMuted;
-    private bool _hasObservedMicrophoneMuteState;
-    private bool _lastSpeakerMuted;
-    private bool _hasObservedSpeakerMuteState;
-
-    private static readonly Led[] FullscreenManagedLeds =
-    [
-        Led.Power,
-        Led.Mute,
-        Led.Microphone,
-        Led.FnLock,
-        Led.Camera,
-    ];
-
-    // Helper method to get the current hotkey cycle state
-    private LedState? GetCurrentHotkeyCycleState()
-    {
-        var states = new List<LedState>(3);
-        if (HotkeyCycleOn) states.Add(LedState.On);
-        if (HotkeyCycleOff) states.Add(LedState.Off);
-        if (HotkeyCycleBlink) states.Add(LedState.Blink);
-        if (states.Count == 0) return null;
-
-        // If never pressed, initialize to first state
-        if (_hotkeyCycleIndex == -1)
-            _hotkeyCycleIndex = 0;
-
-        return states[_hotkeyCycleIndex % states.Count];
-    }
-
-    // Maps each Led enum value to its LedMapping — used in the apply methods
-    // so we don't repeat switch statements.
+    // Maps each Led enum value to its LedMapping — used to keep UI configuration
+    // aligned with hardware behavior updates handled by LedBehaviorService.
     private readonly Dictionary<Led, LedMapping> _mappings;
 
-    public MainViewModel(LedController leds, AppSettings settings)
+    public MainViewModel(LedBehaviorService ledBehavior, AppSettings settings)
     {
-        _leds = leds;
+        _ledBehavior = ledBehavior;
         _settings = settings;
-        _blinkMonitor = new LedBlinkMonitor(leds, settings.BlinkIntervalMs);
         Leds = [Power, Mute, RedDot, Microphone, Sleep, FnLock, Camera];
         _mappings = new Dictionary<Led, LedMapping>
         {
@@ -142,6 +88,9 @@ public sealed partial class MainViewModel : ObservableObject
             [Led.Camera] = Camera,
         };
 
+        _ledBehavior.Initialize(_mappings);
+        UpdateHotkeyCycleBehavior();
+
         // When the user changes a mode via the UI, apply it to hardware immediately.
         foreach (var (led, map) in _mappings)
         {
@@ -149,29 +98,8 @@ public sealed partial class MainViewModel : ObservableObject
             {
                 if (e.PropertyName == nameof(LedMapping.Mode))
                 {
-                    // Remove from blink monitor first in case it was blinking
-                    _blinkMonitor.RemoveBlinkingLed(led);
+                    _ledBehavior.OnLedModeChanged(led);
 
-                    switch (map.Mode)
-                    {
-                        case LedMode.On:
-                            _leds.SetLed(led, LedState.On, customId: map.CustomRegisterId);
-                            break;
-                        case LedMode.Off:
-                            _leds.SetLed(led, LedState.Off, customId: map.CustomRegisterId);
-                            break;
-                        case LedMode.Blink:
-                            // Use software blinking for all LEDs since hardware blink doesn't work on all LEDs
-                            _blinkMonitor.AddBlinkingLed(led, map.CustomRegisterId);
-                            break;
-                        case LedMode.HotkeyControlled:
-                            var state = GetCurrentHotkeyCycleState();
-                            if (state.HasValue)
-                                _leds.SetLed(led, state.Value, customId: map.CustomRegisterId);
-                            break;
-                    }
-
-                    // Check if disk mode usage changed (none->some or some->none)
                     bool hasDiskModesNow = HasDiskModeLeds;
                     if (_previousHadDiskModes != hasDiskModesNow)
                     {
@@ -184,284 +112,31 @@ public sealed partial class MainViewModel : ObservableObject
                 }
                 else if (e.PropertyName == nameof(LedMapping.CustomRegisterId))
                 {
-                    // If the LED is currently blinking, update the blink monitor with the new custom ID
-                    if (map.Mode == LedMode.Blink)
-                    {
-                        _blinkMonitor.RemoveBlinkingLed(led);
-                        _blinkMonitor.AddBlinkingLed(led, map.CustomRegisterId);
-                    }
+                    _ledBehavior.OnCustomRegisterIdChanged(led);
                     TriggerSaveIfEnabled();
                 }
             };
         }
 
-        // Initialize the tracking variable
         _previousHadDiskModes = HasDiskModeLeds;
     }
 
-    // -------------------------------------------------------------------------
-    // Monitoring event handlers
-    // These are called from App.xaml.cs — always on the UI (Dispatcher) thread.
-    // -------------------------------------------------------------------------
-
-    public void OnDiskStateChanged(DiskActivityState state)
+    partial void OnHotkeyCycleOnChanged(bool value)
     {
-        _lastDiskState = state;
-
-        if (_isFullscreen) return;
-
-        bool reading = state is DiskActivityState.Read or DiskActivityState.ReadWrite;
-        bool writing = state is DiskActivityState.Write or DiskActivityState.ReadWrite;
-
-        foreach (var (led, map) in _mappings)
-        {
-            if (map.Mode == LedMode.DiskRead) _leds.SetLed(led, reading ? LedState.On : LedState.Off, customId: map.CustomRegisterId);
-            else if (map.Mode == LedMode.DiskWrite) _leds.SetLed(led, writing ? LedState.On : LedState.Off, customId: map.CustomRegisterId);
-        }
+        UpdateHotkeyCycleBehavior();
+        TriggerSaveIfEnabled();
     }
 
-    // Default mode for the Microphone LED means: mirror the system mute state.
-    // If the mode is NOT Default but the mute state changes, the user likely pressed
-    // the physical mic button — automatically switch back to Default mode so the OS regains control.
-    public void OnMicrophoneMuteChanged(bool isMuted)
+    partial void OnHotkeyCycleOffChanged(bool value)
     {
-        _lastMicrophoneMuted = isMuted;
-        _hasObservedMicrophoneMuteState = true;
-
-        if (_isFullscreen) return;
-
-        if (Microphone.Mode == LedMode.Default)
-        {
-            _leds.SetLed(Led.Microphone, isMuted ? LedState.On : LedState.Off, customId: Microphone.CustomRegisterId);
-        }
-        else
-        {
-            // Mute state changed while in non-Default mode — user pressed the physical button.
-            // Automatically revert to Default so OS control is restored.
-            Microphone.Mode = LedMode.Default;
-            _leds.SetLed(Led.Microphone, isMuted ? LedState.On : LedState.Off, customId: Microphone.CustomRegisterId);
-        }
+        UpdateHotkeyCycleBehavior();
+        TriggerSaveIfEnabled();
     }
 
-    // Default mode for the Mute LED means: mirror the system speaker mute state.
-    // If the mode is NOT Default but the mute state changes, the user likely pressed
-    // the physical mute button — automatically switch back to Default mode so the OS regains control.
-    public void OnSpeakerMuteChanged(bool isMuted)
+    partial void OnHotkeyCycleBlinkChanged(bool value)
     {
-        _lastSpeakerMuted = isMuted;
-        _hasObservedSpeakerMuteState = true;
-
-        if (_isFullscreen) return;
-
-        if (Mute.Mode == LedMode.Default)
-        {
-            _leds.SetLed(Led.Mute, isMuted ? LedState.On : LedState.Off, customId: Mute.CustomRegisterId);
-        }
-        else
-        {
-            // Mute state changed while in non-Default mode — user pressed the physical button.
-            // Automatically revert to Default so OS control is restored.
-            Mute.Mode = LedMode.Default;
-            _leds.SetLed(Led.Mute, isMuted ? LedState.On : LedState.Off, customId: Mute.CustomRegisterId);
-        }
-    }
-
-    // Called by PowerEventListener when a fullscreen app covers the screen.
-    public void OnFullscreenChanged(bool isFullscreen, byte currentBacklight)
-    {
-        // Only dim if the setting is enabled
-        if (!_settings.DimLedsWhenFullscreen) return;
-
-        if (_isFullscreen == isFullscreen) return;
-
-        _isFullscreen = isFullscreen;
-
-        if (isFullscreen)
-        {
-            _preFullscreenBacklight = currentBacklight;
-            _hasPreFullscreenBacklight = true;
-            _blinkMonitor.Pause(); // Pause blinking in fullscreen
-            _leds.SetKeyboardBacklightRaw(0);
-
-            foreach (Led led in FullscreenManagedLeds)
-            {
-                if (ShouldDimLedForFullscreen(led))
-                {
-                    _leds.SetLed(led, LedState.Off, customId: _mappings[led].CustomRegisterId);
-                }
-            }
-        }
-        else
-        {
-            if (_hasPreFullscreenBacklight)
-                _leds.SetKeyboardBacklightRaw(_preFullscreenBacklight);
-
-            foreach (Led led in FullscreenManagedLeds)
-            {
-                ApplyCurrentLedState(led);
-            }
-
-            _blinkMonitor.Resume(); // Resume blinking after fullscreen
-        }
-    }
-
-    private bool ShouldDimLedForFullscreen(Led led)
-    {
-        LedMapping map = _mappings[led];
-        if (map.Mode != LedMode.Default)
-            return true;
-
-        return led switch
-        {
-            Led.Mute => _hasObservedSpeakerMuteState,
-            Led.Microphone => _hasObservedMicrophoneMuteState,
-            _ => false,
-        };
-    }
-
-    private void ApplyCurrentLedState(Led led)
-    {
-        LedMapping map = _mappings[led];
-        _blinkMonitor.RemoveBlinkingLed(led);
-
-        switch (map.Mode)
-        {
-            case LedMode.Default:
-                ApplyDefaultLedState(led, map);
-                break;
-            case LedMode.On:
-                _leds.SetLed(led, LedState.On, customId: map.CustomRegisterId);
-                break;
-            case LedMode.Off:
-                _leds.SetLed(led, LedState.Off, customId: map.CustomRegisterId);
-                break;
-            case LedMode.Blink:
-                _blinkMonitor.AddBlinkingLed(led, map.CustomRegisterId);
-                break;
-            case LedMode.HotkeyControlled:
-                ApplyHotkeyControlledState(led, map);
-                break;
-            case LedMode.DiskRead:
-            case LedMode.DiskWrite:
-                ApplyDiskActivityLedState(led, map);
-                break;
-        }
-    }
-
-    private void ApplyDefaultLedState(Led led, LedMapping map)
-    {
-        switch (led)
-        {
-            case Led.Mute when _hasObservedSpeakerMuteState:
-                _leds.SetLed(led, _lastSpeakerMuted ? LedState.On : LedState.Off, customId: map.CustomRegisterId);
-                break;
-            case Led.Microphone when _hasObservedMicrophoneMuteState:
-                _leds.SetLed(led, _lastMicrophoneMuted ? LedState.On : LedState.Off, customId: map.CustomRegisterId);
-                break;
-        }
-    }
-
-    private void ApplyHotkeyControlledState(Led led, LedMapping map)
-    {
-        LedState? state = GetCurrentHotkeyCycleState();
-        if (!state.HasValue)
-            return;
-
-        if (state.Value == LedState.Blink)
-        {
-            _blinkMonitor.AddBlinkingLed(led, map.CustomRegisterId);
-            return;
-        }
-
-        _leds.SetLed(led, state.Value, customId: map.CustomRegisterId);
-    }
-
-    private void ApplyDiskActivityLedState(Led led, LedMapping map)
-    {
-        bool reading = _lastDiskState is DiskActivityState.Read or DiskActivityState.ReadWrite;
-        bool writing = _lastDiskState is DiskActivityState.Write or DiskActivityState.ReadWrite;
-        bool shouldBeOn = map.Mode switch
-        {
-            LedMode.DiskRead => reading,
-            LedMode.DiskWrite => writing,
-            _ => false,
-        };
-
-        _leds.SetLed(led, shouldBeOn ? LedState.On : LedState.Off, customId: map.CustomRegisterId);
-    }
-
-    // Called by HotkeyService when Win+Shift+K is pressed.
-    // Advances all HotkeyControlled LEDs to the next state in the configured cycle.
-    public void OnHotkeyPressed()
-    {
-        var states = new List<LedState>(3);
-        if (HotkeyCycleOn) states.Add(LedState.On);
-        if (HotkeyCycleOff) states.Add(LedState.Off);
-        if (HotkeyCycleBlink) states.Add(LedState.Blink);
-        if (states.Count == 0) return;
-
-        _hotkeyCycleIndex = (_hotkeyCycleIndex + 1) % states.Count;
-        LedState next = states[_hotkeyCycleIndex];
-
-        if (_isFullscreen) return;
-
-        foreach (var (led, map) in _mappings)
-        {
-            if (map.Mode == LedMode.HotkeyControlled)
-            {
-                if (next == LedState.Blink)
-                {
-                    // Use software blinking
-                    _blinkMonitor.AddBlinkingLed(led, map.CustomRegisterId);
-                }
-                else
-                {
-                    // Remove from blink monitor if it was blinking
-                    _blinkMonitor.RemoveBlinkingLed(led);
-                    _leds.SetLed(led, next, customId: map.CustomRegisterId);
-                }
-            }
-        }
-    }
-
-    // -------------------------------------------------------------------------
-    // Apply static modes to hardware
-    // Called once at startup after LoadFrom() so hardware reflects saved settings.
-    // -------------------------------------------------------------------------
-
-    public void ApplyAll()
-    {
-        foreach (var (led, map) in _mappings)
-        {
-            switch (map.Mode)
-            {
-                case LedMode.On:
-                    _leds.SetLed(led, LedState.On, customId: map.CustomRegisterId);
-                    break;
-                case LedMode.Off:
-                    _leds.SetLed(led, LedState.Off, customId: map.CustomRegisterId);
-                    break;
-                case LedMode.Blink:
-                    // Use software blinking for all LEDs
-                    _blinkMonitor.AddBlinkingLed(led, map.CustomRegisterId);
-                    break;
-                case LedMode.HotkeyControlled:
-                    var state = GetCurrentHotkeyCycleState();
-                    if (state.HasValue)
-                    {
-                        if (state.Value == LedState.Blink)
-                        {
-                            // Use software blinking
-                            _blinkMonitor.AddBlinkingLed(led, map.CustomRegisterId);
-                        }
-                        else
-                        {
-                            _leds.SetLed(led, state.Value, customId: map.CustomRegisterId);
-                        }
-                    }
-                    break;
-            }
-        }
+        UpdateHotkeyCycleBehavior();
+        TriggerSaveIfEnabled();
     }
 
     // -------------------------------------------------------------------------
@@ -490,10 +165,8 @@ public sealed partial class MainViewModel : ObservableObject
         HotkeyCycleOff = _settings.HotkeyCycleOff;
         HotkeyCycleBlink = _settings.HotkeyCycleBlink;
 
-        // Initialize hotkey display text
         HotkeyDisplayText = FormatHotkeyDisplay(_settings.HotkeyModifiers, _settings.HotkeyVirtualKey);
 
-        // Update tracking variable after loading modes
         _previousHadDiskModes = HasDiskModeLeds;
         OnPropertyChanged(nameof(HasDiskModeLeds));
     }
@@ -550,26 +223,28 @@ public sealed partial class MainViewModel : ObservableObject
     {
         var parts = new List<string>();
 
-        if ((modifiers & 0x0002) != 0) parts.Add("Ctrl");  // MOD_CONTROL
-        if ((modifiers & 0x0001) != 0) parts.Add("Alt");   // MOD_ALT
-        if ((modifiers & 0x0004) != 0) parts.Add("Shift"); // MOD_SHIFT
-        if ((modifiers & 0x0008) != 0) parts.Add("Win");   // MOD_WIN
+        if ((modifiers & 0x0002) != 0) parts.Add("Ctrl");
+        if ((modifiers & 0x0001) != 0) parts.Add("Alt");
+        if ((modifiers & 0x0004) != 0) parts.Add("Shift");
+        if ((modifiers & 0x0008) != 0) parts.Add("Win");
 
-        // Convert virtual key code to key name
-        string keyName = GetKeyName(virtualKey);
-        parts.Add(keyName);
+        parts.Add(GetKeyName(virtualKey));
 
         return string.Join(" + ", parts);
     }
 
-    private string GetKeyName(int virtualKey)
+    private void UpdateHotkeyCycleBehavior()
     {
-        // Common keys
-        if (virtualKey >= 0x41 && virtualKey <= 0x5A) // A-Z
+        _ledBehavior.UpdateHotkeyCycleOptions(HotkeyCycleOn, HotkeyCycleOff, HotkeyCycleBlink);
+    }
+
+    private static string GetKeyName(int virtualKey)
+    {
+        if (virtualKey >= 0x41 && virtualKey <= 0x5A)
             return ((char)virtualKey).ToString();
-        if (virtualKey >= 0x30 && virtualKey <= 0x39) // 0-9
+        if (virtualKey >= 0x30 && virtualKey <= 0x39)
             return ((char)virtualKey).ToString();
-        if (virtualKey >= 0x70 && virtualKey <= 0x87) // F1-F24
+        if (virtualKey >= 0x70 && virtualKey <= 0x87)
             return $"F{virtualKey - 0x6F}";
 
         return virtualKey switch
@@ -577,6 +252,7 @@ public sealed partial class MainViewModel : ObservableObject
             0x08 => "Backspace",
             0x09 => "Tab",
             0x0D => "Enter",
+            0x14 => "CapsLock",
             0x1B => "Escape",
             0x20 => "Space",
             0x21 => "PageUp",
@@ -591,10 +267,5 @@ public sealed partial class MainViewModel : ObservableObject
             0x2E => "Delete",
             _ => $"Key{virtualKey:X}"
         };
-    }
-
-    public void UpdateBlinkInterval(int intervalMs)
-    {
-        _blinkMonitor.SetBlinkInterval(intervalMs);
     }
 }

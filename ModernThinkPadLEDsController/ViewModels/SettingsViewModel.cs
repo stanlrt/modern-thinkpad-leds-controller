@@ -10,9 +10,9 @@ namespace ModernThinkPadLEDsController.ViewModels;
 public sealed partial class SettingsViewModel : ObservableObject
 {
     private readonly AppSettings _settings;
+    private readonly LedBehaviorService _ledBehavior;
     private readonly DiskActivityMonitor _disk;
     private readonly LedController _leds;
-    private readonly MainViewModel _mainVm;
     private readonly PowerEventListener _powerListener;
     private Action? _saveSettingsCallback;
 
@@ -26,7 +26,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     [SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Called by CommunityToolkit.Mvvm source generator")]
     partial void OnBlinkIntervalMsChanged(int value)
     {
-        _mainVm.UpdateBlinkInterval(value);
+        _ledBehavior.UpdateBlinkInterval(value);
         _settings.BlinkIntervalMs = value;
         TriggerSave();
     }
@@ -135,15 +135,15 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     public SettingsViewModel(
         AppSettings settings,
+        LedBehaviorService ledBehavior,
         DiskActivityMonitor disk,
         LedController leds,
-        MainViewModel mainVm,
         PowerEventListener powerListener)
     {
         _settings = settings;
+        _ledBehavior = ledBehavior;
         _disk = disk;
         _leds = leds;
-        _mainVm = mainVm;
         _powerListener = powerListener;
     }
 

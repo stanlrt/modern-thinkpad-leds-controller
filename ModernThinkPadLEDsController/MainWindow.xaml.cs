@@ -170,7 +170,7 @@ public partial class MainWindow : FluentWindow
         if ((modifiers & ModifierKeys.Shift) != 0) parts.Add("Shift");
         if ((modifiers & ModifierKeys.Windows) != 0) parts.Add("Win");
 
-        parts.Add(key.ToString());
+        parts.Add(key == Key.Capital ? "CapsLock" : key.ToString());
 
         return string.Join(" + ", parts);
     }
