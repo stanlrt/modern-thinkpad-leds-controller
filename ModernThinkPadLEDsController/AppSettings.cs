@@ -37,7 +37,7 @@ public sealed class AppSettings
     public int HddPollIntervalMs { get; set; } = 300;
 
     public bool RememberKeyboardBacklight { get; set; }
-    public int SavedKeyboardBacklight { get; set; } // 0=Off, 1=Low, 2=High
+    public int SavedKeyboardBacklight { get; set; } // Raw brightness value (0-255)
 
     public bool DimLedsWhenFullscreen { get; set; }
     public bool SuppressDiskCounterWarning { get; set; }

@@ -13,6 +13,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     private readonly DiskActivityMonitor _disk;
     private readonly LedController _leds;
     private readonly MainViewModel _mainVm;
+    private readonly PowerEventListener _powerListener;
     private Action? _saveSettingsCallback;
 
     // Flag to prevent triggering saves during initial load
@@ -54,18 +55,31 @@ public sealed partial class SettingsViewModel : ObservableObject
     }
 
     [ObservableProperty]
+    private int _keyboardBrightnessLevel;
+
+    [SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Called by CommunityToolkit.Mvvm source generator")]
+    partial void OnKeyboardBrightnessLevelChanged(int value)
+    {
+        _leds.SetKeyboardBacklightRaw((byte)value);
+        _settings.SavedKeyboardBacklight = value;
+        TriggerSave();
+    }
+
+    [ObservableProperty]
     private bool _dimLedsWhenFullscreen;
 
     [SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Called by CommunityToolkit.Mvvm source generator")]
     partial void OnDimLedsWhenFullscreenChanged(bool value)
     {
         _settings.DimLedsWhenFullscreen = value;
+
+        if (value)
+            _powerListener.StartFullscreenPolling();
+        else
+            _powerListener.StopFullscreenPolling();
+
         TriggerSave();
     }
-
-    [RelayCommand] private void SetBacklightOff() => _leds.SetKeyboardBacklight(KeyboardBacklight.Off);
-    [RelayCommand] private void SetBacklightLow() => _leds.SetKeyboardBacklight(KeyboardBacklight.Low);
-    [RelayCommand] private void SetBacklightHigh() => _leds.SetKeyboardBacklight(KeyboardBacklight.High);
 
     [ObservableProperty]
     private bool _startWithWindows;
@@ -106,12 +120,14 @@ public sealed partial class SettingsViewModel : ObservableObject
         AppSettings settings,
         DiskActivityMonitor disk,
         LedController leds,
-        MainViewModel mainVm)
+        MainViewModel mainVm,
+        PowerEventListener powerListener)
     {
         _settings = settings;
         _disk = disk;
         _leds = leds;
         _mainVm = mainVm;
+        _powerListener = powerListener;
     }
 
     /// <summary>
@@ -126,6 +142,17 @@ public sealed partial class SettingsViewModel : ObservableObject
         BlinkIntervalMs = _settings.BlinkIntervalMs;
         HddPollIntervalMs = _settings.HddPollIntervalMs;
         RememberKeyboardBacklight = _settings.RememberKeyboardBacklight;
+
+        // Load keyboard brightness level, or read current hardware value if not set
+        if (_settings.SavedKeyboardBacklight == 0 && _leds.GetKeyboardBacklightRaw(out byte currentLevel))
+        {
+            KeyboardBrightnessLevel = currentLevel;
+        }
+        else
+        {
+            KeyboardBrightnessLevel = _settings.SavedKeyboardBacklight;
+        }
+
         DimLedsWhenFullscreen = _settings.DimLedsWhenFullscreen;
         PersistSettingsOnChange = _settings.PersistSettingsOnChange;
         StartWithWindows = StartupTaskManager.IsRegistered();

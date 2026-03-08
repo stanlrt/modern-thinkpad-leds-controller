@@ -451,7 +451,7 @@ public partial class App : System.Windows.Application
         {
             _logger?.LogInformation("System resumed - restarting monitors");
             if (_settings!.RememberKeyboardBacklight)
-                _kbdMonitor!.RestoreMostCommonLevel();
+                _settingsVm!.KeyboardBrightnessLevel = _settings.SavedKeyboardBacklight;
             if (_mainVm!.HasDiskModeLeds)
                 _diskMonitor!.Start();
             _kbdMonitor!.Start();
@@ -464,7 +464,7 @@ public partial class App : System.Windows.Application
         {
             _logger?.LogDebug("Lid state changed: {IsOpen}", isOpen);
             if (isOpen && _settings!.RememberKeyboardBacklight)
-                _kbdMonitor!.RestoreMostCommonLevel();
+                _settingsVm!.KeyboardBrightnessLevel = _settings.SavedKeyboardBacklight;
         });
     }
 

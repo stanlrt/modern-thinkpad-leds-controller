@@ -74,7 +74,7 @@ public sealed partial class MainViewModel : ObservableObject
     private int _hotkeyCycleIndex = -1;
 
     private bool _isFullscreen;
-    private KeyboardBacklight _preFullscreenBacklight = KeyboardBacklight.Off;
+    private byte _preFullscreenBacklight = 0;
 
     // Helper method to get the current hotkey cycle state
     private LedState? GetCurrentHotkeyCycleState()
@@ -230,15 +230,18 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     // Called by PowerEventListener when a fullscreen app covers the screen.
-    public void OnFullscreenChanged(bool isFullscreen, KeyboardBacklight currentBacklight)
+    public void OnFullscreenChanged(bool isFullscreen, byte currentBacklight)
     {
+        // Only dim if the setting is enabled
+        if (!_settings.DimLedsWhenFullscreen) return;
+
         _isFullscreen = isFullscreen;
 
         if (isFullscreen)
         {
             _preFullscreenBacklight = currentBacklight;
             _blinkMonitor.Pause(); // Pause blinking in fullscreen
-            _leds.SetKeyboardBacklight(KeyboardBacklight.Off);
+            _leds.SetKeyboardBacklightRaw(0);
             _leds.SetLed(Led.Power, LedState.Off, customId: Power.CustomRegisterId);
             _leds.SetLed(Led.Mute, LedState.Off, customId: Mute.CustomRegisterId);
             _leds.SetLed(Led.Microphone, LedState.Off, customId: Microphone.CustomRegisterId);
@@ -247,8 +250,8 @@ public sealed partial class MainViewModel : ObservableObject
         }
         else
         {
-            if (_preFullscreenBacklight != KeyboardBacklight.Off)
-                _leds.SetKeyboardBacklight(_preFullscreenBacklight);
+            if (_preFullscreenBacklight != 0)
+                _leds.SetKeyboardBacklightRaw(_preFullscreenBacklight);
 
             _leds.SetLed(Led.Power, LedState.On, customId: Power.CustomRegisterId);
             _blinkMonitor.Resume(); // Resume blinking after fullscreen

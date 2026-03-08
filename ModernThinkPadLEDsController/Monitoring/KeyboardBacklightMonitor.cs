@@ -18,15 +18,15 @@ namespace ModernThinkPadLEDsController.Monitoring;
 // in Form1.cs, but the core idea is identical.
 public sealed class KeyboardBacklightMonitor : IDisposable
 {
-    public event Action<KeyboardBacklight>? LevelChanged;
+    public event Action<byte>? LevelChanged;
 
     private readonly LedController _leds;
-    private readonly Queue<KeyboardBacklight> _history = new();
+    private readonly Queue<byte> _history = new();
     private const int HistorySize = 5;
     private const int PollIntervalMs = 1000;
 
     private CancellationTokenSource? _cts;
-    private KeyboardBacklight _lastSeen = KeyboardBacklight.Off;
+    private byte _lastSeen = 0;
 
     public KeyboardBacklightMonitor(LedController leds) => _leds = leds;
 
@@ -49,23 +49,23 @@ public sealed class KeyboardBacklightMonitor : IDisposable
     {
         if (_history.Count == 0) return;
 
-        KeyboardBacklight mostCommon = _history
+        byte mostCommon = _history
             .GroupBy(x => x)
             .OrderByDescending(g => g.Count())
             .First().Key;
 
-        _leds.SetKeyboardBacklight(mostCommon);
+        _leds.SetKeyboardBacklightRaw(mostCommon);
     }
 
     // Returns the most recently observed level (used by App.xaml.cs to
     // save the level into AppSettings on shutdown).
-    public KeyboardBacklight CurrentLevel => _lastSeen;
+    public byte CurrentLevel => _lastSeen;
 
     private async Task PollLoop(CancellationToken ct)
     {
         while (!ct.IsCancellationRequested)
         {
-            if (_leds.GetKeyboardBacklight(out KeyboardBacklight level))
+            if (_leds.GetKeyboardBacklightRaw(out byte level))
             {
                 if (_history.Count >= HistorySize)
                     _history.Dequeue();

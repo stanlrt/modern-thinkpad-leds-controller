@@ -975,13 +975,17 @@
                                        Margin="0,0,0,8"/>
                             <CheckBox Content="On"
                                       IsChecked="{Binding MainVm.HotkeyCycleOn}"
-                                      Margin="-8,0,0,6"/>
+                                      Margin="-8,0,0,6"
+                                      Padding="8,4"/>
                             <CheckBox Content="Off"
                                       IsChecked="{Binding MainVm.HotkeyCycleOff}"
-                                      Margin="-8,0,0,6"/>
+                                      Margin="-8,0,0,6"
+                                      Padding="8,4"/>
                             <CheckBox Content="Blink"
                                       IsChecked="{Binding MainVm.HotkeyCycleBlink}"
-                                      Margin="-8,0,0,0"/>
+                                      Margin="-8,0,0,0"
+                                      Padding="8,4"/>
+
                         </StackPanel>
                     </TabItem>
 
@@ -1077,25 +1081,41 @@
                     <!-- ── Keyboard Backlight tab ── -->
                     <TabItem Header="Keyboard Backlight">
                         <StackPanel Margin="10,12">
-                            <TextBlock Text="Level"
+                            <TextBlock Text="Brightness Level"
                                        FontWeight="SemiBold"
                                        Margin="0,0,0,8"/>
                             <StackPanel Orientation="Horizontal"
-                                        Margin="0,0,0,14">
-                                <Button Content="Off"
-                                        Command="{Binding SettingsVm.SetBacklightOffCommand}"
-                                        Margin="0,0,6,0"/>
-                                <Button Content="Low"
-                                        Command="{Binding SettingsVm.SetBacklightLowCommand}"
-                                        Margin="0,0,6,0"/>
-                                <Button Content="High"
-                                        Command="{Binding SettingsVm.SetBacklightHighCommand}"/>
+                                        VerticalAlignment="Center">
+                                <Slider Grid.Column="0"
+                                        Minimum="0"
+                                        Maximum="255"
+                                        Width="200"
+                                        TickFrequency="1"
+                                        IsSnapToTickEnabled="True"
+                                        Value="{Binding SettingsVm.KeyboardBrightnessLevel}"/>
+                                <TextBlock Grid.Column="1"
+                                           Text="{Binding SettingsVm.KeyboardBrightnessLevel, StringFormat={}{0} %}"
+                                           VerticalAlignment="Center"
+                                           TextAlignment="Right"
+                                           Margin="8,0,0,0"/>
                             </StackPanel>
+                            <TextBlock Text="Some ThinkPads only support predefined levels. Value will be rounded to the nearest."
+                                       FontSize="11"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,8,0,16"/>
+
+                            <TextBlock Text="Additional options"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,8"/>
                             <CheckBox Content="Remember level and restore after sleep or lid-open"
                                       IsChecked="{Binding SettingsVm.RememberKeyboardBacklight}"
-                                      Margin="0,0,0,6"/>
+                                      Margin="0,0,0,6"
+                                      Padding="0,4"/>
                             <CheckBox Content="Dim backlight and LEDs when a fullscreen app is active"
-                                      IsChecked="{Binding SettingsVm.DimLedsWhenFullscreen}"/>
+                                      IsChecked="{Binding SettingsVm.DimLedsWhenFullscreen}"
+                                      Padding="0,4"/>
+
                         </StackPanel>
                     </TabItem>
 
@@ -1108,10 +1128,12 @@
                             <CheckBox Content="Start with Windows (runs minimised to tray, no UAC prompt)"
                                       IsChecked="{Binding SettingsVm.StartWithWindows}"
                                       Command="{Binding SettingsVm.ToggleStartupCommand}"
-                                      Margin="0,0,0,16"/>
+                                      Margin="0,0,0,16"
+                                      Padding="0,4"/>
                             <CheckBox Content="Auto-save settings on change (if off, the app will revert to the last saved config when restarted)"
                                       IsChecked="{Binding SettingsVm.PersistSettingsOnChange}"
-                                      Margin="0,0,0,16"/>
+                                      Margin="0,0,0,16"
+                                      Padding="0,4"/>
                             <TextBlock Text="Driver"
                                        FontWeight="SemiBold"
                                        Margin="0,0,0,4"/>
