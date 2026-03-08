@@ -131,3 +131,6 @@ dotnet_naming_symbols.private_fields.applicable_accessibilities = private
 
 dotnet_naming_style.camel_case_underscore_style.required_prefix = _
 dotnet_naming_style.camel_case_underscore_style.capitalization = camel_case
+
+# Roslynator
+dotnet_analyzer_diagnostic.category-roslynator.severity = suggestion

@@ -11,6 +11,9 @@ namespace ModernThinkPadLEDsController.Monitoring;
 // Convention (matches ThinkPad keyboard behaviour):
 //   Speakers MUTED  → Mute LED ON  (red warning indicator)
 //   Speakers ACTIVE → Mute LED OFF
+/// <summary>
+/// Observes the default speaker mute state.
+/// </summary>
 public sealed class SpeakerMuteMonitor : IDisposable
 {
     // MuteStateChanged fires with: true = speakers are muted (LED should be ON)

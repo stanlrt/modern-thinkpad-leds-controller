@@ -2,16 +2,9 @@ using NAudio.CoreAudioApi;
 
 namespace ModernThinkPadLEDsController.Monitoring;
 
-// MicrophoneMuteMonitor replaces the CoreAudioApi.dll in the legacy project.
-// CoreAudioApi is the Windows audio subsystem API. NAudio is a well-maintained
-// .NET library that wraps it cleanly.
-//
-// We poll every 500 ms instead of using COM events because the polling approach
-// is simpler and 500 ms is imperceptible to the user for a mute indicator.
-//
-// Convention (matches ThinkPad keyboard behaviour):
-//   Mic MUTED   → Microphone LED ON  (red warning indicator)
-//   Mic ACTIVE  → Microphone LED OFF
+/// <summary>
+/// Observes the default microphone mute state.
+/// </summary>
 public sealed class MicrophoneMuteMonitor : IDisposable
 {
     // MuteStateChanged fires with: true = microphone is muted (LED should be ON)

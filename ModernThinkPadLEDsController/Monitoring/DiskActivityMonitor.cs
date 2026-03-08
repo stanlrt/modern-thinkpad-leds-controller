@@ -11,6 +11,9 @@ public enum DiskActivityState { Idle, Read, Write, ReadWrite }
 //
 // PerformanceCounter is a Windows system counter — the same data you see
 // in Task Manager's disk graph. It reads the "_Total" disk bytes per second.
+/// <summary>
+/// Observes aggregate disk read and write activity.
+/// </summary>
 public sealed class DiskActivityMonitor : IDisposable
 {
     public const int MinIntervalMs = 100;

@@ -12,6 +12,9 @@ namespace ModernThinkPadLEDsController.Hardware;
 //
 // This code is ported verbatim from Form1.cs (~lines 40-200).
 // The only change is swapping the WinRing0/TVicPort branching for IPortIO calls.
+/// <summary>
+/// Reads and writes ThinkPad EC registers through port I/O.
+/// </summary>
 public sealed class EcController
 {
     private const ushort EC_DATAPORT = 0x62;

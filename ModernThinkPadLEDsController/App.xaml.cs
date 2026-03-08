@@ -1,16 +1,20 @@
 using System.Windows;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Windows.Interop;
+using System.Windows.Input;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ModernThinkPadLEDsController.Hardware;
+using ModernThinkPadLEDsController.Lighting;
 using ModernThinkPadLEDsController.Logging;
 using ModernThinkPadLEDsController.Monitoring;
-using ModernThinkPadLEDsController.Services;
-using ModernThinkPadLEDsController.ViewModels;
-using ModernThinkPadLEDsController.Views;
+using ModernThinkPadLEDsController.Presentation.Services;
+using ModernThinkPadLEDsController.Presentation.ViewModels;
+using ModernThinkPadLEDsController.Presentation.Views;
+using ModernThinkPadLEDsController.Runtime;
+using ModernThinkPadLEDsController.Settings;
+using ModernThinkPadLEDsController.Shell;
 using Serilog;
 
 namespace ModernThinkPadLEDsController;
@@ -40,7 +44,8 @@ public partial class App : System.Windows.Application
     private ILogger<App>? _logger;
     private ApplicationCoordinator? _app;
     private ShellCoordinator? _shell;
-    private SettingsCoordinator? _settingsCoordinator;
+    private MainPresentationService? _presentation;
+    private SettingsPersistenceService? _settingsPersistence;
 
     // A named Mutex prevents two instances of the app running simultaneously.
     private Mutex? _singleInstanceMutex;
@@ -211,7 +216,8 @@ public partial class App : System.Windows.Application
                 services.AddSingleton<KeyboardBacklightMonitor>();
                 services.AddSingleton<MicrophoneMuteMonitor>();
                 services.AddSingleton<SpeakerMuteMonitor>();
-                services.AddSingleton<PowerEventListener>();
+                services.AddSingleton<PowerEventMonitor>();
+                services.AddSingleton<FullscreenMonitor>();
 
                 // UI services
                 services.AddSingleton<TrayIconService>(sp =>
@@ -227,9 +233,9 @@ public partial class App : System.Windows.Application
 
                 // Main window
                 services.AddSingleton<MainWindow>();
-                services.AddSingleton<MainUiController>();
-                services.AddSingleton<SettingsCoordinator>();
-                services.AddSingleton<MonitoringHub>();
+                services.AddSingleton<MainWindowHost>();
+                services.AddSingleton<MainPresentationService>();
+                services.AddSingleton<SettingsPersistenceService>();
                 services.AddSingleton<ShellCoordinator>();
                 services.AddSingleton<HardwareRuntimeCoordinator>();
                 services.AddSingleton<ApplicationCoordinator>();
@@ -328,7 +334,8 @@ public partial class App : System.Windows.Application
         // Resolve all services - this triggers construction and validation
         _app = _host!.Services.GetRequiredService<ApplicationCoordinator>();
         _shell = _host.Services.GetRequiredService<ShellCoordinator>();
-        _settingsCoordinator = _host.Services.GetRequiredService<SettingsCoordinator>();
+        _presentation = _host.Services.GetRequiredService<MainPresentationService>();
+        _settingsPersistence = _host.Services.GetRequiredService<SettingsPersistenceService>();
 
         _logger?.LogInformation("All services resolved successfully");
     }
@@ -341,9 +348,9 @@ public partial class App : System.Windows.Application
     /// Updates the registered hotkey and saves it to settings.
     /// </summary>
     /// <returns>True if the hotkey was registered successfully; false if already in use</returns>
-    public bool UpdateHotkey(int modifiers, int virtualKey, string displayText)
+    public bool UpdateHotkey(HotkeyModifiers modifiers, Key key, string displayText)
     {
-        return _shell?.UpdateHotkey(modifiers, virtualKey, displayText) ?? false;
+        return _shell?.UpdateHotkey(modifiers, key, displayText) ?? false;
     }
 
     /// <summary>
@@ -351,7 +358,12 @@ public partial class App : System.Windows.Application
     /// </summary>
     public string GetHotkeyDisplayText()
     {
-        return _shell?.GetHotkeyDisplayText() ?? string.Empty;
+        if (_presentation is null || _settingsPersistence is null)
+            return string.Empty;
+
+        return _presentation.FormatHotkeyDisplay(
+            _settingsPersistence.HotkeyModifiers,
+            _settingsPersistence.HotkeyKey);
     }
 
     private void RequestExit()
@@ -361,9 +373,9 @@ public partial class App : System.Windows.Application
         try
         {
             // Only save if auto-save is enabled; otherwise discard temporary changes
-            if (_settingsCoordinator?.PersistSettingsOnChange ?? false)
+            if (_settingsPersistence?.PersistSettingsOnChange ?? false)
             {
-                _settingsCoordinator.SaveCurrentSettings();
+                _settingsPersistence.SaveCurrentSettings();
             }
             else
             {

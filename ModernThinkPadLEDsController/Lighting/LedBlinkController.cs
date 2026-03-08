@@ -1,12 +1,11 @@
 using ModernThinkPadLEDsController.Hardware;
-using ModernThinkPadLEDsController.Lighting;
 
-namespace ModernThinkPadLEDsController.Monitoring;
+namespace ModernThinkPadLEDsController.Lighting;
 
 /// <summary>
 /// Tracks which LEDs are in Blink mode and actively toggles them
 /// </summary>
-public sealed class LedBlinkService : IDisposable
+public sealed class LedBlinkController : IDisposable
 {
     private readonly LedController _leds;
     private readonly Dictionary<Led, byte?> _blinkingLeds = new();
@@ -17,7 +16,7 @@ public sealed class LedBlinkService : IDisposable
     private bool _isPaused = false;
     private int _blinkIntervalMs;
 
-    public LedBlinkService(LedController leds, int blinkIntervalMs = 500)
+    public LedBlinkController(LedController leds, int blinkIntervalMs = 500)
     {
         _leds = leds;
         _blinkIntervalMs = blinkIntervalMs;

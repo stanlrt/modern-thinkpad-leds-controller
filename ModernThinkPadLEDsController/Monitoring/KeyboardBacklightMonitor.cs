@@ -16,6 +16,9 @@ namespace ModernThinkPadLEDsController.Monitoring;
 //
 // This replaces the legacy 'levels' List<LightLevel> + LINQ query pattern
 // in Form1.cs, but the core idea is identical.
+/// <summary>
+/// Observes and restores the keyboard backlight level.
+/// </summary>
 public sealed class KeyboardBacklightMonitor : IDisposable
 {
     public event Action<byte>? LevelChanged;

@@ -1,0 +1,188 @@
+using System.Runtime.InteropServices;
+using System.Windows;
+using System.Windows.Interop;
+using System.Windows.Threading;
+
+namespace ModernThinkPadLEDsController.Monitoring;
+
+/// <summary>
+/// Detects when another window has entered fullscreen mode.
+/// </summary>
+public sealed class FullscreenMonitor : IDisposable
+{
+    public event Action<bool>? FullscreenChanged;
+
+    private DispatcherTimer? _timer;
+    private bool _wasFullscreen;
+    private bool _isFirstCheck;
+    private IntPtr _ignoredWindowHandle = IntPtr.Zero;
+
+    private const int GwlStyle = -16;
+    private const long WsCaption = 0x00C00000L;
+    private const long WsThickFrame = 0x00040000L;
+    private const uint MonitorDefaultToNearest = 2;
+    private const int FullscreenBoundsTolerance = 2;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct Rect
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MonitorInfo
+    {
+        public int CbSize;
+        public Rect RcMonitor;
+        public Rect RcWork;
+        public uint DwFlags;
+    }
+
+    private enum QueryUserNotificationState
+    {
+        QunsNotPresent = 1,
+        QunsBusy = 2,
+        QunsRunningD3dFullScreen = 3,
+        QunsPresentationMode = 4,
+        QunsAcceptsNotifications = 5,
+        QunsQuietTime = 6,
+        QunsApp = 7,
+    }
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetForegroundWindow();
+
+    [DllImport("user32.dll")]
+    private static extern bool IsWindowVisible(IntPtr hWnd);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool GetWindowRect(IntPtr hWnd, out Rect rect);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint dwFlags);
+
+    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    private static extern bool GetMonitorInfo(IntPtr hMonitor, ref MonitorInfo monitorInfo);
+
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongPtr", SetLastError = true)]
+    private static extern IntPtr GetWindowLongPtr64(IntPtr hWnd, int nIndex);
+
+    [DllImport("user32.dll", EntryPoint = "GetWindowLong", SetLastError = true)]
+    private static extern IntPtr GetWindowLongPtr32(IntPtr hWnd, int nIndex);
+
+    [DllImport("shell32.dll")]
+    private static extern int SHQueryUserNotificationState(out QueryUserNotificationState state);
+
+    /// <summary>
+    /// Sets the app window handle that should be ignored by fullscreen detection.
+    /// </summary>
+    public void Attach(Window window)
+    {
+        _ignoredWindowHandle = new WindowInteropHelper(window).Handle;
+    }
+
+    /// <summary>
+    /// Starts polling for fullscreen changes.
+    /// </summary>
+    public void Start()
+    {
+        _isFirstCheck = true;
+
+        if (_timer is null)
+        {
+            _timer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(500),
+            };
+            _timer.Tick += OnTimerTick;
+        }
+
+        _timer.Stop();
+        _timer.Start();
+    }
+
+    /// <summary>
+    /// Stops polling for fullscreen changes.
+    /// </summary>
+    public void Stop()
+    {
+        _timer?.Stop();
+    }
+
+    private void OnTimerTick(object? sender, EventArgs e)
+    {
+        bool isFullscreen = IsForegroundFullscreen();
+
+        if (_isFirstCheck)
+        {
+            _wasFullscreen = isFullscreen;
+            _isFirstCheck = false;
+            return;
+        }
+
+        if (isFullscreen == _wasFullscreen)
+            return;
+
+        _wasFullscreen = isFullscreen;
+        FullscreenChanged?.Invoke(isFullscreen);
+    }
+
+    private bool IsForegroundFullscreen()
+    {
+        int result = SHQueryUserNotificationState(out QueryUserNotificationState state);
+        if (result == 0 && state == QueryUserNotificationState.QunsRunningD3dFullScreen)
+            return true;
+
+        IntPtr foregroundWindow = GetForegroundWindow();
+        if (foregroundWindow == IntPtr.Zero || foregroundWindow == _ignoredWindowHandle)
+            return false;
+
+        if (!IsWindowVisible(foregroundWindow))
+            return false;
+
+        IntPtr monitor = MonitorFromWindow(foregroundWindow, MonitorDefaultToNearest);
+        if (monitor == IntPtr.Zero)
+            return false;
+
+        MonitorInfo monitorInfo = new() { CbSize = Marshal.SizeOf<MonitorInfo>() };
+        if (!GetMonitorInfo(monitor, ref monitorInfo))
+            return false;
+
+        if (!GetWindowRect(foregroundWindow, out Rect windowRect))
+            return false;
+
+        if (!CoversMonitor(windowRect, monitorInfo.RcMonitor))
+            return false;
+
+        long style = GetWindowStyle(foregroundWindow);
+        bool hasStandardChrome = (style & (WsCaption | WsThickFrame)) != 0;
+        return !hasStandardChrome;
+    }
+
+    private static bool CoversMonitor(Rect windowRect, Rect monitorRect)
+    {
+        return Math.Abs(windowRect.Left - monitorRect.Left) <= FullscreenBoundsTolerance
+            && Math.Abs(windowRect.Top - monitorRect.Top) <= FullscreenBoundsTolerance
+            && Math.Abs(windowRect.Right - monitorRect.Right) <= FullscreenBoundsTolerance
+            && Math.Abs(windowRect.Bottom - monitorRect.Bottom) <= FullscreenBoundsTolerance;
+    }
+
+    private static long GetWindowStyle(IntPtr hWnd)
+    {
+        return IntPtr.Size == 8
+            ? GetWindowLongPtr64(hWnd, GwlStyle).ToInt64()
+            : GetWindowLongPtr32(hWnd, GwlStyle).ToInt32();
+    }
+
+    public void Dispose()
+    {
+        if (_timer is null)
+            return;
+
+        _timer.Stop();
+        _timer.Tick -= OnTimerTick;
+    }
+}

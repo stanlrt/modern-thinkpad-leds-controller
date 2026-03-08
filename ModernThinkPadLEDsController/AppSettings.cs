@@ -1,5 +1,9 @@
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Windows.Input;
+using ModernThinkPadLEDsController.Lighting;
+using ModernThinkPadLEDsController.Shell;
 
 namespace ModernThinkPadLEDsController;
 
@@ -32,9 +36,16 @@ public sealed class AppSettings
     public HotkeyCycleOptions HotkeyCycleOptions { get; set; } = HotkeyCycleOptions.On | HotkeyCycleOptions.Off;
 
     // Hotkey configuration: modifier keys and virtual key code
-    // Defaults to Win + Shift + K (MOD_WIN | MOD_SHIFT = 0x000C, VK_K = 0x4B)
-    public int HotkeyModifiers { get; set; } = 0x000C; // MOD_WIN | MOD_SHIFT
+    // Defaults to Win + Shift + K (0x000C, VK_K = 0x4B)
+    public HotkeyModifiers HotkeyModifiers { get; set; } = HotkeyModifiers.Win | HotkeyModifiers.Shift;
     public int HotkeyVirtualKey { get; set; } = 0x4B;  // VK_K
+
+    [JsonIgnore]
+    public Key HotkeyKey
+    {
+        get => KeyInterop.KeyFromVirtualKey(HotkeyVirtualKey);
+        set => HotkeyVirtualKey = KeyInterop.VirtualKeyFromKey(value);
+    }
 
     public int BlinkIntervalMs { get; set; } = 500;
     public int DiskPollIntervalMs { get; set; } = 300;

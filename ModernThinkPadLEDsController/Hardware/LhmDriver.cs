@@ -12,6 +12,9 @@ namespace ModernThinkPadLEDsController.Hardware;
 //
 // PawnIO must be installed separately by the user (from https://pawnio.eu/).
 // On first use, the driver loads the LpcACPIEC.bin module embedded in LibreHardwareMonitorLib.
+/// <summary>
+/// Wraps PawnIO-backed port access from LibreHardwareMonitor.
+/// </summary>
 public sealed class LhmDriver : IPortIO, IDisposable
 {
     private readonly LpcAcpiEc _pawnModule;

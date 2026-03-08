@@ -3,8 +3,14 @@ using Serilog;
 
 namespace ModernThinkPadLEDsController.Hardware;
 
+/// <summary>
+/// Describes the result of changing the hardware access preference.
+/// </summary>
 public readonly record struct HardwareAccessPreferenceChangeResult(bool AppliedImmediately, string? Message);
 
+/// <summary>
+/// Tracks whether live hardware access is allowed for this session.
+/// </summary>
 public sealed class HardwareAccessController
 {
     private int _isEnabled;

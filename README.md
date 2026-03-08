@@ -1,4 +1,5 @@
-<img src="./Logo.png" width="100px" />
+<!-- markdownlint-disable-next-line MD033 MD041 -->
+<img src="./Logo.png" width="100px" alt="Logo" />
 
 # Modern ThinkPad LEDs Controller
 

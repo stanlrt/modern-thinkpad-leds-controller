@@ -93,6 +93,12 @@
           "NAudio.WinMM": "2.2.1"
         }
       },
+      "Roslynator.Analyzers": {
+        "type": "Direct",
+        "requested": "[4.15.0, )",
+        "resolved": "4.15.0",
+        "contentHash": "E8fu71Y+vzhniJKy1K13Rzwm8Vjcj7CDFBpflqncKUZfc3SzuF0kMBiyMmgXNPkjWTdE3Z+30HlGgYjHONZY/Q=="
+      },
       "Serilog": {
         "type": "Direct",
         "requested": "[4.3.0, )",

@@ -1,25 +1,11 @@
 using Serilog;
+using ModernThinkPadLEDsController.Lighting;
 
 namespace ModernThinkPadLEDsController.Hardware;
 
-public enum Led : byte
-{
-    Power = 0x00,
-    Mute = 0x04,
-    Sleep = 0x07,
-    FnLock = 0x06,
-    RedDot = 0x0A,
-    Microphone = 0x0E,
-    Camera = 0x0F,
-}
-
-public enum LedState : byte
-{
-    Off = 0x00,
-    On = 0x80,
-    Blink = 0xC0,
-}
-
+/// <summary>
+/// Applies LED and keyboard backlight writes through the EC.
+/// </summary>
 public sealed class LedController
 {
     // EC register addresses for LEDs and keyboard backlight.
