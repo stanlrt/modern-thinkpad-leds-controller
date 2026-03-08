@@ -191,6 +191,26 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
+    // Default mode for the Mute LED means: mirror the system speaker mute state.
+    // If the mode is NOT Default but the mute state changes, the user likely pressed
+    // the physical mute button — automatically switch back to Default mode so the OS regains control.
+    public void OnSpeakerMuteChanged(bool isMuted)
+    {
+        if (_isFullscreen) return;
+
+        if (Mute.Mode == LedMode.Default)
+        {
+            _leds.SetLed(Led.Mute, isMuted ? LedState.On : LedState.Off, customId: Mute.CustomRegisterId);
+        }
+        else
+        {
+            // Mute state changed while in non-Default mode — user pressed the physical button.
+            // Automatically revert to Default so OS control is restored.
+            Mute.Mode = LedMode.Default;
+            _leds.SetLed(Led.Mute, isMuted ? LedState.On : LedState.Off, customId: Mute.CustomRegisterId);
+        }
+    }
+
     // Called by PowerEventListener when a fullscreen app covers the screen.
     public void OnFullscreenChanged(bool isFullscreen, KeyboardBacklight currentBacklight)
     {

@@ -41,6 +41,7 @@ public partial class App : System.Windows.Application
     private DiskActivityMonitor? _diskMonitor;
     private KeyboardBacklightMonitor? _kbdMonitor;
     private MicrophoneMuteMonitor? _micMonitor;
+    private SpeakerMuteMonitor? _speakerMonitor;
     private PowerEventListener? _powerListener;
     private HotkeyService? _hotkey;
     private TrayIconService? _tray;
@@ -199,6 +200,7 @@ public partial class App : System.Windows.Application
                 });
                 services.AddSingleton<KeyboardBacklightMonitor>();
                 services.AddSingleton<MicrophoneMuteMonitor>();
+                services.AddSingleton<SpeakerMuteMonitor>();
                 services.AddSingleton<PowerEventListener>();
 
                 // UI services
@@ -309,6 +311,7 @@ public partial class App : System.Windows.Application
         _diskMonitor = _host.Services.GetRequiredService<DiskActivityMonitor>();
         _kbdMonitor = _host.Services.GetRequiredService<KeyboardBacklightMonitor>();
         _micMonitor = _host.Services.GetRequiredService<MicrophoneMuteMonitor>();
+        _speakerMonitor = _host.Services.GetRequiredService<SpeakerMuteMonitor>();
         _powerListener = _host.Services.GetRequiredService<PowerEventListener>();
         _tray = _host.Services.GetRequiredService<TrayIconService>();
         _mainVm = _host.Services.GetRequiredService<MainViewModel>();
@@ -367,6 +370,7 @@ public partial class App : System.Windows.Application
         _mainWindow!.SourceInitialized += OnMainWindowSourceInitialized;
         _diskMonitor!.StateChanged += OnDiskStateChanged;
         _micMonitor!.MuteStateChanged += OnMicrophoneMuteStateChanged;
+        _speakerMonitor!.MuteStateChanged += OnSpeakerMuteStateChanged;
         _powerListener!.SystemSuspending += OnSystemSuspending;
         _powerListener.SystemResumed += OnSystemResumed;
         _powerListener.LidStateChanged += OnLidStateChanged;
@@ -419,6 +423,15 @@ public partial class App : System.Windows.Application
         {
             _logger?.LogDebug("Microphone mute state changed: {IsMuted}", isMuted);
             _mainVm!.OnMicrophoneMuteChanged(isMuted);
+        });
+    }
+
+    private void OnSpeakerMuteStateChanged(bool isMuted)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            _logger?.LogDebug("Speaker mute state changed: {IsMuted}", isMuted);
+            _mainVm!.OnSpeakerMuteChanged(isMuted);
         });
     }
 
@@ -486,6 +499,13 @@ public partial class App : System.Windows.Application
         var isMuted = _micMonitor.QueryMuted();
         _mainVm!.OnMicrophoneMuteChanged(isMuted);
         _logger?.LogDebug("Initial microphone mute state: {IsMuted}", isMuted);
+
+        _speakerMonitor!.Start();
+        _logger?.LogDebug("Speaker mute monitor started");
+
+        var speakerMuted = _speakerMonitor.QueryMuted();
+        _mainVm.OnSpeakerMuteChanged(speakerMuted);
+        _logger?.LogDebug("Initial speaker mute state: {IsMuted}", speakerMuted);
     }
 
     private void ShowMainWindow()
