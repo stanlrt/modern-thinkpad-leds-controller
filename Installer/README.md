@@ -34,8 +34,11 @@ The MSI will be created in the current directory.
 
 - Installs to `C:\Program Files\Modern ThinkPad LEDs Controller\`
 - Creates a Start Menu shortcut
+- Offers to launch the app from the installer finish dialog
 - Registers in Add/Remove Programs for clean uninstall
 - Requires administrator privileges (`perMachine` install)
+
+Startup with Windows is configured by the app itself after first launch. The app uses Task Scheduler instead of the `Run` registry key so Windows can start it elevated without showing a UAC prompt every logon.
 
 ## Important Notes
 
