@@ -56,19 +56,16 @@ public sealed partial class MainViewModel : ObservableObject
 
     partial void OnHotkeyCycleOnChanged(bool value)
     {
-        _settings.HotkeyCycleOn = value;
         TriggerSaveIfEnabled();
     }
 
     partial void OnHotkeyCycleOffChanged(bool value)
     {
-        _settings.HotkeyCycleOff = value;
         TriggerSaveIfEnabled();
     }
 
     partial void OnHotkeyCycleBlinkChanged(bool value)
     {
-        _settings.HotkeyCycleBlink = value;
         TriggerSaveIfEnabled();
     }
 
@@ -239,54 +236,54 @@ public sealed partial class MainViewModel : ObservableObject
     // Settings round-trip
     // -------------------------------------------------------------------------
 
-    public void LoadFrom(AppSettings s)
+    public void LoadFromSettings()
     {
-        Power.Mode = s.PowerMode;
-        Mute.Mode = s.MuteMode;
-        RedDot.Mode = s.RedDotMode;
-        Microphone.Mode = s.MicrophoneMode;
-        Sleep.Mode = s.SleepMode;
-        FnLock.Mode = s.FnLockMode;
-        Camera.Mode = s.CameraMode;
+        Power.Mode = _settings.PowerMode;
+        Mute.Mode = _settings.MuteMode;
+        RedDot.Mode = _settings.RedDotMode;
+        Microphone.Mode = _settings.MicrophoneMode;
+        Sleep.Mode = _settings.SleepMode;
+        FnLock.Mode = _settings.FnLockMode;
+        Camera.Mode = _settings.CameraMode;
 
-        Power.CustomRegisterId = s.PowerCustomId;
-        Mute.CustomRegisterId = s.MuteCustomId;
-        RedDot.CustomRegisterId = s.RedDotCustomId;
-        Microphone.CustomRegisterId = s.MicrophoneCustomId;
-        Sleep.CustomRegisterId = s.SleepCustomId;
-        FnLock.CustomRegisterId = s.FnLockCustomId;
-        Camera.CustomRegisterId = s.CameraCustomId;
+        Power.CustomRegisterId = _settings.PowerCustomId;
+        Mute.CustomRegisterId = _settings.MuteCustomId;
+        RedDot.CustomRegisterId = _settings.RedDotCustomId;
+        Microphone.CustomRegisterId = _settings.MicrophoneCustomId;
+        Sleep.CustomRegisterId = _settings.SleepCustomId;
+        FnLock.CustomRegisterId = _settings.FnLockCustomId;
+        Camera.CustomRegisterId = _settings.CameraCustomId;
 
-        HotkeyCycleOn = s.HotkeyCycleOn;
-        HotkeyCycleOff = s.HotkeyCycleOff;
-        HotkeyCycleBlink = s.HotkeyCycleBlink;
+        HotkeyCycleOn = _settings.HotkeyCycleOn;
+        HotkeyCycleOff = _settings.HotkeyCycleOff;
+        HotkeyCycleBlink = _settings.HotkeyCycleBlink;
 
         // Update tracking variable after loading modes
         _previousHadDiskModes = HasDiskModeLeds;
         OnPropertyChanged(nameof(HasDiskModeLeds));
     }
 
-    public void SaveTo(AppSettings s)
+    public void SaveToSettings()
     {
-        s.PowerMode = Power.Mode;
-        s.MuteMode = Mute.Mode;
-        s.RedDotMode = RedDot.Mode;
-        s.MicrophoneMode = Microphone.Mode;
-        s.SleepMode = Sleep.Mode;
-        s.FnLockMode = FnLock.Mode;
-        s.CameraMode = Camera.Mode;
+        _settings.PowerMode = Power.Mode;
+        _settings.MuteMode = Mute.Mode;
+        _settings.RedDotMode = RedDot.Mode;
+        _settings.MicrophoneMode = Microphone.Mode;
+        _settings.SleepMode = Sleep.Mode;
+        _settings.FnLockMode = FnLock.Mode;
+        _settings.CameraMode = Camera.Mode;
 
-        s.PowerCustomId = Power.CustomRegisterId;
-        s.MuteCustomId = Mute.CustomRegisterId;
-        s.RedDotCustomId = RedDot.CustomRegisterId;
-        s.MicrophoneCustomId = Microphone.CustomRegisterId;
-        s.SleepCustomId = Sleep.CustomRegisterId;
-        s.FnLockCustomId = FnLock.CustomRegisterId;
-        s.CameraCustomId = Camera.CustomRegisterId;
+        _settings.PowerCustomId = Power.CustomRegisterId;
+        _settings.MuteCustomId = Mute.CustomRegisterId;
+        _settings.RedDotCustomId = RedDot.CustomRegisterId;
+        _settings.MicrophoneCustomId = Microphone.CustomRegisterId;
+        _settings.SleepCustomId = Sleep.CustomRegisterId;
+        _settings.FnLockCustomId = FnLock.CustomRegisterId;
+        _settings.CameraCustomId = Camera.CustomRegisterId;
 
-        s.HotkeyCycleOn = HotkeyCycleOn;
-        s.HotkeyCycleOff = HotkeyCycleOff;
-        s.HotkeyCycleBlink = HotkeyCycleBlink;
+        _settings.HotkeyCycleOn = HotkeyCycleOn;
+        _settings.HotkeyCycleOff = HotkeyCycleOff;
+        _settings.HotkeyCycleBlink = HotkeyCycleBlink;
     }
 
     // -------------------------------------------------------------------------
@@ -296,7 +293,10 @@ public sealed partial class MainViewModel : ObservableObject
     private void TriggerSaveIfEnabled()
     {
         if (_settings.PersistSettingsOnChange)
+        {
+            SaveToSettings();
             _saveSettingsCallback?.Invoke();
+        }
     }
 
     public void SetSaveCallback(Action callback)

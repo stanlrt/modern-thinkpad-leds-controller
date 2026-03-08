@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ModernThinkPadLEDsController.Hardware;
@@ -10,71 +11,48 @@ public sealed partial class SettingsViewModel : ObservableObject
 {
     private readonly AppSettings _settings;
     private readonly DiskActivityMonitor _disk;
-    private readonly KeyboardBacklightMonitor _backlight;
-    private readonly PowerEventListener _power;
     private readonly LedController _leds;
     private Action? _saveSettingsCallback;
 
-    // -------------------------------------------------------------------------
-    // Disk monitoring
-    // -------------------------------------------------------------------------
+    // Flag to prevent triggering saves during initial load
+    private bool _isLoading;
 
-    // Called by MainViewModel when disk mode LEDs are added/removed
-    public void StartDiskMonitoring() => _disk.Start();
-    public void StopDiskMonitoring() => _disk.Stop();
-
-    // -------------------------------------------------------------------------
-    // Timing
-    // -------------------------------------------------------------------------
 
     [ObservableProperty]
     private int _hddPollIntervalMs;
 
+    [SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Called by CommunityToolkit.Mvvm source generator")]
     partial void OnHddPollIntervalMsChanged(int value)
     {
         _disk.UpdateInterval(value);
         _settings.HddPollIntervalMs = value;
-        TriggerSaveIfEnabled();
+        TriggerSave();
     }
 
-    // -------------------------------------------------------------------------
-    // Keyboard backlight
-    // -------------------------------------------------------------------------
 
     [ObservableProperty]
     private bool _rememberKeyboardBacklight;
 
-    [ObservableProperty]
-    private KeyboardBacklight _keyboardBacklightLevel;
+    [SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Called by CommunityToolkit.Mvvm source generator")]
+    partial void OnRememberKeyboardBacklightChanged(bool value)
+    {
+        _settings.RememberKeyboardBacklight = value;
+        TriggerSave();
+    }
 
     [ObservableProperty]
     private bool _dimLedsWhenFullscreen;
 
+    [SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Called by CommunityToolkit.Mvvm source generator")]
     partial void OnDimLedsWhenFullscreenChanged(bool value)
     {
-        if (value) _power.StartFullscreenPolling();
-        else _power.StopFullscreenPolling();
         _settings.DimLedsWhenFullscreen = value;
-        TriggerSaveIfEnabled();
+        TriggerSave();
     }
-
-    partial void OnRememberKeyboardBacklightChanged(bool value)
-    {
-        _settings.RememberKeyboardBacklight = value;
-        TriggerSaveIfEnabled();
-    }
-
-    // -------------------------------------------------------------------------
-    // Manual keyboard backlight buttons
-    // -------------------------------------------------------------------------
 
     [RelayCommand] private void SetBacklightOff() => _leds.SetKeyboardBacklight(KeyboardBacklight.Off);
     [RelayCommand] private void SetBacklightLow() => _leds.SetKeyboardBacklight(KeyboardBacklight.Low);
     [RelayCommand] private void SetBacklightHigh() => _leds.SetKeyboardBacklight(KeyboardBacklight.High);
-
-    // -------------------------------------------------------------------------
-    // Startup with Windows
-    // -------------------------------------------------------------------------
 
     [ObservableProperty]
     private bool _startWithWindows;
@@ -93,71 +71,65 @@ public sealed partial class SettingsViewModel : ObservableObject
         }
     }
 
-    // -------------------------------------------------------------------------
-    // Settings persistence
-    // -------------------------------------------------------------------------
-
     [ObservableProperty]
     private bool _persistSettingsOnChange;
 
+    [SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Called by CommunityToolkit.Mvvm source generator")]
     partial void OnPersistSettingsOnChangeChanged(bool value)
     {
         _settings.PersistSettingsOnChange = value;
-        TriggerSaveIfEnabled();
+        // Don't trigger save for this property change itself to avoid potential issues
     }
-
-    private void TriggerSaveIfEnabled()
-    {
-        if (_settings.PersistSettingsOnChange)
-            _saveSettingsCallback?.Invoke();
-    }
-
-    // -------------------------------------------------------------------------
-    // Driver / app info (read-only, shown in App Settings tab)
-    // -------------------------------------------------------------------------
-
     public string DriverStatus { get; } = "PawnIO";
 
     public string AppVersion { get; } =
         System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "—";
 
     // -------------------------------------------------------------------------
-    // Constructor + settings round-trip
+    // Constructor + initialization
     // -------------------------------------------------------------------------
 
     public SettingsViewModel(
         AppSettings settings,
         DiskActivityMonitor disk,
-        KeyboardBacklightMonitor backlight,
-        PowerEventListener power,
         LedController leds)
     {
         _settings = settings;
         _disk = disk;
-        _backlight = backlight;
-        _power = power;
         _leds = leds;
     }
 
-    public void LoadFrom(AppSettings s)
+    /// <summary>
+    /// Load settings from AppSettings. Sets _isLoading flag to prevent
+    /// triggering saves during initialization.
+    /// </summary>
+    public void LoadFromSettings()
     {
-        HddPollIntervalMs = s.HddPollIntervalMs;
-        RememberKeyboardBacklight = s.RememberKeyboardBacklight;
-        DimLedsWhenFullscreen = s.DimLedsWhenFullscreen;
-        PersistSettingsOnChange = s.PersistSettingsOnChange;
-        StartWithWindows = StartupTaskManager.IsRegistered();
-    }
+        _isLoading = true;
 
-    public void SaveTo(AppSettings s)
-    {
-        s.HddPollIntervalMs = HddPollIntervalMs;
-        s.RememberKeyboardBacklight = RememberKeyboardBacklight;
-        s.DimLedsWhenFullscreen = DimLedsWhenFullscreen;
-        s.PersistSettingsOnChange = PersistSettingsOnChange;
+        // Use property setters - partial methods will sync to _settings but won't trigger save
+        HddPollIntervalMs = _settings.HddPollIntervalMs;
+        RememberKeyboardBacklight = _settings.RememberKeyboardBacklight;
+        DimLedsWhenFullscreen = _settings.DimLedsWhenFullscreen;
+        PersistSettingsOnChange = _settings.PersistSettingsOnChange;
+        StartWithWindows = StartupTaskManager.IsRegistered();
+
+        _isLoading = false;
     }
 
     public void SetSaveCallback(Action callback)
     {
         _saveSettingsCallback = callback;
+    }
+
+    /// <summary>
+    /// Trigger save callback if PersistSettingsOnChange is enabled and not currently loading.
+    /// </summary>
+    private void TriggerSave()
+    {
+        if (!_isLoading && PersistSettingsOnChange)
+        {
+            _saveSettingsCallback?.Invoke();
+        }
     }
 }

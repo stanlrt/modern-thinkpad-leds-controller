@@ -1,5 +1,6 @@
 using System.Windows;
 using System.IO;
+using System.Runtime.InteropServices;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -16,6 +17,21 @@ namespace ModernThinkPadLEDsController;
 /// <summary>Root app manager.</summary>
 public partial class App : System.Windows.Application
 {
+    // Win32 API imports for activating existing window instance
+    [DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+    [DllImport("user32.dll")]
+    private static extern bool IsIconic(IntPtr hWnd);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern IntPtr FindWindow(string? lpClassName, string? lpWindowName);
+
+    private const int SW_RESTORE = 9;
+
     // Dependency injection host for managing services and logging
     private IHost? _host;
     private ILogger<App>? _logger;
@@ -215,15 +231,69 @@ public partial class App : System.Windows.Application
 
         if (!isFirstInstance)
         {
-            _logger?.LogWarning("Another instance is already running");
-            System.Windows.MessageBox.Show("Modern ThinkPad LEDs Controller is already running.\n\nLook for its icon in the system tray.",
-                            "Already Running", MessageBoxButton.OK, MessageBoxImage.Information);
+            _logger?.LogWarning("Another instance is already running - attempting to activate it");
+
+            // Try to find and activate the existing window
+            if (TryActivateExistingInstance())
+            {
+                _logger?.LogInformation("Successfully activated existing instance window");
+            }
+            else
+            {
+                _logger?.LogWarning("Could not find/activate existing window - showing message");
+                System.Windows.MessageBox.Show(
+                    "Modern ThinkPad LEDs Controller is already running.\n\nLook for its icon in the system tray.",
+                    "Already Running",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+
             Shutdown();
             return false;
         }
 
         _logger?.LogInformation("Single instance check passed - no other instance detected");
         return true;
+    }
+
+    /// <summary>
+    /// Attempts to find and activate the main window of an existing application instance.
+    /// </summary>
+    /// <returns>True if the window was found and activated; otherwise false.</returns>
+    private bool TryActivateExistingInstance()
+    {
+        try
+        {
+            // Try to find the window by its title
+            // MainWindow's title is "Modern ThinkPad LEDs Controller"
+            IntPtr hWnd = FindWindow(null, "Modern ThinkPad LEDs Controller");
+
+            if (hWnd == IntPtr.Zero)
+            {
+                _logger?.LogDebug("Could not find existing window by title");
+                return false;
+            }
+
+            _logger?.LogDebug("Found existing window handle: {Handle}", hWnd);
+
+            // If the window is minimized, restore it
+            if (IsIconic(hWnd))
+            {
+                _logger?.LogDebug("Window is minimized - restoring");
+                ShowWindow(hWnd, SW_RESTORE);
+            }
+
+            // Bring the window to the foreground
+            bool success = SetForegroundWindow(hWnd);
+            _logger?.LogDebug("SetForegroundWindow result: {Success}", success);
+
+            return success;
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Error while trying to activate existing instance");
+            return false;
+        }
     }
 
     /// <summary>
@@ -261,8 +331,8 @@ public partial class App : System.Windows.Application
         bool diskOk = true; // Assume it worked; monitor will log if it didn't
 
         // Load settings into view models
-        _mainVm!.LoadFrom(_settings!);
-        _settingsVm!.LoadFrom(_settings!);
+        _mainVm!.LoadFromSettings();
+        _settingsVm!.LoadFromSettings();
         _logger?.LogDebug("Settings loaded into view models");
 
         // Configure ViewModels
@@ -284,7 +354,7 @@ public partial class App : System.Windows.Application
 
         if (_mainVm.HasDiskModeLeds)
         {
-            _settingsVm.StartDiskMonitoring();
+            _diskMonitor?.Start();
             _logger?.LogInformation("Disk monitoring started (has disk mode LEDs)");
         }
     }
@@ -311,9 +381,9 @@ public partial class App : System.Windows.Application
         {
             _logger?.LogDebug("Disk mode LEDs changed: {HasDiskModes}", hasDiskModes);
             if (hasDiskModes)
-                _settingsVm!.StartDiskMonitoring();
+                _diskMonitor!.Start();
             else
-                _settingsVm!.StopDiskMonitoring();
+                _diskMonitor!.Stop();
         });
     }
 
@@ -438,7 +508,15 @@ public partial class App : System.Windows.Application
 
         try
         {
-            SaveSettings();
+            // Only save if auto-save is enabled; otherwise discard temporary changes
+            if (_settings?.PersistSettingsOnChange == true)
+            {
+                SaveSettings();
+            }
+            else
+            {
+                _logger?.LogInformation("PersistSettingsOnChange is disabled - discarding unsaved changes");
+            }
 
             _logger?.LogDebug("Disposing DI host (will dispose all services automatically)");
             _host?.Dispose(); // This disposes all registered services
@@ -468,8 +546,8 @@ public partial class App : System.Windows.Application
         try
         {
             _logger?.LogDebug("Saving settings");
-            _mainVm?.SaveTo(_settings!);
-            _settingsVm?.SaveTo(_settings!);
+            _mainVm?.SaveToSettings();
+            // SettingsViewModel auto-syncs to _settings via partial methods, no SaveToSettings needed
             _settings?.Save();
             _logger?.LogDebug("Settings saved successfully");
         }

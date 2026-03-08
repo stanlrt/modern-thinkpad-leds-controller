@@ -5,10 +5,6 @@ using ModernThinkPadLEDsController.Monitoring;
 
 namespace ModernThinkPadLEDsController.Services;
 
-// TrayIconService manages the system-tray icon (bottom-right of the taskbar).
-//
-// H.NotifyIcon.Wpf is a pure-WPF tray icon library. Its TaskbarIcon is a
-// FrameworkElement we create and hold in a field — no WinForms dependency needed.
 public sealed class TrayIconService : IDisposable
 {
     public event Action? ShowWindowRequested;
@@ -37,7 +33,6 @@ public sealed class TrayIconService : IDisposable
 
             _taskbarIcon.ToolTipText = "Modern ThinkPad LEDs Controller";
 
-            // Load icon from file in output directory
             var iconPath = System.IO.Path.Combine(AppContext.BaseDirectory, "Resources", "favicon.ico");
             System.Diagnostics.Debug.WriteLine($"Looking for icon at: {iconPath}");
             System.Diagnostics.Debug.WriteLine($"Icon file exists: {System.IO.File.Exists(iconPath)}");
@@ -57,12 +52,9 @@ public sealed class TrayIconService : IDisposable
             _taskbarIcon.TrayLeftMouseUp += (_, _) => ShowWindowRequested?.Invoke();
             _taskbarIcon.TrayMouseDoubleClick += (_, _) => ShowWindowRequested?.Invoke();
 
-            System.Diagnostics.Debug.WriteLine("About to set Visibility to Visible");
             _taskbarIcon.Visibility = System.Windows.Visibility.Visible;
-            System.Diagnostics.Debug.WriteLine("TaskbarIcon visibility set to Visible");
             System.Diagnostics.Debug.WriteLine($"TaskbarIcon created: {_taskbarIcon != null}");
 
-            // Force creation of the tray icon
             _taskbarIcon?.ForceCreate();
             System.Diagnostics.Debug.WriteLine("ForceCreate() called");
         }

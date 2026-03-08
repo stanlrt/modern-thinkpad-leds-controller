@@ -1083,7 +1083,7 @@
                                       IsChecked="{Binding SettingsVm.StartWithWindows}"
                                       Command="{Binding SettingsVm.ToggleStartupCommand}"
                                       Margin="0,0,0,16"/>
-                            <CheckBox Content="Persist settings on change (auto-save when settings are modified)"
+                            <CheckBox Content="Auto-save settings on change (if off, the app will revert to the last saved config when restarted)"
                                       IsChecked="{Binding SettingsVm.PersistSettingsOnChange}"
                                       Margin="0,0,0,16"/>
                             <TextBlock Text="Driver"

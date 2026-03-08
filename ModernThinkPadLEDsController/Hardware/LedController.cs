@@ -2,10 +2,6 @@ using Serilog;
 
 namespace ModernThinkPadLEDsController.Hardware;
 
-// These enums replace the raw byte constants in the legacy code.
-// Instead of writing (byte)(0x0A | 0x80) everywhere, you write
-// SetLed(Led.RedDot, LedState.On) and the intent is obvious.
-
 public enum Led : byte
 {
     Power = 0x00,
@@ -34,8 +30,6 @@ public enum KeyboardBacklight : byte
 public sealed class LedController
 {
     // EC register addresses for LEDs and keyboard backlight.
-    // Writing led_id | power_state to 0x0C controls a specific LED.
-    // Writing a level byte to 0x0D controls keyboard backlight brightness.
     private const byte TP_LED_OFFSET = 0x0C;
     private const byte TP_KBD_OFFSET = 0x0D;
 
@@ -47,33 +41,19 @@ public sealed class LedController
         Log.Debug("LedController initialized");
     }
 
-    // Set a named LED to a specific state.
-    // invertState: when true, On becomes Off and Off becomes On.
-    //   Used for the "invert" feature — e.g. power LED off while
-    //   system is active, on only during disk idle.
-    // customId: when provided, overrides the default LED register ID from the enum
-    public bool SetLed(Led led, LedState state, bool invertState = false, byte? customId = null)
+    public bool SetLed(Led led, LedState state, byte? customId = null)
     {
-        if (invertState && state != LedState.Blink)
-            state = state == LedState.On ? LedState.Off : LedState.On;
 
         byte ledId = customId ?? (byte)led;
         byte value = (byte)(ledId | (byte)state);
 
         bool success = _ec.WriteByte(TP_LED_OFFSET, value);
         if (success)
-            Log.Debug("SetLed({Led}, {State}, invert={Invert}, customId={CustomId}) SUCCESS", led, state, invertState, customId);
+            Log.Debug("SetLed({Led}, {State}, customId={CustomId}) SUCCESS", led, state, customId);
         else
             Log.Warning("SetLed({Led}, {State}) FAILED", led, state);
 
         return success;
-    }
-
-    // Set a LED by raw ID (for the custom EC write dialog).
-    public bool SetLedRaw(byte ledId, LedState state)
-    {
-        byte value = (byte)(ledId | (byte)state);
-        return _ec.WriteByte(TP_LED_OFFSET, value);
     }
 
     public bool SetKeyboardBacklight(KeyboardBacklight level)
