@@ -14,6 +14,7 @@ public partial class MainWindow : FluentWindow
 
     private const int WM_MOUSEHWHEEL = 0x020E;
     private const double SCROLL_SENSITIVITY = 3.0;
+    private bool _horizontalMouseWheelHookAttached;
 
     public MainViewModel MainVm { get; }
     public SettingsViewModel SettingsVm { get; }
@@ -25,12 +26,36 @@ public partial class MainWindow : FluentWindow
         InitializeComponent();
         DataContext = this;
         SourceInitialized += OnWindowInitialized;
+        Loaded += OnWindowLoaded;
     }
 
     private void OnWindowInitialized(object? sender, EventArgs e)
     {
-        var source = PresentationSource.FromVisual(this) as HwndSource;
-        source?.AddHook(OnHorizontalMouseWheel);
+        TryAttachHorizontalMouseWheelHook();
+    }
+
+    private void OnWindowLoaded(object sender, RoutedEventArgs e)
+    {
+        TryAttachHorizontalMouseWheelHook();
+    }
+
+    private void TryAttachHorizontalMouseWheelHook()
+    {
+        if (_horizontalMouseWheelHookAttached)
+            return;
+
+        IntPtr handle = new WindowInteropHelper(this).Handle;
+        if (handle == IntPtr.Zero)
+            return;
+
+        HwndSource? source = HwndSource.FromHwnd(handle);
+        if (source is null)
+            return;
+
+        source.AddHook(OnHorizontalMouseWheel);
+        _horizontalMouseWheelHookAttached = true;
+        SourceInitialized -= OnWindowInitialized;
+        Loaded -= OnWindowLoaded;
     }
 
     private IntPtr OnHorizontalMouseWheel(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
