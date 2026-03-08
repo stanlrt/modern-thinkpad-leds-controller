@@ -949,11 +949,10 @@
                 <!-- ============================================================ -->
                 <!-- SECTION 2 — Tab panels                                       -->
                 <!-- ============================================================ -->
-                <TabControl>
-
+                <TabControl Margin="0,0,0,0">
                     <!-- ── Hotkey tab ── -->
                     <TabItem Header="Hotkey">
-                        <StackPanel Margin="16,12">
+                        <StackPanel Margin="10,12">
                             <TextBlock Text="Shortcut"
                                        FontWeight="SemiBold"
                                        Margin="0,0,0,8"/>
@@ -988,7 +987,7 @@
 
                     <!-- ── Disk tab ── -->
                     <TabItem Header="Disk">
-                        <StackPanel Margin="16,12">
+                        <StackPanel Margin="10,12">
                             <!-- Warning shown only when disk counters are unavailable -->
                             <Border CornerRadius="4"
                                     Padding="12,8"
@@ -1050,7 +1049,7 @@
 
                     <!-- ── Keyboard Backlight tab ── -->
                     <TabItem Header="Keyboard Backlight">
-                        <StackPanel Margin="16,12">
+                        <StackPanel Margin="10,12">
                             <TextBlock Text="Level"
                                        FontWeight="SemiBold"
                                        Margin="0,0,0,8"/>
@@ -1075,7 +1074,7 @@
 
                     <!-- ── App Settings tab ── -->
                     <TabItem Header="App Settings">
-                        <StackPanel Margin="16,12">
+                        <StackPanel Margin="10,12">
                             <TextBlock Text="Settings"
                                        FontWeight="SemiBold"
                                        Margin="0,0,0,8"/>

@@ -75,6 +75,22 @@ public sealed partial class MainViewModel : ObservableObject
     private bool _isFullscreen;
     private KeyboardBacklight _preFullscreenBacklight = KeyboardBacklight.Off;
 
+    // Helper method to get the current hotkey cycle state
+    private LedState? GetCurrentHotkeyCycleState()
+    {
+        var states = new List<LedState>(3);
+        if (HotkeyCycleOn) states.Add(LedState.On);
+        if (HotkeyCycleOff) states.Add(LedState.Off);
+        if (HotkeyCycleBlink) states.Add(LedState.Blink);
+        if (states.Count == 0) return null;
+
+        // If never pressed, initialize to first state
+        if (_hotkeyCycleIndex == -1)
+            _hotkeyCycleIndex = 0;
+
+        return states[_hotkeyCycleIndex % states.Count];
+    }
+
     // Maps each Led enum value to its LedMapping — used in the apply methods
     // so we don't repeat switch statements.
     private readonly Dictionary<Led, LedMapping> _mappings;
@@ -107,6 +123,11 @@ public sealed partial class MainViewModel : ObservableObject
                         case LedMode.On: _leds.SetLed(led, LedState.On, customId: map.CustomRegisterId); break;
                         case LedMode.Off: _leds.SetLed(led, LedState.Off, customId: map.CustomRegisterId); break;
                         case LedMode.Blink: _leds.SetLed(led, LedState.Blink, customId: map.CustomRegisterId); break;
+                        case LedMode.HotkeyControlled:
+                            var state = GetCurrentHotkeyCycleState();
+                            if (state.HasValue)
+                                _leds.SetLed(led, state.Value, customId: map.CustomRegisterId);
+                            break;
                     }
 
                     // Check if disk mode usage changed (none->some or some->none)
@@ -228,6 +249,11 @@ public sealed partial class MainViewModel : ObservableObject
                 case LedMode.On: _leds.SetLed(led, LedState.On, customId: map.CustomRegisterId); break;
                 case LedMode.Off: _leds.SetLed(led, LedState.Off, customId: map.CustomRegisterId); break;
                 case LedMode.Blink: _leds.SetLed(led, LedState.Blink, customId: map.CustomRegisterId); break;
+                case LedMode.HotkeyControlled:
+                    var state = GetCurrentHotkeyCycleState();
+                    if (state.HasValue)
+                        _leds.SetLed(led, state.Value, customId: map.CustomRegisterId);
+                    break;
             }
         }
     }
