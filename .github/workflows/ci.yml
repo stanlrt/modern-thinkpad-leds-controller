@@ -1,4 +1,4 @@
-name: Format & Lint
+name: CI
 
 on:
   push:
@@ -19,6 +19,8 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "10.0.x"
+          cache: true
+          cache-dependency-path: '**/packages.lock.json'
 
       - name: Restore dependencies
         run: dotnet restore ModernThinkPadLEDsController/ModernThinkPadLEDsController.csproj
@@ -39,3 +41,37 @@ jobs:
           --no-restore
           --configuration Release
           /warnaserror
+
+  test:
+    name: dotnet test (unit & component)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+          cache: true
+          cache-dependency-path: '**/packages.lock.json'
+
+      - name: Restore dependencies
+        run: dotnet restore ModernThinkPadLEDsController.Tests/ModernThinkPadLEDsController.Tests.csproj
+
+      - name: Run tests
+        # dotnet test builds the project implicitly before running — no
+        # separate build step needed.
+        run: >
+          dotnet test ModernThinkPadLEDsController.Tests/ModernThinkPadLEDsController.Tests.csproj
+          --configuration Release
+          --logger "trx;LogFileName=test-results.trx"
+          --collect:"XPlat Code Coverage"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: "**/*.trx"
