@@ -1,0 +1,8 @@
+This project is a modern rewrite of an original work by Valentin-Gabriel Radu. While this version features a completely new UI and codebase, the functional logic is inspired by the original software.
+
+Copyright (c) 2020 Valentin-Gabriel Radu
+
+Permission to use, copy, modify, and distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
