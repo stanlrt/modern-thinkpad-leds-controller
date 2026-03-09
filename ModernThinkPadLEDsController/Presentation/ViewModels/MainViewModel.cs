@@ -58,6 +58,8 @@ public sealed partial class MainViewModel : ObservableObject
     /// </summary>
     public event Action<bool>? DiskModeLedsChanged;
 
+    public event Action? LedConfigurationChanged;
+
     private bool _previousHadDiskModes;
 
     /// <summary>
@@ -137,6 +139,8 @@ public sealed partial class MainViewModel : ObservableObject
                         DiskModeLedsChanged?.Invoke(hasDiskModesNow);
                     }
 
+                    LedConfigurationChanged?.Invoke();
+
                     TriggerSaveIfEnabled();
                 }
                 else if (e.PropertyName == nameof(LedMapping.CustomRegisterId))
@@ -158,18 +162,21 @@ public sealed partial class MainViewModel : ObservableObject
     partial void OnHotkeyCycleOnChanged(bool value)
     {
         UpdateHotkeyCycleBehavior();
+        LedConfigurationChanged?.Invoke();
         TriggerSaveIfEnabled();
     }
 
     partial void OnHotkeyCycleOffChanged(bool value)
     {
         UpdateHotkeyCycleBehavior();
+        LedConfigurationChanged?.Invoke();
         TriggerSaveIfEnabled();
     }
 
     partial void OnHotkeyCycleBlinkChanged(bool value)
     {
         UpdateHotkeyCycleBehavior();
+        LedConfigurationChanged?.Invoke();
         TriggerSaveIfEnabled();
     }
 

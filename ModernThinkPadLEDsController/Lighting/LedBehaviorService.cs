@@ -197,6 +197,37 @@ public sealed class LedBehaviorService : IDisposable
         }
     }
 
+    /// <summary>
+    /// Event-driven monitor updates remain the primary source of truth.
+    /// The periodic loop only backstops LED states that the app owns but
+    /// cannot observe being overridden externally.
+    /// </summary>
+    public void ReapplyManagedStates()
+    {
+        foreach (Led led in Mappings.Keys)
+        {
+            if (!ShouldForcePeriodicReapply(led))
+            {
+                continue;
+            }
+
+            ApplyLedStateRespectingFullscreen(led, forceWrite: true);
+        }
+    }
+
+    public bool NeedsPeriodicReapply()
+    {
+        foreach (Led led in Mappings.Keys)
+        {
+            if (ShouldUsePeriodicReapplyBackstop(led))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public void UpdateBlinkInterval(int intervalMs)
     {
         _blinkMonitor.SetBlinkInterval(intervalMs);
@@ -213,16 +244,16 @@ public sealed class LedBehaviorService : IDisposable
         field ?? throw new InvalidOperationException("LedBehaviorService.Initialize must be called before use."); set;
     }
 
-    private void ApplyLedStateRespectingFullscreen(Led led)
+    private void ApplyLedStateRespectingFullscreen(Led led, bool forceWrite = false)
     {
         if (_isFullscreen && ShouldDimLedForFullscreen(led))
         {
             _blinkMonitor.RemoveBlinkingLed(led);
-            _leds.SetLed(led, LedState.Off, customId: Mappings[led].CustomRegisterId);
+            _leds.SetLed(led, LedState.Off, customId: Mappings[led].CustomRegisterId, forceWrite: forceWrite);
             return;
         }
 
-        ApplyCurrentLedState(led);
+        ApplyCurrentLedState(led, forceWrite);
     }
 
     private List<LedState> BuildHotkeyCycleStates()
@@ -283,7 +314,39 @@ public sealed class LedBehaviorService : IDisposable
         };
     }
 
-    private void ApplyCurrentLedState(Led led)
+    private bool ShouldUsePeriodicReapplyBackstop(Led led)
+    {
+        if (_isFullscreen && ShouldDimLedForFullscreen(led))
+        {
+            return true;
+        }
+
+        LedMapping map = Mappings[led];
+        return map.Mode switch
+        {
+            LedMode.On => true,
+            LedMode.Off => true,
+            LedMode.HotkeyControlled => true,
+            _ => false,
+        };
+    }
+
+    private bool ShouldForcePeriodicReapply(Led led)
+    {
+        if (!ShouldUsePeriodicReapplyBackstop(led))
+        {
+            return false;
+        }
+
+        LedMapping map = Mappings[led];
+        return map.Mode switch
+        {
+            LedMode.HotkeyControlled => GetCurrentHotkeyCycleState() is LedState state && state != LedState.Blink,
+            _ => true,
+        };
+    }
+
+    private void ApplyCurrentLedState(Led led, bool forceWrite = false)
     {
         LedMapping map = Mappings[led];
         _blinkMonitor.RemoveBlinkingLed(led);
@@ -291,41 +354,41 @@ public sealed class LedBehaviorService : IDisposable
         switch (map.Mode)
         {
             case LedMode.Default:
-                ApplyDefaultLedState(led, map);
+                ApplyDefaultLedState(led, map, forceWrite);
                 break;
             case LedMode.On:
-                _leds.SetLed(led, LedState.On, customId: map.CustomRegisterId);
+                _leds.SetLed(led, LedState.On, customId: map.CustomRegisterId, forceWrite: forceWrite);
                 break;
             case LedMode.Off:
-                _leds.SetLed(led, LedState.Off, customId: map.CustomRegisterId);
+                _leds.SetLed(led, LedState.Off, customId: map.CustomRegisterId, forceWrite: forceWrite);
                 break;
             case LedMode.Blink:
                 _blinkMonitor.AddBlinkingLed(led, map.CustomRegisterId);
                 break;
             case LedMode.HotkeyControlled:
-                ApplyHotkeyControlledState(led, map);
+                ApplyHotkeyControlledState(led, map, forceWrite);
                 break;
             case LedMode.DiskRead:
             case LedMode.DiskWrite:
-                ApplyDiskActivityLedState(led, map);
+                ApplyDiskActivityLedState(led, map, forceWrite);
                 break;
         }
     }
 
-    private void ApplyDefaultLedState(Led led, LedMapping map)
+    private void ApplyDefaultLedState(Led led, LedMapping map, bool forceWrite)
     {
         switch (led)
         {
             case Led.Mute when _hasObservedSpeakerMuteState:
-                _leds.SetLed(led, _lastSpeakerMuted ? LedState.On : LedState.Off, customId: map.CustomRegisterId);
+                _leds.SetLed(led, _lastSpeakerMuted ? LedState.On : LedState.Off, customId: map.CustomRegisterId, forceWrite: forceWrite);
                 break;
             case Led.Microphone when _hasObservedMicrophoneMuteState:
-                _leds.SetLed(led, _lastMicrophoneMuted ? LedState.On : LedState.Off, customId: map.CustomRegisterId);
+                _leds.SetLed(led, _lastMicrophoneMuted ? LedState.On : LedState.Off, customId: map.CustomRegisterId, forceWrite: forceWrite);
                 break;
         }
     }
 
-    private void ApplyHotkeyControlledState(Led led, LedMapping map)
+    private void ApplyHotkeyControlledState(Led led, LedMapping map, bool forceWrite)
     {
         LedState? state = GetCurrentHotkeyCycleState();
         if (!state.HasValue)
@@ -339,10 +402,10 @@ public sealed class LedBehaviorService : IDisposable
             return;
         }
 
-        _leds.SetLed(led, state.Value, customId: map.CustomRegisterId);
+        _leds.SetLed(led, state.Value, customId: map.CustomRegisterId, forceWrite: forceWrite);
     }
 
-    private void ApplyDiskActivityLedState(Led led, LedMapping map)
+    private void ApplyDiskActivityLedState(Led led, LedMapping map, bool forceWrite = false)
     {
         bool reading = _lastDiskState is DiskActivityState.Read or DiskActivityState.ReadWrite;
         bool writing = _lastDiskState is DiskActivityState.Write or DiskActivityState.ReadWrite;
@@ -353,7 +416,7 @@ public sealed class LedBehaviorService : IDisposable
             _ => false,
         };
 
-        _leds.SetLed(led, shouldBeOn ? LedState.On : LedState.Off, customId: map.CustomRegisterId);
+        _leds.SetLed(led, shouldBeOn ? LedState.On : LedState.Off, customId: map.CustomRegisterId, forceWrite: forceWrite);
     }
 
     public void Dispose()

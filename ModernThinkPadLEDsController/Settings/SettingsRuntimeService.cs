@@ -11,6 +11,7 @@ namespace ModernThinkPadLEDsController.Settings;
 public interface ISettingsRuntimeService
 {
     void UpdateBlinkInterval(int intervalMs);
+    void UpdateLedReapplyInterval(int intervalMs);
     void UpdateDiskPollInterval(int intervalMs);
     bool TryGetCurrentKeyboardBrightness(out byte level);
     void SetKeyboardBrightnessLevel(int level);
@@ -55,6 +56,11 @@ public sealed class SettingsRuntimeService : ISettingsRuntimeService
     public void UpdateBlinkInterval(int intervalMs)
     {
         _ledBehavior.UpdateBlinkInterval(intervalMs);
+    }
+
+    public void UpdateLedReapplyInterval(int intervalMs)
+    {
+        _settings.LedReapplyIntervalMs = intervalMs;
     }
 
     public void UpdateDiskPollInterval(int intervalMs)

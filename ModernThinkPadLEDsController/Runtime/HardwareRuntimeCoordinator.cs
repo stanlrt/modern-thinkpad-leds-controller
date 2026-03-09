@@ -12,6 +12,8 @@ namespace ModernThinkPadLEDsController.Runtime;
 /// </summary>
 public sealed class HardwareRuntimeCoordinator : IDisposable
 {
+    private const int MIN_LED_REAPPLY_INTERVAL_MS = 250;
+
     private readonly AppSettings _settings;
     private readonly HardwareAccessController _hardwareAccess;
     private readonly MainPresentationService _presentation;
@@ -26,6 +28,7 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
     private readonly ILogger<HardwareRuntimeCoordinator> _logger;
 
     private bool _eventsWired;
+    private CancellationTokenSource? _ledReapplyCts;
 
     public HardwareRuntimeCoordinator(
         AppSettings settings,
@@ -67,6 +70,7 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
         _logger.LogDebug("Wiring up event handlers");
 
         _presentation.DiskModeLedsChanged += OnDiskModeLedsChanged;
+        _presentation.LedConfigurationChanged += OnLedConfigurationChanged;
         _diskMonitor.StateChanged += OnDiskStateChanged;
         _microphoneMuteMonitor.MuteStateChanged += OnMicrophoneMuteStateChanged;
         _speakerMuteMonitor.MuteStateChanged += OnSpeakerMuteStateChanged;
@@ -121,6 +125,8 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
         bool speakerMuted = _speakerMuteMonitor.QueryMuted();
         _ledBehavior.ObserveSpeakerMuteState(speakerMuted);
         _logger.LogDebug("Initial speaker mute state: {IsMuted}", speakerMuted);
+
+        UpdateLedReapplyLoopState();
     }
 
     public void Dispose()
@@ -130,7 +136,10 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
             return;
         }
 
+        StopLedReapplyLoop();
+
         _presentation.DiskModeLedsChanged -= OnDiskModeLedsChanged;
+        _presentation.LedConfigurationChanged -= OnLedConfigurationChanged;
         _diskMonitor.StateChanged -= OnDiskStateChanged;
         _microphoneMuteMonitor.MuteStateChanged -= OnMicrophoneMuteStateChanged;
         _speakerMuteMonitor.MuteStateChanged -= OnSpeakerMuteStateChanged;
@@ -162,6 +171,11 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
                 _diskMonitor.Stop();
             }
         });
+    }
+
+    private void OnLedConfigurationChanged()
+    {
+        _windowHost.Dispatch(UpdateLedReapplyLoopState);
     }
 
     private void OnDiskStateChanged(DiskActivityState state)
@@ -201,6 +215,7 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
         _windowHost.Dispatch(() =>
         {
             _logger.LogInformation("System suspending - stopping monitors");
+            StopLedReapplyLoop();
             StopMonitors(_keyboardBacklightMonitor, _diskMonitor, _fullscreenMonitor);
         });
     }
@@ -231,6 +246,8 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
             {
                 StartMonitor(_fullscreenMonitor);
             }
+
+            UpdateLedReapplyLoopState();
         });
     }
 
@@ -244,6 +261,64 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
         foreach (ILifecycleMonitor monitor in monitors)
         {
             monitor.Stop();
+        }
+    }
+
+    private void StartLedReapplyLoop()
+    {
+        if (_ledReapplyCts is not null)
+        {
+            return;
+        }
+
+        _ledReapplyCts = new CancellationTokenSource();
+        CancellationToken token = _ledReapplyCts.Token;
+        Task.Run(async () =>
+        {
+            try
+            {
+                while (!token.IsCancellationRequested)
+                {
+                    int intervalMs = Math.Max(MIN_LED_REAPPLY_INTERVAL_MS, _settings.LedReapplyIntervalMs);
+                    await Task.Delay(intervalMs, token);
+
+                    _windowHost.Dispatch(() =>
+                    {
+                        if (_hardwareAccess.IsEnabled && _ledBehavior.NeedsPeriodicReapply())
+                        {
+                            _ledBehavior.ReapplyManagedStates();
+                        }
+                    });
+                }
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        }, token);
+    }
+
+    private void StopLedReapplyLoop()
+    {
+        _ledReapplyCts?.Cancel();
+        _ledReapplyCts?.Dispose();
+        _ledReapplyCts = null;
+    }
+
+    private void UpdateLedReapplyLoopState()
+    {
+        if (!_hardwareAccess.IsEnabled)
+        {
+            StopLedReapplyLoop();
+            return;
+        }
+
+        if (_ledBehavior.NeedsPeriodicReapply())
+        {
+            StartLedReapplyLoop();
+        }
+        else
+        {
+            StopLedReapplyLoop();
         }
     }
 
@@ -282,6 +357,7 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
 
             byte currentLevel = _keyboardBacklightMonitor.CurrentLevel;
             _ledBehavior.OnFullscreenChanged(isFullscreen, currentLevel);
+            UpdateLedReapplyLoopState();
         });
     }
 }

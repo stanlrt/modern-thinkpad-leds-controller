@@ -28,6 +28,12 @@ public sealed class MainPresentationService
         remove => _mainViewModel.DiskModeLedsChanged -= value;
     }
 
+    public event Action? LedConfigurationChanged
+    {
+        add => _mainViewModel.LedConfigurationChanged += value;
+        remove => _mainViewModel.LedConfigurationChanged -= value;
+    }
+
     public void LoadFromSettings()
     {
         _mainViewModel.LoadFromSettings();

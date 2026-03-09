@@ -43,6 +43,7 @@ public sealed class AppSettings
     public HotkeyBinding Hotkey { get; set; } = new();
 
     public int BlinkIntervalMs { get; set; } = 500;
+    public int LedReapplyIntervalMs { get; set; } = 1000;
     public int DiskPollIntervalMs { get; set; } = 300;
 
     public bool RememberKeyboardBacklight { get; set; }

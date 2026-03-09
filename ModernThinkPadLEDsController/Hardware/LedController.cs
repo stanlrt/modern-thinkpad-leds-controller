@@ -27,7 +27,7 @@ public sealed class LedController
         Log.Debug("LedController initialized");
     }
 
-    public bool SetLed(Led led, LedState state, byte? customId = null)
+    public bool SetLed(Led led, LedState state, byte? customId = null, bool forceWrite = false)
     {
         if (!_hardwareAccess.IsEnabled)
         {
@@ -38,11 +38,14 @@ public sealed class LedController
         byte ledId = customId ?? (byte)led;
         byte value = (byte)(ledId | (byte)state);
 
-        lock (_cacheLock)
+        if (!forceWrite)
         {
-            if (_lastLedStates.TryGetValue(ledId, out LedState lastState) && lastState == state)
+            lock (_cacheLock)
             {
-                return true;
+                if (_lastLedStates.TryGetValue(ledId, out LedState lastState) && lastState == state)
+                {
+                    return true;
+                }
             }
         }
 

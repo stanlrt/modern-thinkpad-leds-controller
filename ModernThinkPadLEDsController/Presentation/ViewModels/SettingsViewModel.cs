@@ -38,6 +38,19 @@ public sealed partial class SettingsViewModel : ObservableObject
 
 
     [ObservableProperty]
+    private int _ledReapplyIntervalMs;
+
+    partial void OnLedReapplyIntervalMsChanged(int value)
+    {
+        if (_isLoading)
+            return;
+
+        _runtime.UpdateLedReapplyInterval(value);
+        TriggerSave();
+    }
+
+
+    [ObservableProperty]
     private int _diskPollIntervalMs;
 
     partial void OnDiskPollIntervalMsChanged(int value)
@@ -191,6 +204,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         try
         {
             BlinkIntervalMs = _settings.BlinkIntervalMs;
+            LedReapplyIntervalMs = _settings.LedReapplyIntervalMs;
             DiskPollIntervalMs = Math.Max(DiskActivityMonitor.MIN_INTERVAL_MS, _settings.DiskPollIntervalMs);
             RememberKeyboardBacklight = _settings.RememberKeyboardBacklight;
 

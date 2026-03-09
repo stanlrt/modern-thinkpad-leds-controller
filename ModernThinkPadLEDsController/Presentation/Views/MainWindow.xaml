@@ -1200,6 +1200,27 @@
                                 <TextBlock Text="{Binding SettingsVm.HardwareAccessWarningMessage}"
                                            TextWrapping="Wrap"/>
                             </Border>
+                            <TextBlock Text="LED re-apply interval"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,4"/>
+                            <StackPanel Orientation="Horizontal"
+                                        VerticalAlignment="Center">
+                                <Slider Minimum="250"
+                                        Maximum="3000"
+                                        Width="200"
+                                        TickFrequency="250"
+                                        IsSnapToTickEnabled="True"
+                                        Value="{Binding SettingsVm.LedReapplyIntervalMs}"
+                                        VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1"
+                                           Text="{Binding SettingsVm.LedReapplyIntervalMs, StringFormat={}{0} ms}"
+                                           Margin="12,0,0,0"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <TextBlock Text="How often the app re-asserts user-controlled LED states when firmware or the OS changes them externally. Lower values react faster but cause more EC traffic."
+                                       Opacity="0.6"
+                                       TextWrapping="Wrap"
+                                       Margin="0,0,0,16"/>
                             <TextBlock Text="Driver"
                                        FontWeight="SemiBold"
                                        Margin="0,0,0,4"/>
