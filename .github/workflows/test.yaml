@@ -1,0 +1,47 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: dotnet test (unit & component)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+          cache: true
+          cache-dependency-path: '**/packages.lock.json'
+
+      - name: Restore dependencies
+        run: dotnet restore ModernThinkPadLEDsController.Tests/ModernThinkPadLEDsController.Tests.csproj
+
+      - name: Build
+        run: >
+          dotnet build ModernThinkPadLEDsController.Tests/ModernThinkPadLEDsController.Tests.csproj
+          --no-restore
+          --configuration Release
+
+      - name: Run tests
+        run: >
+          dotnet test ModernThinkPadLEDsController.Tests/ModernThinkPadLEDsController.Tests.csproj
+          --no-build
+          --configuration Release
+          --logger "trx;LogFileName=test-results.trx"
+          --collect:"XPlat Code Coverage"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: "**/*.trx"
