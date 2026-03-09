@@ -100,6 +100,7 @@ public sealed class HardwareRuntimeCoordinatorTickTests
         HardwareRuntimeCoordinator coordinator = new(access, behavior);
 
         behavior.ApplyAll();
+        io.Clear();
 
         coordinator.ExecuteReapplyTick();
         int firstCount = io.DataPortWriteCount;

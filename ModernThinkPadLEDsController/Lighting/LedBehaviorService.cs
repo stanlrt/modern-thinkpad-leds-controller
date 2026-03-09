@@ -310,6 +310,11 @@ public sealed class LedBehaviorService : IDisposable
             return false;
         }
 
+        if (!Mappings.ContainsKey(led))
+        {
+            return false;
+        }
+
         LedMapping map = Mappings[led];
         if (map.Mode != LedMode.Default)
         {
