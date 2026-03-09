@@ -12,18 +12,18 @@ namespace ModernThinkPadLEDsController.Presentation.Views;
 /// </summary>
 public partial class PawnIOSetupWindow : FluentWindow
 {
-    // Constants
-    private const string PawnIODownloadUrl = "https://pawnio.eu/";
+    private const string PAWN_IO_DOWNLOAD_URL = "https://pawnio.eu/";
 
-    // State machine
     private enum SetupState
     {
-        Initial,                    // Fresh start, button says "Download PawnIO"
-        WaitingForManualInstall,    // Browser opened, button says "Restart to Verify"
-        Verifying,                  // Checking if PawnIO installed (brief)
-        InstallationFailed,         // Error shown, button says "Retry"
-        ManualRestartRequired       // Success but restart failed, button says "Close"
+#pragma warning disable RCS1181 // Convert comment to documentation comment
+        Initial = 0,                    // Fresh start, button says "Download PawnIO"
+        WaitingForManualInstall = 1,    // Browser opened, button says "Restart to Verify"
+        Verifying = 2,                  // Checking if PawnIO installed (brief)
+        InstallationFailed = 3,         // Error shown, button says "Retry"
+        ManualRestartRequired = 4       // Success but restart failed, button says "Close"
     }
+#pragma warning restore RCS1181 // Convert comment to documentation comment
 
     private SetupState _currentState = SetupState.Initial;
     private readonly ILogger<PawnIOSetupWindow> _logger;
@@ -31,10 +31,7 @@ public partial class PawnIOSetupWindow : FluentWindow
     public PawnIOSetupWindow()
     {
         InitializeComponent();
-        _logger = LoggerFactory.Create(builder =>
-        {
-            builder.AddDebug();
-        }).CreateLogger<PawnIOSetupWindow>();
+        _logger = LoggerFactory.Create(builder => builder.AddDebug()).CreateLogger<PawnIOSetupWindow>();
 
         _logger.LogInformation("PawnIO setup window opened");
     }
@@ -134,7 +131,7 @@ public partial class PawnIOSetupWindow : FluentWindow
         {
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
             {
-                FileName = PawnIODownloadUrl,
+                FileName = PAWN_IO_DOWNLOAD_URL,
                 UseShellExecute = true
             });
 
@@ -147,7 +144,7 @@ public partial class PawnIOSetupWindow : FluentWindow
         {
             _logger.LogError(ex, "Failed to open download page in browser");
             TransitionToState(SetupState.WaitingForManualInstall,
-                $"Please download and install PawnIO manually from {PawnIODownloadUrl}",
+                $"Please download and install PawnIO manually from {PAWN_IO_DOWNLOAD_URL}",
                 System.Windows.Media.Brushes.IndianRed);
         }
     }
@@ -156,7 +153,7 @@ public partial class PawnIOSetupWindow : FluentWindow
     {
         try
         {
-            var exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
+            string? exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
 
             if (string.IsNullOrEmpty(exePath))
             {

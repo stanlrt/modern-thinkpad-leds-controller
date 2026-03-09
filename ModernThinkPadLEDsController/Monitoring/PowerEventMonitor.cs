@@ -10,14 +10,14 @@ namespace ModernThinkPadLEDsController.Monitoring;
 /// </summary>
 public enum MonitorState
 {
-    On,
-    Off,
+    On = 0,
+    Off = 1,
 }
 
 /// <summary>
 /// Translates window power messages into application-level events.
 /// </summary>
-public sealed class PowerEventMonitor : IDisposable
+public sealed class PowerEventMonitor : IWindowAttachedMonitor
 {
     public event Action<bool>? LidStateChanged;
     public event Action<MonitorState>? MonitorStateChanged;
@@ -29,15 +29,15 @@ public sealed class PowerEventMonitor : IDisposable
     private IntPtr _lidHandle = IntPtr.Zero;
     private IntPtr _monitorHandle = IntPtr.Zero;
 
-    private static readonly Guid GuidLidSwitchStateChange =
+    private static readonly Guid _guidLidSwitchStateChange =
         new(0xBA3E0F4D, 0xB817, 0x4094, 0xA2, 0xD1, 0xD5, 0x63, 0x79, 0xE6, 0xA0, 0xF3);
 
-    private static readonly Guid GuidMonitorPowerOn =
+    private static readonly Guid _guidMonitorPowerOn =
         new(0x02731015, 0x4510, 0x4526, 0x99, 0xE6, 0xE5, 0xA1, 0x7E, 0xBD, 0x1A, 0xEA);
 
-    private const int WmPowerBroadcast = 0x0218;
-    private const int PbtPowerSettingChange = 0x8013;
-    private const int DeviceNotifyWindowHandle = 0x0000;
+    private const int WM_POWER_BROADCAST = 0x0218;
+    private const int PBT_POWER_SETTING_CHANGE = 0x8013;
+    private const int DEVICE_NOTIFY_WINDOW_HANDLE = 0x0000;
 
     [StructLayout(LayoutKind.Sequential)]
     private struct PowerBroadcastSetting
@@ -63,21 +63,21 @@ public sealed class PowerEventMonitor : IDisposable
         _source = HwndSource.FromHwnd(helper.Handle);
         _source?.AddHook(WndProcHook);
 
-        Guid lidGuid = GuidLidSwitchStateChange;
-        Guid monitorGuid = GuidMonitorPowerOn;
-        _lidHandle = RegisterPowerSettingNotification(helper.Handle, ref lidGuid, DeviceNotifyWindowHandle);
-        _monitorHandle = RegisterPowerSettingNotification(helper.Handle, ref monitorGuid, DeviceNotifyWindowHandle);
+        Guid lidGuid = _guidLidSwitchStateChange;
+        Guid monitorGuid = _guidMonitorPowerOn;
+        _lidHandle = RegisterPowerSettingNotification(helper.Handle, ref lidGuid, DEVICE_NOTIFY_WINDOW_HANDLE);
+        _monitorHandle = RegisterPowerSettingNotification(helper.Handle, ref monitorGuid, DEVICE_NOTIFY_WINDOW_HANDLE);
 
         SystemEvents.PowerModeChanged += OnPowerModeChanged;
     }
 
     private IntPtr WndProcHook(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
-        if (msg == WmPowerBroadcast && (int)wParam == PbtPowerSettingChange)
+        if (msg == WM_POWER_BROADCAST && (int)wParam == PBT_POWER_SETTING_CHANGE)
         {
             PowerBroadcastSetting powerSetting = Marshal.PtrToStructure<PowerBroadcastSetting>(lParam);
 
-            if (powerSetting.PowerSetting == GuidLidSwitchStateChange)
+            if (powerSetting.PowerSetting == _guidLidSwitchStateChange)
             {
                 bool isOpen = powerSetting.Data != 0;
                 if (_previousLidState != isOpen)
@@ -87,7 +87,7 @@ public sealed class PowerEventMonitor : IDisposable
                 }
                 handled = true;
             }
-            else if (powerSetting.PowerSetting == GuidMonitorPowerOn)
+            else if (powerSetting.PowerSetting == _guidMonitorPowerOn)
             {
                 MonitorStateChanged?.Invoke(powerSetting.Data != 0 ? MonitorState.On : MonitorState.Off);
                 handled = true;
@@ -115,10 +115,14 @@ public sealed class PowerEventMonitor : IDisposable
         SystemEvents.PowerModeChanged -= OnPowerModeChanged;
 
         if (_lidHandle != IntPtr.Zero)
+        {
             UnregisterPowerSettingNotification(_lidHandle);
+        }
 
         if (_monitorHandle != IntPtr.Zero)
+        {
             UnregisterPowerSettingNotification(_monitorHandle);
+        }
 
         _source?.RemoveHook(WndProcHook);
     }

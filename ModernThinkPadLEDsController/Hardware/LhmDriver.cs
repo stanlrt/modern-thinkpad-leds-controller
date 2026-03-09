@@ -4,14 +4,6 @@ using Serilog;
 
 namespace ModernThinkPadLEDsController.Hardware;
 
-// LhmDriver wraps LibreHardwareMonitor's PawnIO-based EC port access.
-//
-// LibreHardwareMonitor uses PawnIO instead of inpout64, providing better security
-// through scriptable driver modules. The LpcAcpiEc class gives us direct access
-// to I/O ports 0x62 and 0x66 (the Embedded Controller data and command ports).
-//
-// PawnIO must be installed separately by the user (from https://pawnio.eu/).
-// On first use, the driver loads the LpcACPIEC.bin module embedded in LibreHardwareMonitorLib.
 /// <summary>
 /// Wraps PawnIO-backed port access from LibreHardwareMonitor.
 /// </summary>
@@ -20,10 +12,12 @@ public sealed class LhmDriver : IPortIO, IDisposable
     private readonly LpcAcpiEc _pawnModule;
     private bool _disposed;
 
-    // TryOpen is the only way to create an LhmDriver.
-    // It returns false if PawnIO is not installed or the module fails to load.
-    // 'out LhmDriver? driver' is an output parameter — the caller gets the
-    // object back through it when the return value is true.
+    /// <summary>
+    /// TryOpen is the only way to create an LhmDriver.
+    /// It returns false if PawnIO is not installed or the module fails to load.
+    /// 'out LhmDriver? driver' is an output parameter — the caller gets the
+    /// object back through it when the return value is true.
+    /// </summary>
     public static bool TryOpen(out LhmDriver? driver)
     {
         driver = null;
@@ -33,8 +27,8 @@ public sealed class LhmDriver : IPortIO, IDisposable
         // Check if PawnIO Windows service is running
         try
         {
-            using var service = new ServiceController("pawnio");
-            var status = service.Status;
+            using ServiceController service = new ServiceController("pawnio");
+            ServiceControllerStatus status = service.Status;
             Log.Information("PawnIO service status: {Status}", status);
 
             if (status != ServiceControllerStatus.Running)
@@ -52,7 +46,7 @@ public sealed class LhmDriver : IPortIO, IDisposable
         try
         {
             Log.Debug("Instantiating LpcAcpiEc module");
-            var pawnModule = new LpcAcpiEc();
+            LpcAcpiEc pawnModule = new LpcAcpiEc();
             driver = new LhmDriver(pawnModule);
             Log.Information("LHM driver opened successfully");
             return true;
@@ -72,7 +66,9 @@ public sealed class LhmDriver : IPortIO, IDisposable
     public byte ReadByte(ushort port)
     {
         if (_disposed)
+        {
             throw new ObjectDisposedException(nameof(LhmDriver));
+        }
 
         try
         {
@@ -90,7 +86,9 @@ public sealed class LhmDriver : IPortIO, IDisposable
     public void WriteByte(ushort port, byte data)
     {
         if (_disposed)
+        {
             throw new ObjectDisposedException(nameof(LhmDriver));
+        }
 
         try
         {
@@ -106,7 +104,11 @@ public sealed class LhmDriver : IPortIO, IDisposable
 
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
+
         _disposed = true;
         Log.Debug("Closing LHM driver");
         _pawnModule.Close();

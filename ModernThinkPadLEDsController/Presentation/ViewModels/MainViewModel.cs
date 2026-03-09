@@ -16,7 +16,9 @@ public sealed partial class MainViewModel : ObservableObject
     private Action? _saveSettingsCallback;
     private bool _isLoading;
 
-    // One LedMapping per LED. The View binds to e.g. Power.Mode, RedDot.Mode, etc.
+    /// <summary>
+    /// One LedMapping per LED. The View binds to e.g. Power.Mode, RedDot.Mode, etc.
+    /// </summary>
     public LedMapping Power { get; } = new() { Name = "Power" };
     public LedMapping Mute { get; } = new() { Name = "Mute" };
     public LedMapping RedDot { get; } = new() { Name = "Red Dot" };
@@ -25,11 +27,15 @@ public sealed partial class MainViewModel : ObservableObject
     public LedMapping FnLock { get; } = new() { Name = "Fn Lock" };
     public LedMapping Camera { get; } = new() { Name = "Camera" };
 
-    // Ordered list for the XAML ItemsControl — same objects as above.
+    /// <summary>
+    /// Ordered list for the XAML ItemsControl — same objects as above.
+    /// </summary>
     public IReadOnlyList<LedMapping> Leds { get; }
 
-    // False when Windows disk performance counters are unavailable on this machine.
-    // The View uses this to show a warning in the Disk tab.
+    /// <summary>
+    /// False when Windows disk performance counters are unavailable on this machine.
+    /// The View uses this to show a warning in the Disk tab.
+    /// </summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(DiskMonitoringUnavailable))]
     [NotifyPropertyChangedFor(nameof(DiskRadiosEnabled))]
@@ -37,39 +43,57 @@ public sealed partial class MainViewModel : ObservableObject
 
     public bool DiskMonitoringUnavailable => !DiskMonitoringAvailable;
 
-    // Disk radios should only be enabled when monitoring is available.
+    /// <summary>
+    /// Disk radios should only be enabled when monitoring is available.
+    /// </summary>
     public bool DiskRadiosEnabled => DiskMonitoringAvailable;
 
-    // True when at least one LED is using disk monitoring modes.
+    /// <summary>
+    /// True when at least one LED is using disk monitoring modes.
+    /// </summary>
     public bool HasDiskModeLeds => _mappings.Values.Any(m => m.Mode is LedMode.DiskRead or LedMode.DiskWrite);
 
-    // Event fired when the disk mode LED count changes (0 to 1+ or 1+ to 0)
+    /// <summary>
+    /// Event fired when the disk mode LED count changes (0 to 1+ or 1+ to 0)
+    /// </summary>
     public event Action<bool>? DiskModeLedsChanged;
 
     private bool _previousHadDiskModes;
 
-    // --- Hotkey cycle config ---
-    // Which states should LEDs in HotkeyControlled mode cycle through?
+    /// <summary>
+    /// --- Hotkey cycle config ---
+    /// Which states should LEDs in HotkeyControlled mode cycle through?
+    /// </summary>
     [ObservableProperty] private bool _hotkeyCycleOn = true;
     [ObservableProperty] private bool _hotkeyCycleOff = true;
     [ObservableProperty] private bool _hotkeyCycleBlink;
 
-    // Display text for the current hotkey combination (e.g., "Win + Shift + K")
+    /// <summary>
+    /// Display text for the current hotkey combination (e.g., "Win + Shift + K")
+    /// </summary>
     [ObservableProperty] private string _hotkeyDisplayText = "Win + Shift + K";
 
-    // Flag to indicate when user is recording a new hotkey
+    /// <summary>
+    /// Flag to indicate when user is recording a new hotkey
+    /// </summary>
     [ObservableProperty] private bool _isRecordingHotkey;
 
-    // Warning message for hotkey issues (e.g., no modifiers, conflicts)
+    /// <summary>
+    /// Warning message for hotkey issues (e.g., no modifiers, conflicts)
+    /// </summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasHotkeyWarning))]
     private string? _hotkeyWarningMessage;
 
-    // Whether to show the warning box
+    /// <summary>
+    /// Whether to show the warning box
+    /// </summary>
     public bool HasHotkeyWarning => !string.IsNullOrEmpty(HotkeyWarningMessage);
 
-    // Maps each Led enum value to its LedMapping — used to keep UI configuration
-    // aligned with hardware behavior updates handled by LedBehaviorService.
+    /// <summary>
+    /// Maps each Led enum value to its LedMapping — used to keep UI configuration
+    /// aligned with hardware behavior updates handled by LedBehaviorService.
+    /// </summary>
     private readonly Dictionary<Led, LedMapping> _mappings;
 
     public MainViewModel(LedBehaviorService ledBehavior, AppSettings settings)
@@ -92,14 +116,16 @@ public sealed partial class MainViewModel : ObservableObject
         UpdateHotkeyCycleBehavior();
 
         // When the user changes a mode via the UI, apply it to hardware immediately.
-        foreach (var (led, map) in _mappings)
+        foreach ((Led led, LedMapping? map) in _mappings)
         {
             map.PropertyChanged += (_, e) =>
             {
                 if (e.PropertyName == nameof(LedMapping.Mode))
                 {
                     if (_isLoading)
+                    {
                         return;
+                    }
 
                     _ledBehavior.OnLedModeChanged(led);
 
@@ -116,7 +142,9 @@ public sealed partial class MainViewModel : ObservableObject
                 else if (e.PropertyName == nameof(LedMapping.CustomRegisterId))
                 {
                     if (_isLoading)
+                    {
                         return;
+                    }
 
                     _ledBehavior.OnCustomRegisterIdChanged(led);
                     TriggerSaveIfEnabled();
@@ -176,7 +204,7 @@ public sealed partial class MainViewModel : ObservableObject
             HotkeyCycleOff = (hotkeyCycleOptions & HotkeyCycleOptions.Off) != 0;
             HotkeyCycleBlink = (hotkeyCycleOptions & HotkeyCycleOptions.Blink) != 0;
 
-            HotkeyDisplayText = FormatHotkeyDisplay(_settings.HotkeyModifiers, _settings.HotkeyKey);
+            HotkeyDisplayText = FormatHotkeyDisplay(_settings.Hotkey);
 
             _previousHadDiskModes = HasDiskModeLeds;
             OnPropertyChanged(nameof(HasDiskModeLeds));
@@ -233,16 +261,31 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>
     /// Formats Win32 modifier flags and a WPF key into a human-readable string.
     /// </summary>
-    public string FormatHotkeyDisplay(HotkeyModifiers modifiers, Key key)
+    public string FormatHotkeyDisplay(HotkeyBinding hotkey)
     {
-        var parts = new List<string>();
+        List<string> parts = new List<string>();
 
-        if ((modifiers & HotkeyModifiers.Control) != 0) parts.Add("Ctrl");
-        if ((modifiers & HotkeyModifiers.Alt) != 0) parts.Add("Alt");
-        if ((modifiers & HotkeyModifiers.Shift) != 0) parts.Add("Shift");
-        if ((modifiers & HotkeyModifiers.Win) != 0) parts.Add("Win");
+        if ((hotkey.Modifiers & HotkeyModifiers.Control) != 0)
+        {
+            parts.Add("Ctrl");
+        }
 
-        parts.Add(GetKeyName(key));
+        if ((hotkey.Modifiers & HotkeyModifiers.Alt) != 0)
+        {
+            parts.Add("Alt");
+        }
+
+        if ((hotkey.Modifiers & HotkeyModifiers.Shift) != 0)
+        {
+            parts.Add("Shift");
+        }
+
+        if ((hotkey.Modifiers & HotkeyModifiers.Win) != 0)
+        {
+            parts.Add("Win");
+        }
+
+        parts.Add(GetKeyName(hotkey.Key));
 
         return string.Join(" + ", parts);
     }
@@ -255,9 +298,21 @@ public sealed partial class MainViewModel : ObservableObject
     private HotkeyCycleOptions GetHotkeyCycleOptions()
     {
         HotkeyCycleOptions options = HotkeyCycleOptions.None;
-        if (HotkeyCycleOn) options |= HotkeyCycleOptions.On;
-        if (HotkeyCycleOff) options |= HotkeyCycleOptions.Off;
-        if (HotkeyCycleBlink) options |= HotkeyCycleOptions.Blink;
+        if (HotkeyCycleOn)
+        {
+            options |= HotkeyCycleOptions.On;
+        }
+
+        if (HotkeyCycleOff)
+        {
+            options |= HotkeyCycleOptions.Off;
+        }
+
+        if (HotkeyCycleBlink)
+        {
+            options |= HotkeyCycleOptions.Blink;
+        }
+
         return options;
     }
 

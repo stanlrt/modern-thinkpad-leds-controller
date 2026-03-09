@@ -2,8 +2,10 @@ using System.Diagnostics;
 
 namespace ModernThinkPadLEDsController.Monitoring;
 
-// DiskActivityState tells us what kind of I/O is happening right now.
-public enum DiskActivityState { Idle, Read, Write, ReadWrite }
+/// <summary>
+/// DiskActivityState tells us what kind of I/O is happening right now.
+/// </summary>
+public enum DiskActivityState { Idle = 0, Read = 1, Write = 2, ReadWrite = 3 }
 
 // DiskActivityMonitor replaces the BackgroundWorker + PerformanceCounter loop
 // from the legacy WinForms app. It runs on a background thread and
@@ -14,16 +16,20 @@ public enum DiskActivityState { Idle, Read, Write, ReadWrite }
 /// <summary>
 /// Observes aggregate disk read and write activity.
 /// </summary>
-public sealed class DiskActivityMonitor : IDisposable
+public sealed class DiskActivityMonitor : ILifecycleMonitor
 {
-    public const int MinIntervalMs = 100;
+    public const int MIN_INTERVAL_MS = 100;
 
-    // StateChanged fires on the background thread. The caller must dispatch
-    // back to the UI thread if they want to update UI properties.
+    /// <summary>
+    /// StateChanged fires on the background thread. The caller must dispatch
+    /// back to the UI thread if they want to update UI properties.
+    /// </summary>
     public event Action<DiskActivityState>? StateChanged;
 
-    // IsAvailable is false if the disk performance counters are disabled on
-    // this machine (can happen on some enterprise/hardened systems).
+    /// <summary>
+    /// IsAvailable is false if the disk performance counters are disabled on
+    /// this machine (can happen on some enterprise/hardened systems).
+    /// </summary>
     public bool IsAvailable { get; private set; }
 
     private PerformanceCounter? _readCounter;
@@ -33,18 +39,31 @@ public sealed class DiskActivityMonitor : IDisposable
 
     public DiskActivityMonitor(int intervalMs = 300)
     {
-        _intervalMs = Math.Max(MinIntervalMs, intervalMs);
+        _intervalMs = Math.Max(MIN_INTERVAL_MS, intervalMs);
     }
 
-    // Call TryInitialize() once at startup. Returns false if the Windows
-    // disk performance counters are not available on this machine.
+    /// <summary>
+    /// Call TryInitialize() once at startup. Returns false if the Windows
+    /// disk performance counters are not available on this machine.
+    /// </summary>
     public bool TryInitialize()
     {
         try
         {
-            if (!PerformanceCounterCategory.Exists("LogicalDisk")) return false;
-            if (!PerformanceCounterCategory.CounterExists("Disk Read Bytes/sec", "LogicalDisk")) return false;
-            if (!PerformanceCounterCategory.CounterExists("Disk Write Bytes/sec", "LogicalDisk")) return false;
+            if (!PerformanceCounterCategory.Exists("LogicalDisk"))
+            {
+                return false;
+            }
+
+            if (!PerformanceCounterCategory.CounterExists("Disk Read Bytes/sec", "LogicalDisk"))
+            {
+                return false;
+            }
+
+            if (!PerformanceCounterCategory.CounterExists("Disk Write Bytes/sec", "LogicalDisk"))
+            {
+                return false;
+            }
 
             _readCounter = new PerformanceCounter("LogicalDisk", "Disk Read Bytes/sec", "_Total");
             _writeCounter = new PerformanceCounter("LogicalDisk", "Disk Write Bytes/sec", "_Total");
@@ -56,7 +75,10 @@ public sealed class DiskActivityMonitor : IDisposable
 
     public void Start()
     {
-        if (!IsAvailable) return;
+        if (!IsAvailable)
+        {
+            return;
+        }
         // Stop any existing monitoring first to prevent multiple loops
         Stop();
         _cts = new CancellationTokenSource();
@@ -71,8 +93,10 @@ public sealed class DiskActivityMonitor : IDisposable
         _cts = null;
     }
 
-    // Call when the user changes the disk poll interval slider.
-    public void UpdateInterval(int ms) => Interlocked.Exchange(ref _intervalMs, Math.Max(MinIntervalMs, ms));
+    /// <summary>
+    /// Call when the user changes the disk poll interval slider.
+    /// </summary>
+    public void UpdateInterval(int ms) => Interlocked.Exchange(ref _intervalMs, Math.Max(MIN_INTERVAL_MS, ms));
 
     private async Task MonitorLoop(CancellationToken ct)
     {

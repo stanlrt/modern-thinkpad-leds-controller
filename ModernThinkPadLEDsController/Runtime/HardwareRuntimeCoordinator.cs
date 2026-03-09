@@ -60,7 +60,9 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
     public void Initialize()
     {
         if (_eventsWired)
+        {
             return;
+        }
 
         _logger.LogDebug("Wiring up event handlers");
 
@@ -106,14 +108,14 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
             _logger.LogDebug("Fullscreen polling started");
         }
 
-        _microphoneMuteMonitor.Start();
+        StartMonitor(_microphoneMuteMonitor);
         _logger.LogDebug("Microphone mute monitor started");
 
         bool microphoneMuted = _microphoneMuteMonitor.QueryMuted();
         _ledBehavior.ObserveMicrophoneMuteState(microphoneMuted);
         _logger.LogDebug("Initial microphone mute state: {IsMuted}", microphoneMuted);
 
-        _speakerMuteMonitor.Start();
+        StartMonitor(_speakerMuteMonitor);
         _logger.LogDebug("Speaker mute monitor started");
 
         bool speakerMuted = _speakerMuteMonitor.QueryMuted();
@@ -124,7 +126,9 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
     public void Dispose()
     {
         if (!_eventsWired)
+        {
             return;
+        }
 
         _presentation.DiskModeLedsChanged -= OnDiskModeLedsChanged;
         _diskMonitor.StateChanged -= OnDiskStateChanged;
@@ -150,16 +154,22 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
             }
 
             if (hasDiskModes && _diskMonitor.IsAvailable)
+            {
                 _diskMonitor.Start();
+            }
             else
+            {
                 _diskMonitor.Stop();
+            }
         });
     }
 
     private void OnDiskStateChanged(DiskActivityState state)
     {
         if (!_hardwareAccess.IsEnabled)
+        {
             return;
+        }
 
         _windowHost.Dispatch(() =>
         {
@@ -191,9 +201,7 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
         _windowHost.Dispatch(() =>
         {
             _logger.LogInformation("System suspending - stopping monitors");
-            _keyboardBacklightMonitor.Stop();
-            _diskMonitor.Stop();
-            _fullscreenMonitor.Stop();
+            StopMonitors(_keyboardBacklightMonitor, _diskMonitor, _fullscreenMonitor);
         });
     }
 
@@ -203,45 +211,74 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
         {
             _logger.LogInformation("System resumed - restarting monitors");
             if (!_hardwareAccess.IsEnabled)
+            {
                 return;
+            }
 
             if (_settings.RememberKeyboardBacklight && _settings.SavedKeyboardBacklight is int savedKeyboardBacklight)
+            {
                 _presentation.SetKeyboardBrightnessLevel(savedKeyboardBacklight);
+            }
 
             if (_presentation.HasDiskModeLeds)
-                _diskMonitor.Start();
+            {
+                StartMonitor(_diskMonitor);
+            }
 
-            _keyboardBacklightMonitor.Start();
+            StartMonitor(_keyboardBacklightMonitor);
 
             if (_settings.DimLedsWhenFullscreen)
-                _fullscreenMonitor.Start();
+            {
+                StartMonitor(_fullscreenMonitor);
+            }
         });
+    }
+
+    private static void StartMonitor(ILifecycleMonitor monitor)
+    {
+        monitor.Start();
+    }
+
+    private static void StopMonitors(params ILifecycleMonitor[] monitors)
+    {
+        foreach (ILifecycleMonitor monitor in monitors)
+        {
+            monitor.Stop();
+        }
     }
 
     private void OnLidStateChanged(bool isOpen)
     {
         if (!_hardwareAccess.IsEnabled)
+        {
             return;
+        }
 
         _windowHost.Dispatch(() =>
         {
             _logger.LogDebug("Lid state changed: {IsOpen}", isOpen);
             if (isOpen && _settings.RememberKeyboardBacklight && _settings.SavedKeyboardBacklight is int savedKeyboardBacklight)
+            {
                 _presentation.SetKeyboardBrightnessLevel(savedKeyboardBacklight);
+            }
         });
     }
 
     private void OnFullscreenChanged(bool isFullscreen)
     {
         if (!_hardwareAccess.IsEnabled)
+        {
             return;
+        }
 
         _windowHost.Dispatch(() =>
         {
             _logger.LogDebug("Fullscreen state changed: {IsFullscreen}", isFullscreen);
 
             if (!_keyboardBacklightMonitor.HasObservedLevel)
+            {
                 return;
+            }
 
             byte currentLevel = _keyboardBacklightMonitor.CurrentLevel;
             _ledBehavior.OnFullscreenChanged(isFullscreen, currentLevel);

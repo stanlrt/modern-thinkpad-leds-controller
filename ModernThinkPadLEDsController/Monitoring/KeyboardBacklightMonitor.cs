@@ -2,35 +2,19 @@ using ModernThinkPadLEDsController.Hardware;
 
 namespace ModernThinkPadLEDsController.Monitoring;
 
-// KeyboardBacklightMonitor does two things:
-//
-// 1. It continuously polls EC register 0x0D to watch for user-initiated
-//    backlight changes (e.g. pressing Fn+Space). When the level changes,
-//    it fires LevelChanged so the UI stays in sync.
-//
-// 2. It maintains a rolling history of the last 5 readings. When the system
-//    wakes from sleep or the lid opens, PowerEventListener calls
-//    RestoreMostCommonLevel() to put the keyboard backlight back to where
-//    the user had it. The "most common" approach avoids restoring a wrong
-//    level if there was one bad reading right before sleep.
-//
-// This replaces the legacy 'levels' List<LightLevel> + LINQ query pattern
-// in Form1.cs, but the core idea is identical.
 /// <summary>
 /// Observes and restores the keyboard backlight level.
 /// </summary>
-public sealed class KeyboardBacklightMonitor : IDisposable
+public sealed class KeyboardBacklightMonitor : ILifecycleMonitor
 {
     public event Action<byte>? LevelChanged;
 
     private readonly LedController _leds;
     private readonly Queue<byte> _history = new();
-    private const int HistorySize = 5;
-    private const int PollIntervalMs = 1000;
+    private const int HISTORY_SIZE = 5;
+    private const int POLL_INTERVAL_MS = 1000;
 
     private CancellationTokenSource? _cts;
-    private byte _lastSeen = 0;
-    private bool _hasObservedLevel;
 
     public KeyboardBacklightMonitor(LedController leds) => _leds = leds;
 
@@ -44,8 +28,8 @@ public sealed class KeyboardBacklightMonitor : IDisposable
         // This ensures CurrentLevel is valid immediately when fullscreen polling starts
         if (_leds.GetKeyboardBacklightRaw(out byte initialLevel))
         {
-            _lastSeen = initialLevel;
-            _hasObservedLevel = true;
+            CurrentLevel = initialLevel;
+            HasObservedLevel = true;
             _history.Enqueue(initialLevel);
         }
 
@@ -59,10 +43,15 @@ public sealed class KeyboardBacklightMonitor : IDisposable
         _cts = null;
     }
 
-    // Called by PowerEventListener on system resume and lid-open.
+    /// <summary>
+    /// Called by PowerEventListener on system resume and lid-open.
+    /// </summary>
     public void RestoreMostCommonLevel()
     {
-        if (_history.Count == 0) return;
+        if (_history.Count == 0)
+        {
+            return;
+        }
 
         byte mostCommon = _history
             .GroupBy(x => x)
@@ -72,12 +61,16 @@ public sealed class KeyboardBacklightMonitor : IDisposable
         _leds.SetKeyboardBacklightRaw(mostCommon);
     }
 
-    // Returns the most recently observed level (used by App.xaml.cs to
-    // save the level into AppSettings on shutdown).
-    public byte CurrentLevel => _lastSeen;
+    /// <summary>
+    /// Returns the most recently observed level (used by App.xaml.cs to
+    /// save the level into AppSettings on shutdown).
+    /// </summary>
+    public byte CurrentLevel { get; private set; } = 0;
 
-    // True after at least one successful hardware read.
-    public bool HasObservedLevel => _hasObservedLevel;
+    /// <summary>
+    /// True after at least one successful hardware read.
+    /// </summary>
+    public bool HasObservedLevel { get; private set; }
 
     private async Task PollLoop(CancellationToken ct)
     {
@@ -85,27 +78,29 @@ public sealed class KeyboardBacklightMonitor : IDisposable
         {
             if (_leds.GetKeyboardBacklightRaw(out byte level))
             {
-                _hasObservedLevel = true;
+                HasObservedLevel = true;
 
-                if (_history.Count >= HistorySize)
+                if (_history.Count >= HISTORY_SIZE)
+                {
                     _history.Dequeue();
+                }
+
                 _history.Enqueue(level);
 
-                if (level != _lastSeen)
+                if (level != CurrentLevel)
                 {
-                    _lastSeen = level;
+                    CurrentLevel = level;
                     LevelChanged?.Invoke(level);
                 }
             }
 
-            try { await Task.Delay(PollIntervalMs, ct); }
+            try { await Task.Delay(POLL_INTERVAL_MS, ct); }
             catch (OperationCanceledException) { break; }
         }
     }
 
     public void Dispose()
     {
-        _cts?.Cancel();
-        _cts?.Dispose();
+        Stop();
     }
 }

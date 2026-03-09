@@ -8,7 +8,7 @@ namespace ModernThinkPadLEDsController.Monitoring;
 /// <summary>
 /// Detects when another window has entered fullscreen mode.
 /// </summary>
-public sealed class FullscreenMonitor : IDisposable
+public sealed class FullscreenMonitor : ILifecycleMonitor, IWindowAttachedMonitor
 {
     public event Action<bool>? FullscreenChanged;
 
@@ -17,11 +17,11 @@ public sealed class FullscreenMonitor : IDisposable
     private bool _isFirstCheck;
     private IntPtr _ignoredWindowHandle = IntPtr.Zero;
 
-    private const int GwlStyle = -16;
-    private const long WsCaption = 0x00C00000L;
-    private const long WsThickFrame = 0x00040000L;
-    private const uint MonitorDefaultToNearest = 2;
-    private const int FullscreenBoundsTolerance = 2;
+    private const int GWL_STYLE = -16;
+    private const long WS_CAPTION = 0x00C00000L;
+    private const long WS_THICK_FRAME = 0x00040000L;
+    private const uint MONITOR_DEFAULT_TO_NEAREST = 2;
+    private const int FULLSCREEN_BOUNDS_TOLERANCE = 2;
 
     [StructLayout(LayoutKind.Sequential)]
     private struct Rect
@@ -124,7 +124,9 @@ public sealed class FullscreenMonitor : IDisposable
         }
 
         if (isFullscreen == _wasFullscreen)
+        {
             return;
+        }
 
         _wasFullscreen = isFullscreen;
         FullscreenChanged?.Invoke(isFullscreen);
@@ -134,53 +136,69 @@ public sealed class FullscreenMonitor : IDisposable
     {
         int result = SHQueryUserNotificationState(out QueryUserNotificationState state);
         if (result == 0 && state == QueryUserNotificationState.QunsRunningD3dFullScreen)
+        {
             return true;
+        }
 
         IntPtr foregroundWindow = GetForegroundWindow();
         if (foregroundWindow == IntPtr.Zero || foregroundWindow == _ignoredWindowHandle)
+        {
             return false;
+        }
 
         if (!IsWindowVisible(foregroundWindow))
+        {
             return false;
+        }
 
-        IntPtr monitor = MonitorFromWindow(foregroundWindow, MonitorDefaultToNearest);
+        IntPtr monitor = MonitorFromWindow(foregroundWindow, MONITOR_DEFAULT_TO_NEAREST);
         if (monitor == IntPtr.Zero)
+        {
             return false;
+        }
 
         MonitorInfo monitorInfo = new() { CbSize = Marshal.SizeOf<MonitorInfo>() };
         if (!GetMonitorInfo(monitor, ref monitorInfo))
+        {
             return false;
+        }
 
         if (!GetWindowRect(foregroundWindow, out Rect windowRect))
+        {
             return false;
+        }
 
         if (!CoversMonitor(windowRect, monitorInfo.RcMonitor))
+        {
             return false;
+        }
 
         long style = GetWindowStyle(foregroundWindow);
-        bool hasStandardChrome = (style & (WsCaption | WsThickFrame)) != 0;
+        bool hasStandardChrome = (style & (WS_CAPTION | WS_THICK_FRAME)) != 0;
         return !hasStandardChrome;
     }
 
     private static bool CoversMonitor(Rect windowRect, Rect monitorRect)
     {
-        return Math.Abs(windowRect.Left - monitorRect.Left) <= FullscreenBoundsTolerance
-            && Math.Abs(windowRect.Top - monitorRect.Top) <= FullscreenBoundsTolerance
-            && Math.Abs(windowRect.Right - monitorRect.Right) <= FullscreenBoundsTolerance
-            && Math.Abs(windowRect.Bottom - monitorRect.Bottom) <= FullscreenBoundsTolerance;
+        return Math.Abs(windowRect.Left - monitorRect.Left) <= FULLSCREEN_BOUNDS_TOLERANCE
+            && Math.Abs(windowRect.Top - monitorRect.Top) <= FULLSCREEN_BOUNDS_TOLERANCE
+            && Math.Abs(windowRect.Right - monitorRect.Right) <= FULLSCREEN_BOUNDS_TOLERANCE
+            && Math.Abs(windowRect.Bottom - monitorRect.Bottom) <= FULLSCREEN_BOUNDS_TOLERANCE;
     }
 
     private static long GetWindowStyle(IntPtr hWnd)
     {
         return IntPtr.Size == 8
-            ? GetWindowLongPtr64(hWnd, GwlStyle).ToInt64()
-            : GetWindowLongPtr32(hWnd, GwlStyle).ToInt32();
+            ? GetWindowLongPtr64(hWnd, GWL_STYLE).ToInt64()
+            : GetWindowLongPtr32(hWnd, GWL_STYLE).ToInt32();
     }
 
     public void Dispose()
     {
         if (_timer is null)
+        {
             return;
+        }
 
         _timer.Stop();
         _timer.Tick -= OnTimerTick;

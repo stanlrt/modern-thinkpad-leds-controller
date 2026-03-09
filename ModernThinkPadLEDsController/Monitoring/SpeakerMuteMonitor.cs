@@ -14,19 +14,23 @@ namespace ModernThinkPadLEDsController.Monitoring;
 /// <summary>
 /// Observes the default speaker mute state.
 /// </summary>
-public sealed class SpeakerMuteMonitor : IDisposable
+public sealed class SpeakerMuteMonitor : ILifecycleMonitor
 {
-    // MuteStateChanged fires with: true = speakers are muted (LED should be ON)
+    /// <summary>
+    /// MuteStateChanged fires with: true = speakers are muted (LED should be ON)
+    /// </summary>
     public event Action<bool>? MuteStateChanged;
 
     private readonly MMDeviceEnumerator _enumerator = new();
     private CancellationTokenSource? _cts;
     private bool _lastState;
 
-    private const int PollIntervalMs = 500;
+    private const int POLL_INTERVAL_MS = 500;
 
     public void Start()
     {
+        Stop();
+
         // Sync the initial state immediately before starting the poll loop.
         _lastState = QueryMuted();
 
@@ -34,9 +38,16 @@ public sealed class SpeakerMuteMonitor : IDisposable
         _ = Task.Run(() => PollLoop(_cts.Token));
     }
 
-    public void Stop() => _cts?.Cancel();
+    public void Stop()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _cts = null;
+    }
 
-    // Returns the current mute state without going through the event system.
+    /// <summary>
+    /// Returns the current mute state without going through the event system.
+    /// </summary>
     public bool QueryMuted() => IsSpeakerMuted();
 
     private async Task PollLoop(CancellationToken ct)
@@ -50,7 +61,7 @@ public sealed class SpeakerMuteMonitor : IDisposable
                 MuteStateChanged?.Invoke(muted);
             }
 
-            try { await Task.Delay(PollIntervalMs, ct); }
+            try { await Task.Delay(POLL_INTERVAL_MS, ct); }
             catch (OperationCanceledException) { break; }
         }
     }
@@ -68,7 +79,7 @@ public sealed class SpeakerMuteMonitor : IDisposable
 
     public void Dispose()
     {
-        _cts?.Cancel();
+        Stop();
         _enumerator.Dispose();
     }
 }

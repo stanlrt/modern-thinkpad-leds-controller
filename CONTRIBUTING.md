@@ -45,7 +45,6 @@ ModernThinkPadLEDsController/
 ├── Logging/            # Logging configuration and related docs
 ├── Resources/          # Packaged assets and resource dictionaries
 ├── App.xaml(.cs)       # Application entry point
-├── AppSettings.cs      # Persisted user settings
 ├── AssemblyInfo.cs     # WPF assembly-level resource metadata
 └── app.manifest        # UAC elevation + DPI awareness declarations
 ```

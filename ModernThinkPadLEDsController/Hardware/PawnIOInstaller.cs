@@ -10,20 +10,19 @@ namespace ModernThinkPadLEDsController.Hardware;
 /// </summary>
 public static class PawnIOInstaller
 {
-    private const string InstallerResourceName = "ModernThinkPadLEDsController.Resources.PawnIO-Setup.exe";
-    private const string TempInstallerName = "PawnIO-Setup.exe";
+    private const string INSTALLER_RESOURCE_NAME = "ModernThinkPadLEDsController.Resources.PawnIO-Setup.exe";
+    private const string TEMP_INSTALLER_NAME = "PawnIO-Setup.exe";
 
-    private static readonly ILogger _logger = LoggerFactory.Create(builder =>
-    {
-        builder.AddDebug();
-    }).CreateLogger("PawnIOInstaller");
+    private static readonly ILogger _logger = LoggerFactory.Create(builder => builder.AddDebug()).CreateLogger("PawnIOInstaller");
 
     public static bool IsPawnIOInstalled()
     {
         try
         {
-            if (!LhmDriver.TryOpen(out var driver) || driver is null)
+            if (!LhmDriver.TryOpen(out LhmDriver? driver) || driver is null)
+            {
                 return false;
+            }
 
             using (driver)
             {
@@ -48,9 +47,9 @@ public static class PawnIOInstaller
             _logger.LogInformation("Starting PawnIO installer extraction");
 
             // Extract installer from embedded resources to temp directory
-            var tempPath = Path.Combine(Path.GetTempPath(), TempInstallerName);
+            string tempPath = Path.Combine(Path.GetTempPath(), TEMP_INSTALLER_NAME);
 
-            using (var resourceStream = typeof(PawnIOInstaller).Assembly.GetManifestResourceStream(InstallerResourceName))
+            using (Stream? resourceStream = typeof(PawnIOInstaller).Assembly.GetManifestResourceStream(INSTALLER_RESOURCE_NAME))
             {
                 if (resourceStream == null)
                 {
@@ -60,7 +59,7 @@ public static class PawnIOInstaller
 
                 _logger.LogDebug("Extracting installer to: {TempPath}", tempPath);
 
-                using (var fileStream = File.Create(tempPath))
+                using (FileStream fileStream = File.Create(tempPath))
                 {
                     resourceStream.CopyTo(fileStream);
                 }
@@ -68,21 +67,21 @@ public static class PawnIOInstaller
 
             _logger.LogInformation("Launching PawnIO installer with elevation");
 
-            var startInfo = new ProcessStartInfo
+            ProcessStartInfo startInfo = new ProcessStartInfo
             {
                 FileName = tempPath,
                 UseShellExecute = true,
                 Verb = "runas" // Request elevation
             };
 
-            var process = Process.Start(startInfo);
+            Process? process = Process.Start(startInfo);
             if (process != null)
             {
                 _logger.LogInformation("Waiting for installer to complete");
 
                 process.WaitForExit();
 
-                var exitCode = process.ExitCode;
+                int exitCode = process.ExitCode;
                 _logger.LogInformation("Installer completed with exit code: {ExitCode}", exitCode);
 
                 try

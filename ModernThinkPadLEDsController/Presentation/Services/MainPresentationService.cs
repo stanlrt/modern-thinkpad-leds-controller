@@ -1,5 +1,5 @@
-using ModernThinkPadLEDsController.Presentation.ViewModels;
 using System.Windows.Input;
+using ModernThinkPadLEDsController.Presentation.ViewModels;
 using ModernThinkPadLEDsController.Shell;
 
 namespace ModernThinkPadLEDsController.Presentation.Services;
@@ -50,9 +50,9 @@ public sealed class MainPresentationService
         _mainViewModel.DiskMonitoringAvailable = isAvailable;
     }
 
-    public string FormatHotkeyDisplay(HotkeyModifiers modifiers, Key key)
+    public string FormatHotkeyDisplay(HotkeyBinding hotkey)
     {
-        return _mainViewModel.FormatHotkeyDisplay(modifiers, key);
+        return _mainViewModel.FormatHotkeyDisplay(hotkey);
     }
 
     public void SetKeyboardBrightnessLevel(int level)

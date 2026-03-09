@@ -45,7 +45,9 @@ public sealed class ApplicationCoordinator : IDisposable
     public void Initialize()
     {
         if (_isInitialized)
+        {
             return;
+        }
 
         _logger.LogInformation("Initializing services and UI");
 

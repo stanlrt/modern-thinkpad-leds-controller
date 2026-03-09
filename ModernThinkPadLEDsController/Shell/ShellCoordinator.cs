@@ -1,4 +1,3 @@
-using System.Windows.Input;
 using Microsoft.Extensions.Logging;
 using ModernThinkPadLEDsController.Lighting;
 using ModernThinkPadLEDsController.Monitoring;
@@ -48,7 +47,9 @@ public sealed class ShellCoordinator : IDisposable
     public void Initialize()
     {
         if (_isInitialized)
+        {
             return;
+        }
 
         _tray.ShowWindowRequested += OnShowWindowRequested;
         _tray.ExitRequested += OnExitRequested;
@@ -79,30 +80,12 @@ public sealed class ShellCoordinator : IDisposable
         }
     }
 
-    public bool UpdateHotkey(HotkeyModifiers modifiers, Key key, string displayText)
-    {
-        int virtualKey = KeyInterop.VirtualKeyFromKey(key);
-        _logger.LogInformation("Updating hotkey to {Display} (modifiers={Modifiers:X}, vk={VirtualKey:X})",
-            displayText, (int)modifiers, virtualKey);
-
-        bool success = _hotkey.UpdateHotkey(modifiers, key);
-
-        if (success)
-        {
-            _settingsPersistence.UpdateHotkey(modifiers, key);
-        }
-        else
-        {
-            _logger.LogWarning("Failed to register hotkey {Display} - already in use", displayText);
-        }
-
-        return success;
-    }
-
     public void Dispose()
     {
         if (!_isInitialized)
+        {
             return;
+        }
 
         _windowHost.SourceInitialized -= OnMainWindowSourceInitialized;
         _tray.ShowWindowRequested -= OnShowWindowRequested;
@@ -126,26 +109,27 @@ public sealed class ShellCoordinator : IDisposable
     private void OnMainWindowSourceInitialized(object? sender, EventArgs e)
     {
         if (sender is not MainWindow window)
+        {
             return;
+        }
 
         _logger.LogDebug("Main window source initialized");
         _powerEventMonitor.Attach(window);
         _fullscreenMonitor.Attach(window);
-        bool hotkeySuccess = _hotkey.Register(window, _settingsPersistence.HotkeyModifiers, _settingsPersistence.HotkeyKey);
+        HotkeyBinding hotkey = _settingsPersistence.Hotkey;
+        bool hotkeySuccess = _hotkey.Register(window, hotkey);
         _hotkey.HotkeyPressed -= OnHotkeyPressed;
         _hotkey.HotkeyPressed += OnHotkeyPressed;
-
-        int configuredVirtualKey = KeyInterop.VirtualKeyFromKey(_settingsPersistence.HotkeyKey);
 
         if (hotkeySuccess)
         {
             _logger.LogInformation("Hotkey service initialized with {Modifiers:X} + {VirtualKey:X}",
-                (int)_settingsPersistence.HotkeyModifiers, configuredVirtualKey);
+                (int)hotkey.Modifiers, hotkey.VirtualKey);
         }
         else
         {
             _logger.LogWarning("Hotkey {Modifiers:X} + {VirtualKey:X} is already in use - hotkey disabled",
-                (int)_settingsPersistence.HotkeyModifiers, configuredVirtualKey);
+                (int)hotkey.Modifiers, hotkey.VirtualKey);
         }
     }
 

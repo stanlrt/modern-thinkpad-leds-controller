@@ -37,10 +37,14 @@ public sealed class HardwareAccessController
     public string GetStatusDescription()
     {
         if (IsEnabled)
+        {
             return DriverLoaded ? "PawnIO active" : "Hardware access requested, restart required";
+        }
 
         if (DriverLoaded)
+        {
             return "Hardware access disabled for this session";
+        }
 
         return StartupReason is null
             ? "Hardware access disabled"
@@ -50,7 +54,9 @@ public sealed class HardwareAccessController
     public void LogSuppressedOperationOnce(string operationName)
     {
         if (Interlocked.Exchange(ref _suppressedOperationLogged, 1) != 0)
+        {
             return;
+        }
 
         Log.Warning(
             "Hardware access is disabled; suppressing EC operations. First blocked operation: {Operation}. Status: {Status}",

@@ -75,12 +75,18 @@ public sealed class SettingsRuntimeService : ISettingsRuntimeService
     public void SetFullscreenPollingEnabled(bool enabled)
     {
         if (!_hardwareAccess.IsEnabled)
+        {
             return;
+        }
 
         if (enabled)
+        {
             _fullscreenMonitor.Start();
+        }
         else
+        {
             _fullscreenMonitor.Stop();
+        }
     }
 
     public HardwareAccessPreferenceChangeResult SetHardwareAccessEnabled(bool enabled)
@@ -90,7 +96,9 @@ public sealed class SettingsRuntimeService : ISettingsRuntimeService
         if (enabled)
         {
             if (_hardwareAccess.IsEnabled)
+            {
                 return new HardwareAccessPreferenceChangeResult(true, null);
+            }
 
             return new HardwareAccessPreferenceChangeResult(
                 false,
@@ -123,7 +131,9 @@ public sealed class SettingsRuntimeService : ISettingsRuntimeService
     public StartupTaskOperationResult SetStartupEnabled(bool enabled)
     {
         if (!enabled)
+        {
             return StartupTaskManager.Unregister();
+        }
 
         string executablePath = Environment.ProcessPath ?? string.Empty;
         return StartupTaskManager.Register(executablePath);

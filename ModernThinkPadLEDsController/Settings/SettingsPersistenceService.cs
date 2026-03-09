@@ -26,9 +26,7 @@ public sealed class SettingsPersistenceService
 
     public bool PersistSettingsOnChange => _settings.PersistSettingsOnChange;
 
-    public HotkeyModifiers HotkeyModifiers => _settings.HotkeyModifiers;
-
-    public Key HotkeyKey => _settings.HotkeyKey;
+    public HotkeyBinding Hotkey => _settings.Hotkey;
 
     public void SaveCurrentSettings()
     {
@@ -36,8 +34,15 @@ public sealed class SettingsPersistenceService
         {
             _logger.LogDebug("Saving settings");
             _presentation.SaveToSettings();
-            _settings.Save();
-            _logger.LogDebug("Settings saved successfully");
+
+            if (_settings.Save())
+            {
+                _logger.LogDebug("Settings saved successfully");
+            }
+            else
+            {
+                _logger.LogWarning("Settings save failed");
+            }
         }
         catch (Exception ex)
         {
@@ -45,15 +50,22 @@ public sealed class SettingsPersistenceService
         }
     }
 
-    public void UpdateHotkey(HotkeyModifiers modifiers, Key key)
+    public void UpdateHotkey(HotkeyBinding hotkey)
     {
-        _settings.HotkeyModifiers = modifiers;
-        _settings.HotkeyKey = key;
+        _settings.Hotkey = hotkey;
 
         if (!PersistSettingsOnChange)
+        {
             return;
+        }
 
-        _settings.Save();
-        _logger.LogDebug("Hotkey settings saved");
+        if (_settings.Save())
+        {
+            _logger.LogDebug("Hotkey settings saved");
+        }
+        else
+        {
+            _logger.LogWarning("Hotkey settings save failed");
+        }
     }
 }

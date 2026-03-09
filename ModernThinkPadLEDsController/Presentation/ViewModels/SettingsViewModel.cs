@@ -17,7 +17,9 @@ public sealed partial class SettingsViewModel : ObservableObject
     private readonly ISettingsRuntimeService _runtime;
     private Action? _saveSettingsCallback;
 
-    // Flag to prevent triggering saves during initial load
+    /// <summary>
+    /// Flag to prevent triggering saves during initial load
+    /// </summary>
     private bool _isLoading;
 
 
@@ -189,7 +191,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         try
         {
             BlinkIntervalMs = _settings.BlinkIntervalMs;
-            DiskPollIntervalMs = Math.Max(DiskActivityMonitor.MinIntervalMs, _settings.DiskPollIntervalMs);
+            DiskPollIntervalMs = Math.Max(DiskActivityMonitor.MIN_INTERVAL_MS, _settings.DiskPollIntervalMs);
             RememberKeyboardBacklight = _settings.RememberKeyboardBacklight;
 
             // When no brightness has been persisted yet, read the current hardware level

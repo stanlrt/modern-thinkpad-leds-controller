@@ -8,7 +8,9 @@ namespace ModernThinkPadLEDsController.Hardware;
 /// </summary>
 public sealed class LedController
 {
-    // EC register addresses for LEDs and keyboard backlight.
+    /// <summary>
+    /// EC register addresses for LEDs and keyboard backlight.
+    /// </summary>
     private const byte TP_LED_OFFSET = 0x0C;
     private const byte TP_KBD_OFFSET = 0x0D;
 
@@ -39,7 +41,9 @@ public sealed class LedController
         lock (_cacheLock)
         {
             if (_lastLedStates.TryGetValue(ledId, out LedState lastState) && lastState == state)
+            {
                 return true;
+            }
         }
 
         bool success = _ec.WriteByte(TP_LED_OFFSET, value);
@@ -53,12 +57,16 @@ public sealed class LedController
             Log.Debug("SetLed({Led}, {State}, customId={CustomId}) SUCCESS", led, state, customId);
         }
         else
+        {
             Log.Warning("SetLed({Led}, {State}) FAILED", led, state);
+        }
 
         return success;
     }
 
-    // Set keyboard backlight to any raw byte value (0-255)
+    /// <summary>
+    /// Set keyboard backlight to any raw byte value (0-255)
+    /// </summary>
     public bool SetKeyboardBacklightRaw(byte level)
     {
         if (!_hardwareAccess.IsEnabled)
@@ -70,7 +78,9 @@ public sealed class LedController
         lock (_cacheLock)
         {
             if (_lastKeyboardBacklightLevel == level)
+            {
                 return true;
+            }
         }
 
         bool success = _ec.WriteByte(TP_KBD_OFFSET, level);
@@ -84,11 +94,16 @@ public sealed class LedController
             Log.Debug("SetKeyboardBacklight(raw={Level}) SUCCESS", level);
         }
         else
+        {
             Log.Warning("SetKeyboardBacklight(raw={Level}) FAILED", level);
+        }
+
         return success;
     }
 
-    // Read the raw keyboard backlight value (0-255)
+    /// <summary>
+    /// Read the raw keyboard backlight value (0-255)
+    /// </summary>
     public bool GetKeyboardBacklightRaw(out byte level)
     {
         level = 0;

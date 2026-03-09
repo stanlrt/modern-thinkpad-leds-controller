@@ -1,3 +1,3 @@
 # Settings
 
-Persistence and live runtime application of settings.
+Settings model, persistence, and live runtime application of settings.

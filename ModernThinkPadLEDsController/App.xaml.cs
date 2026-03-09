@@ -1,7 +1,7 @@
-using System.Windows;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Windows.Input;
+using System.Threading;
+using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -22,9 +22,9 @@ namespace ModernThinkPadLEDsController;
 /// <summary>Root app manager.</summary>
 public partial class App : System.Windows.Application
 {
-    private static readonly string[] SafeModeArguments = ["--safe-mode", "--no-hardware"];
+    private static readonly string[] _safeModeArguments = ["--safe-mode", "--no-hardware"];
 
-    // Win32 API imports for activating existing window instance
+
     [DllImport("user32.dll")]
     private static extern bool SetForegroundWindow(IntPtr hWnd);
 
@@ -37,62 +37,48 @@ public partial class App : System.Windows.Application
     [DllImport("user32.dll", SetLastError = true)]
     private static extern IntPtr FindWindow(string? lpClassName, string? lpWindowName);
 
-    private const int SW_RESTORE = 9;
+#pragma warning disable IDE1006 // Naming Styles
+    private const int _SW_RESTORE = 9;
+#pragma warning restore IDE1006 // Naming Styles
 
-    // Dependency injection host for managing services and logging
     private IHost? _host;
     private ILogger<App>? _logger;
     private ApplicationCoordinator? _app;
-    private ShellCoordinator? _shell;
-    private MainPresentationService? _presentation;
     private SettingsPersistenceService? _settingsPersistence;
+    private ApplicationExceptionCoordinator? _exceptionCoordinator;
 
-    // A named Mutex prevents two instances of the app running simultaneously.
     private Mutex? _singleInstanceMutex;
-    private bool _mutexOwned = false;
+    private bool _mutexOwned;
 
     protected override void OnStartup(StartupEventArgs e)
     {
-        var emergencyLogPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "ModernThinkPadLEDsController",
-            "Logs",
-            "emergency.log");
-
-        void EmergencyLog(string message)
-        {
-            try
-            {
-                var dir = Path.GetDirectoryName(emergencyLogPath);
-                if (dir != null) Directory.CreateDirectory(dir);
-                File.AppendAllText(emergencyLogPath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] [App.OnStartup] {message}\n");
-            }
-            catch
-            {
-                // If we can't even write to the emergency log, there's not much else we can do
-            }
-        }
+        StartupEmergencyLogger emergencyLogger = new StartupEmergencyLogger("App.OnStartup");
 
         try
         {
-            EmergencyLog("=== OnStartup() called ===");
-            EmergencyLog($"Args: {string.Join(" ", e.Args)}");
+            emergencyLogger.Log("=== OnStartup() called ===");
+            emergencyLogger.Log($"Args: {string.Join(" ", e.Args)}");
 
             // ══════════════════════════════════════════════════════════════
             // CRITICAL: Initialize logging FIRST before anything else
             // This ensures all subsequent operations including errors are logged
             // ══════════════════════════════════════════════════════════════
-            EmergencyLog("Calling ConfigureSerilog()...");
+            emergencyLogger.Log("Calling ConfigureSerilog()...");
             LoggingConfiguration.ConfigureSerilog();
-            EmergencyLog("ConfigureSerilog() completed");
+            emergencyLogger.Log("ConfigureSerilog() completed");
 
             base.OnStartup(e);
-            EmergencyLog("base.OnStartup() completed");
+            emergencyLogger.Log("base.OnStartup() completed");
 
             // Build dependency injection host
             _host = CreateHostBuilder(e.Args).Build();
             _logger = _host.Services.GetRequiredService<ILogger<App>>();
-            var hardwareAccess = _host.Services.GetRequiredService<HardwareAccessController>();
+            _exceptionCoordinator = new ApplicationExceptionCoordinator(
+                Dispatcher,
+                () => _logger,
+                DisposeApplicationResources,
+                Shutdown);
+            HardwareAccessController hardwareAccess = _host.Services.GetRequiredService<HardwareAccessController>();
 
             _logger.LogDebug("Application startup initiated");
             _logger.LogDebug("Command line arguments: {Args}", string.Join(" ", e.Args));
@@ -100,13 +86,16 @@ public partial class App : System.Windows.Application
             LoggingConfiguration.LogEnvironmentDetails();
 
             // Global exception handlers to prevent silent crashes
-            DispatcherUnhandledException += OnDispatcherUnhandledException;
-            AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
-            TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
+            DispatcherUnhandledException += _exceptionCoordinator.OnDispatcherUnhandledException;
+            AppDomain.CurrentDomain.UnhandledException += _exceptionCoordinator.OnUnhandledException;
+            TaskScheduler.UnobservedTaskException += _exceptionCoordinator.OnUnobservedTaskException;
 
             _logger.LogDebug("Exception handlers registered");
 
-            if (!TryInitializeSingleInstance()) return;
+            if (!TryInitializeSingleInstance())
+            {
+                return;
+            }
 
             try
             {
@@ -116,7 +105,7 @@ public partial class App : System.Windows.Application
             catch (InvalidOperationException ex) when (ex.Message.Contains("LHM driver"))
             {
                 _logger.LogError(ex, "Failed to initialize driver - showing PawnIO setup window");
-                var setup = new PawnIOSetupWindow();
+                PawnIOSetupWindow setup = new PawnIOSetupWindow();
                 setup.ShowDialog();
                 Shutdown();
                 return;
@@ -129,23 +118,17 @@ public partial class App : System.Windows.Application
             _app.Start(startMinimized);
 
             _logger.LogInformation("Application startup completed successfully");
-            EmergencyLog("=== OnStartup() completed successfully ===");
+            emergencyLogger.Log("=== OnStartup() completed successfully ===");
         }
         catch (Exception ex)
         {
-            EmergencyLog($"FATAL EXCEPTION in OnStartup(): {ex.GetType().Name}: {ex.Message}");
-            EmergencyLog($"Stack Trace: {ex.StackTrace}");
-            if (ex.InnerException != null)
-            {
-                EmergencyLog($"Inner Exception: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
-                EmergencyLog($"Inner Stack Trace: {ex.InnerException.StackTrace}");
-            }
+            emergencyLogger.LogException("FATAL EXCEPTION in OnStartup()", ex);
 
             Log.Fatal(ex, "Fatal error during application startup");
 
-            var message = $"Fatal startup error:\n\n{ex.GetType().Name}: {ex.Message}\n\n" +
+            string message = $"Fatal startup error:\n\n{ex.GetType().Name}: {ex.Message}\n\n" +
                          $"Stack Trace:\n{ex.StackTrace}\n\n" +
-                         $"See logs at: {Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ModernThinkPadLEDsController", "Logs")}";
+                         $"See logs at: {StartupEmergencyLogger.LogDirectory}";
 
             System.Windows.MessageBox.Show(message, "Startup Error", MessageBoxButton.OK, MessageBoxImage.Error);
 
@@ -162,7 +145,7 @@ public partial class App : System.Windows.Application
     {
         return Host.CreateDefaultBuilder(args)
             .ConfigureLogging()
-            .ConfigureServices((context, services) =>
+            .ConfigureServices((_, services) =>
             {
                 AppSettings settings = AppSettings.Load();
                 bool startedInSafeMode = args.Any(IsSafeModeArgument);
@@ -184,10 +167,13 @@ public partial class App : System.Windows.Application
                 // Hardware layer - driver must be validated before use
                 if (startWithHardwareAccess)
                 {
-                    services.AddSingleton<LhmDriver>(sp =>
+                    services.AddSingleton<LhmDriver>(__ =>
                     {
-                        if (!LhmDriver.TryOpen(out var driver) || driver is null)
+                        if (!LhmDriver.TryOpen(out LhmDriver? driver) || driver is null)
+                        {
                             throw new InvalidOperationException("Failed to initialize LHM driver");
+                        }
+
                         return driver;
                     });
 
@@ -208,8 +194,8 @@ public partial class App : System.Windows.Application
                 // Monitoring services
                 services.AddSingleton<DiskActivityMonitor>(sp =>
                 {
-                    var settings = sp.GetRequiredService<AppSettings>();
-                    var monitor = new DiskActivityMonitor(settings.DiskPollIntervalMs);
+                    AppSettings settings = sp.GetRequiredService<AppSettings>();
+                    DiskActivityMonitor monitor = new DiskActivityMonitor(settings.DiskPollIntervalMs);
                     monitor.TryInitialize(); // Initialize on creation
                     return monitor;
                 });
@@ -220,9 +206,9 @@ public partial class App : System.Windows.Application
                 services.AddSingleton<FullscreenMonitor>();
 
                 // UI services
-                services.AddSingleton<TrayIconService>(sp =>
+                services.AddSingleton<TrayIconService>(__ =>
                 {
-                    var tray = new TrayIconService();
+                    TrayIconService tray = new TrayIconService();
                     tray.Initialize();
                     return tray;
                 });
@@ -236,6 +222,7 @@ public partial class App : System.Windows.Application
                 services.AddSingleton<MainWindowHost>();
                 services.AddSingleton<MainPresentationService>();
                 services.AddSingleton<SettingsPersistenceService>();
+                services.AddSingleton<HotkeyConfigurationService>();
                 services.AddSingleton<ShellCoordinator>();
                 services.AddSingleton<HardwareRuntimeCoordinator>();
                 services.AddSingleton<ApplicationCoordinator>();
@@ -244,7 +231,7 @@ public partial class App : System.Windows.Application
 
     private static bool IsSafeModeArgument(string arg)
     {
-        return SafeModeArguments.Any(safeModeArg => string.Equals(arg, safeModeArg, StringComparison.OrdinalIgnoreCase));
+        return _safeModeArguments.Any(safeModeArg => string.Equals(arg, safeModeArg, StringComparison.OrdinalIgnoreCase));
     }
 
     private bool TryInitializeSingleInstance()
@@ -306,10 +293,12 @@ public partial class App : System.Windows.Application
             _logger?.LogDebug("Found existing window handle: {Handle}", hWnd);
 
             if (IsIconic(hWnd))
+            {
                 _logger?.LogDebug("Window is minimized - restoring");
+            }
 
             // Restore also covers the tray-hidden case better than only checking iconic state.
-            ShowWindow(hWnd, SW_RESTORE);
+            ShowWindow(hWnd, _SW_RESTORE);
 
             // Bring the window to the foreground
             bool success = SetForegroundWindow(hWnd);
@@ -333,37 +322,9 @@ public partial class App : System.Windows.Application
 
         // Resolve all services - this triggers construction and validation
         _app = _host!.Services.GetRequiredService<ApplicationCoordinator>();
-        _shell = _host.Services.GetRequiredService<ShellCoordinator>();
-        _presentation = _host.Services.GetRequiredService<MainPresentationService>();
         _settingsPersistence = _host.Services.GetRequiredService<SettingsPersistenceService>();
 
         _logger?.LogInformation("All services resolved successfully");
-    }
-
-    // -------------------------------------------------------------------------
-    // Hotkey management
-    // -------------------------------------------------------------------------
-
-    /// <summary>
-    /// Updates the registered hotkey and saves it to settings.
-    /// </summary>
-    /// <returns>True if the hotkey was registered successfully; false if already in use</returns>
-    public bool UpdateHotkey(HotkeyModifiers modifiers, Key key, string displayText)
-    {
-        return _shell?.UpdateHotkey(modifiers, key, displayText) ?? false;
-    }
-
-    /// <summary>
-    /// Gets the current hotkey display text from settings.
-    /// </summary>
-    public string GetHotkeyDisplayText()
-    {
-        if (_presentation is null || _settingsPersistence is null)
-            return string.Empty;
-
-        return _presentation.FormatHotkeyDisplay(
-            _settingsPersistence.HotkeyModifiers,
-            _settingsPersistence.HotkeyKey);
     }
 
     private void RequestExit()
@@ -382,15 +343,7 @@ public partial class App : System.Windows.Application
                 _logger?.LogInformation("PersistSettingsOnChange is disabled - discarding unsaved changes");
             }
 
-            _logger?.LogDebug("Disposing DI host (will dispose all services automatically)");
-            _host?.Dispose(); // This disposes all registered services
-
-            _logger?.LogDebug("Releasing single instance mutex");
-            if (_mutexOwned)
-            {
-                _singleInstanceMutex?.ReleaseMutex();
-            }
-            _singleInstanceMutex?.Dispose();
+            DisposeApplicationResources();
 
             _logger?.LogInformation("Shutdown sequence completed");
 
@@ -405,43 +358,47 @@ public partial class App : System.Windows.Application
         }
     }
 
-    private void OnDispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+    private void DisposeApplicationResources()
     {
-        _logger?.LogError(e.Exception, "Unhandled exception on UI thread");
-        LogAndShowException("UI Thread Exception", e.Exception);
-        e.Handled = true;
-    }
-
-    private void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
-    {
-        if (e.ExceptionObject is Exception ex)
+        try
         {
-            _logger?.LogCritical(ex, "Unhandled exception on background thread. IsTerminating: {IsTerminating}", e.IsTerminating);
-            LogAndShowException("Background Thread Exception", ex);
+            _logger?.LogDebug("Disposing DI host (will dispose all services automatically)");
+            _host?.Dispose();
+            _host = null;
         }
-    }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Failed to dispose DI host");
+        }
 
-    private void OnUnobservedTaskException(object? sender, System.Threading.Tasks.UnobservedTaskExceptionEventArgs e)
-    {
-        _logger?.LogError(e.Exception, "Unobserved task exception");
-        LogAndShowException("Task Exception", e.Exception);
-        e.SetObserved(); // Prevent crash
-    }
+        try
+        {
+            _logger?.LogDebug("Releasing single instance mutex");
+            if (_mutexOwned)
+            {
+                _singleInstanceMutex?.ReleaseMutex();
+                _mutexOwned = false;
+            }
+        }
+        catch (ApplicationException ex)
+        {
+            _logger?.LogDebug(ex, "Single instance mutex was already released");
+            _mutexOwned = false;
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Failed to release single instance mutex");
+        }
 
-    private static void LogAndShowException(string title, Exception ex)
-    {
-        var logDirectory = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "ModernThinkPadLEDsController",
-            "Logs");
-
-        var message = $"{ex.GetType().Name}: {ex.Message}\n\n" +
-                     $"Stack Trace:\n{ex.StackTrace}\n\n" +
-                     $"═══════════════════════════════════════════\n" +
-                     $"Logs are saved to:\n{logDirectory}\n" +
-                     $"═══════════════════════════════════════════";
-
-        System.Windows.MessageBox.Show(message, title, MessageBoxButton.OK, MessageBoxImage.Error);
+        try
+        {
+            _singleInstanceMutex?.Dispose();
+            _singleInstanceMutex = null;
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Failed to dispose single instance mutex");
+        }
     }
 
 }

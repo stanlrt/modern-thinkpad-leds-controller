@@ -14,28 +14,24 @@ public sealed class TrayIconService : IDisposable
 
     private readonly TaskbarIcon _taskbarIcon = new();
 
-    public TrayIconService()
-    {
-    }
-
     public void Initialize()
     {
         try
         {
-            var showItem = new System.Windows.Controls.MenuItem { Header = "Show" };
+            System.Windows.Controls.MenuItem showItem = new System.Windows.Controls.MenuItem { Header = "Show" };
             showItem.Click += (_, _) => ShowWindowRequested?.Invoke();
 
-            var exitItem = new System.Windows.Controls.MenuItem { Header = "Exit" };
+            System.Windows.Controls.MenuItem exitItem = new System.Windows.Controls.MenuItem { Header = "Exit" };
             exitItem.Click += (_, _) => ExitRequested?.Invoke();
 
-            var menu = new System.Windows.Controls.ContextMenu();
+            System.Windows.Controls.ContextMenu menu = new System.Windows.Controls.ContextMenu();
             menu.Items.Add(showItem);
             menu.Items.Add(new Separator());
             menu.Items.Add(exitItem);
 
             _taskbarIcon.ToolTipText = "Modern ThinkPad LEDs Controller";
 
-            var iconPath = System.IO.Path.Combine(AppContext.BaseDirectory, "Resources", "favicon.ico");
+            string iconPath = System.IO.Path.Combine(AppContext.BaseDirectory, "Resources", "favicon.ico");
             System.Diagnostics.Debug.WriteLine($"Looking for icon at: {iconPath}");
             System.Diagnostics.Debug.WriteLine($"Icon file exists: {System.IO.File.Exists(iconPath)}");
 

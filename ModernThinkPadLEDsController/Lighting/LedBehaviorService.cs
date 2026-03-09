@@ -11,9 +11,6 @@ public sealed class LedBehaviorService : IDisposable
     private readonly LedController _leds;
     private readonly AppSettings _settings;
     private readonly LedBlinkController _blinkMonitor;
-
-    private IReadOnlyDictionary<Led, LedMapping>? _mappings;
-
     private HotkeyCycleOptions _hotkeyCycleOptions = HotkeyCycleOptions.On | HotkeyCycleOptions.Off;
     private int _hotkeyCycleIndex = -1;
 
@@ -26,7 +23,7 @@ public sealed class LedBehaviorService : IDisposable
     private bool _lastSpeakerMuted;
     private bool _hasObservedSpeakerMuteState;
 
-    private static readonly Led[] FullscreenManagedLeds =
+    private static readonly Led[] _fullscreenManagedLeds =
     [
         Led.Power,
         Led.Mute,
@@ -44,7 +41,7 @@ public sealed class LedBehaviorService : IDisposable
 
     public void Initialize(IReadOnlyDictionary<Led, LedMapping> mappings)
     {
-        _mappings = mappings;
+        Mappings = mappings;
     }
 
     public void UpdateHotkeyCycleOptions(HotkeyCycleOptions hotkeyCycleOptions)
@@ -66,12 +63,17 @@ public sealed class LedBehaviorService : IDisposable
     {
         _lastDiskState = state;
 
-        if (_isFullscreen) return;
+        if (_isFullscreen)
+        {
+            return;
+        }
 
-        foreach (var (led, map) in Mappings)
+        foreach ((Led led, LedMapping? map) in Mappings)
         {
             if (map.Mode is LedMode.DiskRead or LedMode.DiskWrite)
+            {
                 ApplyDiskActivityLedState(led, map);
+            }
         }
     }
 
@@ -85,8 +87,10 @@ public sealed class LedBehaviorService : IDisposable
         UpdateObservedMuteState(Led.Mute, isMuted);
     }
 
-    // Mute observations update cached OS state first, then recompute the LED.
-    // Only Default mode follows that cached state; explicit user modes are reapplied.
+    /// <summary>
+    /// Mute observations update cached OS state first, then recompute the LED.
+    /// Only Default mode follows that cached state; explicit user modes are reapplied.
+    /// </summary>
     private void UpdateObservedMuteState(Led led, bool isMuted)
     {
         bool isMicrophone = led == Led.Microphone;
@@ -107,8 +111,15 @@ public sealed class LedBehaviorService : IDisposable
 
     public void OnFullscreenChanged(bool isFullscreen, byte currentBacklight)
     {
-        if (!_settings.DimLedsWhenFullscreen) return;
-        if (_isFullscreen == isFullscreen) return;
+        if (!_settings.DimLedsWhenFullscreen)
+        {
+            return;
+        }
+
+        if (_isFullscreen == isFullscreen)
+        {
+            return;
+        }
 
         _isFullscreen = isFullscreen;
 
@@ -119,19 +130,25 @@ public sealed class LedBehaviorService : IDisposable
             _blinkMonitor.Pause();
             _leds.SetKeyboardBacklightRaw(0);
 
-            foreach (Led led in FullscreenManagedLeds)
+            foreach (Led led in _fullscreenManagedLeds)
             {
                 if (ShouldDimLedForFullscreen(led))
+                {
                     _leds.SetLed(led, LedState.Off, customId: Mappings[led].CustomRegisterId);
+                }
             }
         }
         else
         {
             if (_hasPreFullscreenBacklight)
+            {
                 _leds.SetKeyboardBacklightRaw(_preFullscreenBacklight);
+            }
 
-            foreach (Led led in FullscreenManagedLeds)
+            foreach (Led led in _fullscreenManagedLeds)
+            {
                 ApplyCurrentLedState(led);
+            }
 
             _blinkMonitor.Resume();
         }
@@ -140,17 +157,25 @@ public sealed class LedBehaviorService : IDisposable
     public void OnHotkeyPressed()
     {
         List<LedState> states = BuildHotkeyCycleStates();
-        if (states.Count == 0) return;
+        if (states.Count == 0)
+        {
+            return;
+        }
 
         _hotkeyCycleIndex = (_hotkeyCycleIndex + 1) % states.Count;
-        if (_isFullscreen) return;
+        if (_isFullscreen)
+        {
+            return;
+        }
 
         LedState next = states[_hotkeyCycleIndex];
 
-        foreach (var (led, map) in Mappings)
+        foreach ((Led led, LedMapping? map) in Mappings)
         {
             if (map.Mode != LedMode.HotkeyControlled)
+            {
                 continue;
+            }
 
             if (next == LedState.Blink)
             {
@@ -167,7 +192,9 @@ public sealed class LedBehaviorService : IDisposable
     public void ApplyAll()
     {
         foreach (Led led in Mappings.Keys)
+        {
             ApplyCurrentLedState(led);
+        }
     }
 
     public void UpdateBlinkInterval(int intervalMs)
@@ -180,8 +207,11 @@ public sealed class LedBehaviorService : IDisposable
         _blinkMonitor.ClearAll();
     }
 
-    private IReadOnlyDictionary<Led, LedMapping> Mappings =>
-        _mappings ?? throw new InvalidOperationException("LedBehaviorService.Initialize must be called before use.");
+    private IReadOnlyDictionary<Led, LedMapping> Mappings
+    {
+        get =>
+        field ?? throw new InvalidOperationException("LedBehaviorService.Initialize must be called before use."); set;
+    }
 
     private void ApplyLedStateRespectingFullscreen(Led led)
     {
@@ -198,31 +228,52 @@ public sealed class LedBehaviorService : IDisposable
     private List<LedState> BuildHotkeyCycleStates()
     {
         List<LedState> states = new(3);
-        if ((_hotkeyCycleOptions & HotkeyCycleOptions.On) != 0) states.Add(LedState.On);
-        if ((_hotkeyCycleOptions & HotkeyCycleOptions.Off) != 0) states.Add(LedState.Off);
-        if ((_hotkeyCycleOptions & HotkeyCycleOptions.Blink) != 0) states.Add(LedState.Blink);
+        if ((_hotkeyCycleOptions & HotkeyCycleOptions.On) != 0)
+        {
+            states.Add(LedState.On);
+        }
+
+        if ((_hotkeyCycleOptions & HotkeyCycleOptions.Off) != 0)
+        {
+            states.Add(LedState.Off);
+        }
+
+        if ((_hotkeyCycleOptions & HotkeyCycleOptions.Blink) != 0)
+        {
+            states.Add(LedState.Blink);
+        }
+
         return states;
     }
 
     private LedState? GetCurrentHotkeyCycleState()
     {
         List<LedState> states = BuildHotkeyCycleStates();
-        if (states.Count == 0) return null;
+        if (states.Count == 0)
+        {
+            return null;
+        }
 
         if (_hotkeyCycleIndex == -1)
+        {
             _hotkeyCycleIndex = 0;
+        }
 
         return states[_hotkeyCycleIndex % states.Count];
     }
 
     private bool ShouldDimLedForFullscreen(Led led)
     {
-        if (Array.IndexOf(FullscreenManagedLeds, led) < 0)
+        if (Array.IndexOf(_fullscreenManagedLeds, led) < 0)
+        {
             return false;
+        }
 
         LedMapping map = Mappings[led];
         if (map.Mode != LedMode.Default)
+        {
             return true;
+        }
 
         return led switch
         {
@@ -278,7 +329,9 @@ public sealed class LedBehaviorService : IDisposable
     {
         LedState? state = GetCurrentHotkeyCycleState();
         if (!state.HasValue)
+        {
             return;
+        }
 
         if (state.Value == LedState.Blink)
         {

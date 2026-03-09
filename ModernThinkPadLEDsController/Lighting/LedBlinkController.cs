@@ -12,8 +12,8 @@ public sealed class LedBlinkController : IDisposable
     private readonly object _lock = new();
 
     private CancellationTokenSource? _cts;
-    private bool _currentState = false;
-    private bool _isPaused = false;
+    private bool _currentState;
+    private bool _isPaused;
     private int _blinkIntervalMs;
 
     public LedBlinkController(LedController leds, int blinkIntervalMs = 500)
@@ -22,7 +22,9 @@ public sealed class LedBlinkController : IDisposable
         _blinkIntervalMs = blinkIntervalMs;
     }
 
-    // Update the blink interval dynamically
+    /// <summary>
+    /// Update the blink interval dynamically
+    /// </summary>
     public void SetBlinkInterval(int intervalMs)
     {
         _blinkIntervalMs = intervalMs;
@@ -42,7 +44,9 @@ public sealed class LedBlinkController : IDisposable
         _cts = null;
     }
 
-    // Add an LED to the blinking set
+    /// <summary>
+    /// Add an LED to the blinking set
+    /// </summary>
     public void AddBlinkingLed(Led led, byte? customId)
     {
         lock (_lock)
@@ -57,7 +61,9 @@ public sealed class LedBlinkController : IDisposable
         }
     }
 
-    // Remove an LED from the blinking set
+    /// <summary>
+    /// Remove an LED from the blinking set
+    /// </summary>
     public void RemoveBlinkingLed(Led led)
     {
         lock (_lock)
@@ -72,7 +78,9 @@ public sealed class LedBlinkController : IDisposable
         }
     }
 
-    // Clear all blinking LEDs
+    /// <summary>
+    /// Clear all blinking LEDs
+    /// </summary>
     public void ClearAll()
     {
         lock (_lock)
@@ -82,7 +90,9 @@ public sealed class LedBlinkController : IDisposable
         }
     }
 
-    // Pause blinking without removing LEDs from the list
+    /// <summary>
+    /// Pause blinking without removing LEDs from the list
+    /// </summary>
     public void Pause()
     {
         lock (_lock)
@@ -91,7 +101,9 @@ public sealed class LedBlinkController : IDisposable
         }
     }
 
-    // Resume blinking
+    /// <summary>
+    /// Resume blinking
+    /// </summary>
     public void Resume()
     {
         lock (_lock)
@@ -112,7 +124,7 @@ public sealed class LedBlinkController : IDisposable
             {
                 if (!_isPaused)
                 {
-                    foreach (var (led, customId) in _blinkingLeds)
+                    foreach ((Led led, byte? customId) in _blinkingLeds)
                     {
                         _leds.SetLed(led, state, customId);
                     }

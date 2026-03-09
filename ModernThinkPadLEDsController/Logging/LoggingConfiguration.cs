@@ -3,6 +3,7 @@ using Microsoft.Extensions.Hosting;
 using Serilog;
 using Serilog.Events;
 using System.IO;
+using System.Security.Principal;
 
 namespace ModernThinkPadLEDsController.Logging;
 
@@ -12,29 +13,21 @@ namespace ModernThinkPadLEDsController.Logging;
 /// </summary>
 public static class LoggingConfiguration
 {
-    private static readonly string LogDirectory = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "ModernThinkPadLEDsController",
-        "Logs");
-
-    private static readonly string EmergencyLogPath = Path.Combine(LogDirectory, "emergency.log");
+    private static readonly string _logDirectory = StartupEmergencyLogger.LogDirectory;
+    private static readonly StartupEmergencyLogger _emergencyLogger = new(nameof(LoggingConfiguration));
 
     /// <summary>
     /// Writes to emergency log file when Serilog hasn't been initialized yet
     /// </summary>
     private static void EmergencyLog(string message)
     {
-        try
-        {
-            Directory.CreateDirectory(LogDirectory);
-            File.AppendAllText(EmergencyLogPath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}\n");
-        }
-        catch { /* If we can't log, we can't log */ }
+        _emergencyLogger.Log(message);
     }
 
     /// <summary>
     /// Configures Serilog with appropriate sinks and formatting for this application.
     /// </summary>
+    /// <exception cref="InvalidOperationException">Fatal errors that cannot be recovered</exception>
     public static void ConfigureSerilog()
     {
         try
@@ -42,17 +35,17 @@ public static class LoggingConfiguration
             EmergencyLog("=== ConfigureSerilog() called ===");
             EmergencyLog($"Current Directory: {Environment.CurrentDirectory}");
             EmergencyLog($"Process Path: {Environment.ProcessPath}");
-            EmergencyLog($"Log Directory: {LogDirectory}");
+            EmergencyLog($"Log Directory: {_logDirectory}");
 
             // Ensure log directory exists
-            Directory.CreateDirectory(LogDirectory);
+            Directory.CreateDirectory(_logDirectory);
             EmergencyLog("Log directory created/verified");
 
             // Ensure log directory exists
-            Directory.CreateDirectory(LogDirectory);
+            Directory.CreateDirectory(_logDirectory);
             EmergencyLog("Log directory created/verified");
 
-            var logFilePath = Path.Combine(LogDirectory, "app-.log");
+            string logFilePath = Path.Combine(_logDirectory, "app-.log");
             EmergencyLog($"Log file path: {logFilePath}");
 
             EmergencyLog("Configuring Serilog LoggerConfiguration...");
@@ -74,19 +67,19 @@ public static class LoggingConfiguration
                 // File sink - rolling daily, keep 30 days of logs
                 .WriteTo.File(
                     path: logFilePath,
-                    rollingInterval: RollingInterval.Day,
-                    retainedFileCountLimit: 30,
                     outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}] [{Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}",
                     shared: false,
-                    flushToDiskInterval: TimeSpan.FromSeconds(1))
+                    flushToDiskInterval: TimeSpan.FromSeconds(1),
+                    rollingInterval: RollingInterval.Day,
+                    retainedFileCountLimit: 30)
 
                 // Windows Event Log sink - important for MSI-installed apps
                 // This helps diagnose issues when the app is installed as a service or with elevated permissions
                 .WriteTo.EventLog(
                     source: "ModernThinkPadLEDsController",
                     logName: "Application",
-                    restrictedToMinimumLevel: LogEventLevel.Warning,
-                    manageEventSource: false) // Don't try to create event source (requires admin)
+                    manageEventSource: false,
+                    restrictedToMinimumLevel: LogEventLevel.Warning) // Don't try to create event source (requires admin)
 
                 .CreateLogger();
 
@@ -95,7 +88,7 @@ public static class LoggingConfiguration
             Log.Information("═══════════════════════════════════════════════════════════");
             Log.Information("Modern ThinkPad LEDs Controller Starting");
             Log.Information("Version: {Version}", GetAppVersion());
-            Log.Information("Log Directory: {LogDirectory}", LogDirectory);
+            Log.Information("Log Directory: {LogDirectory}", _logDirectory);
             Log.Information("OS Version: {OSVersion}", Environment.OSVersion);
             Log.Information("Is 64-bit Process: {Is64Bit}", Environment.Is64BitProcess);
             Log.Information("Command Line: {CommandLine}", Environment.CommandLine);
@@ -137,7 +130,7 @@ public static class LoggingConfiguration
     /// </summary>
     private static string GetAppVersion()
     {
-        var version = typeof(LoggingConfiguration).Assembly.GetName().Version;
+        Version? version = typeof(LoggingConfiguration).Assembly.GetName().Version;
         return version?.ToString() ?? "Unknown";
     }
 
@@ -164,8 +157,8 @@ public static class LoggingConfiguration
     {
         try
         {
-            var identity = System.Security.Principal.WindowsIdentity.GetCurrent();
-            var principal = new System.Security.Principal.WindowsPrincipal(identity);
+            WindowsIdentity identity = System.Security.Principal.WindowsIdentity.GetCurrent();
+            WindowsPrincipal principal = new System.Security.Principal.WindowsPrincipal(identity);
             return principal.IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
         }
         catch

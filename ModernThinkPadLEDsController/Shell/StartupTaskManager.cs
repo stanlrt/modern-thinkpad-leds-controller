@@ -15,29 +15,32 @@ public readonly record struct StartupTaskOperationResult(bool Success, string? E
     public static StartupTaskOperationResult Failed(string errorMessage) => new(false, errorMessage);
 }
 
-// StartupTaskManager creates / removes a Windows Task Scheduler entry so the
-// app starts automatically at logon with elevated (admin) privileges.
-//
-// Why Task Scheduler instead of the registry Run key?
-//   The registry Run key starts the app at login but Windows will show a UAC
-//   prompt every time because the app requires admin rights.
-//   A scheduled task with RunLevel=HighestAvailable starts the app as admin
-//   silently — no prompt, because the task was already approved once when it
-//   was created (which required admin rights to do).
+/// <summary>
+/// Creates / removes a Windows Task Scheduler entry so the
+/// app starts automatically at logon with elevated (admin) privileges.
+/// </summary>
 internal static class StartupTaskManager
 {
-    private const string TaskName = "ModernThinkPadLEDsController_Elevated";
+    private const string TASK_NAME = "ModernThinkPadLEDsController_Elevated";
 
-    // Returns true if our scheduled task is registered on this machine.
+    /// <summary>.
+    /// </summary>
+    /// <returns>
+    /// Returns true if our scheduled task is registered on this machine.
+    /// </returns>
     public static bool IsRegistered()
     {
-        var result = RunSchtasks($"/Query /TN \"{TaskName}\"");
+        SchtasksProcessResult result = RunSchtasks($"/Query /TN \"{TASK_NAME}\"");
 
         if (result.ExitCode == 0)
+        {
             return true;
+        }
 
         if (result.ExitCode == 1)
+        {
             return false;
+        }
 
         if (!string.IsNullOrWhiteSpace(result.ErrorMessage))
         {
@@ -47,12 +50,16 @@ internal static class StartupTaskManager
         return false;
     }
 
-    // Register the task. Returns true on success.
-    // executablePath = full path to the .exe (use Environment.ProcessPath).
+    /// <summary>
+    /// Register the task. Returns true on success.
+    /// executablePath = full path to the .exe (use Environment.ProcessPath).
+    /// </summary>
     public static StartupTaskOperationResult Register(string executablePath)
     {
         if (string.IsNullOrWhiteSpace(executablePath))
+        {
             return StartupTaskOperationResult.Failed("The application executable path is unavailable.");
+        }
 
         string? tempXml = null;
 
@@ -64,9 +71,11 @@ internal static class StartupTaskManager
             tempXml = Path.Combine(Path.GetTempPath(), $"mtleds_task_{Guid.NewGuid():N}.xml");
             WriteTaskXml(tempXml, username, executablePath);
 
-            var result = RunSchtasks($"/Create /F /TN \"{TaskName}\" /XML \"{tempXml}\"");
+            SchtasksProcessResult result = RunSchtasks($"/Create /F /TN \"{TASK_NAME}\" /XML \"{tempXml}\"");
             if (result.ExitCode == 0)
+            {
                 return StartupTaskOperationResult.Successful();
+            }
 
             string message = result.ErrorMessage ?? "Unknown error while registering the startup task.";
             Log.Warning("Failed to register startup task: {ErrorMessage}", message);
@@ -83,25 +92,32 @@ internal static class StartupTaskManager
         }
     }
 
-    // Remove the task. Returns true on success.
+    /// <summary>
+    /// Remove the task.
+    /// </summary>
+    /// <returns>Returns true on success.</returns>
     public static StartupTaskOperationResult Unregister()
     {
-        var result = RunSchtasks($"/Delete /F /TN \"{TaskName}\"");
+        SchtasksProcessResult result = RunSchtasks($"/Delete /F /TN \"{TASK_NAME}\"");
         if (result.ExitCode == 0)
+        {
             return StartupTaskOperationResult.Successful();
+        }
 
         string message = result.ErrorMessage ?? "Unknown error while removing the startup task.";
         Log.Warning("Failed to remove startup task: {ErrorMessage}", message);
         return StartupTaskOperationResult.Failed(message);
     }
 
-    // Builds the XML that describes the scheduled task.
-    // RunLevel=HighestAvailable is what makes the task run as admin silently.
-    // The app receives --minimized so it starts hidden in the tray.
+    /// <summary>
+    /// Builds the XML that describes the scheduled task.
+    /// RunLevel=HighestAvailable is what makes the task run as admin silently.
+    /// The app receives --minimized so it starts hidden in the tray.
+    /// </summary>
     private static void WriteTaskXml(string filePath, string username, string executablePath)
     {
         XNamespace taskNamespace = "http://schemas.microsoft.com/windows/2004/02/mit/task";
-        var document = new XDocument(
+        XDocument document = new XDocument(
           new XDeclaration("1.0", "utf-16", null),
           new XElement(taskNamespace + "Task",
             new XAttribute("version", "1.3"),
@@ -125,13 +141,13 @@ internal static class StartupTaskManager
                 new XElement(taskNamespace + "Command", executablePath),
                 new XElement(taskNamespace + "Arguments", "--minimized")))));
 
-        var settings = new XmlWriterSettings
+        XmlWriterSettings settings = new XmlWriterSettings
         {
             Encoding = Encoding.Unicode,
             Indent = true,
         };
 
-        using var writer = XmlWriter.Create(filePath, settings);
+        using XmlWriter writer = XmlWriter.Create(filePath, settings);
         document.Save(writer);
     }
 
@@ -140,7 +156,9 @@ internal static class StartupTaskManager
         try
         {
             if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
+            {
                 File.Delete(filePath);
+            }
         }
         catch (Exception ex)
         {
@@ -152,7 +170,7 @@ internal static class StartupTaskManager
     {
         try
         {
-            using var proc = Process.Start(new ProcessStartInfo("schtasks.exe")
+            using Process? proc = Process.Start(new ProcessStartInfo("schtasks.exe")
             {
                 Arguments = arguments,
                 UseShellExecute = false,
@@ -162,7 +180,9 @@ internal static class StartupTaskManager
             });
 
             if (proc is null)
+            {
                 return SchtasksProcessResult.Failed("Failed to start schtasks.exe.");
+            }
 
             string standardOutput = proc.StandardOutput.ReadToEnd();
             string standardError = proc.StandardError.ReadToEnd();
