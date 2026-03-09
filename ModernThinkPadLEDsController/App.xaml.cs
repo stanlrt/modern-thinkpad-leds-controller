@@ -220,6 +220,7 @@ public partial class App : System.Windows.Application
                 // Main window
                 services.AddSingleton<MainWindow>();
                 services.AddSingleton<MainWindowHost>();
+                services.AddSingleton<IUiDispatcher>(sp => sp.GetRequiredService<MainWindowHost>());
                 services.AddSingleton<MainPresentationService>();
                 services.AddSingleton<SettingsPersistenceService>();
                 services.AddSingleton<HotkeyConfigurationService>();

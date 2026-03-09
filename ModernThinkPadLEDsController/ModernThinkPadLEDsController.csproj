@@ -11,6 +11,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <ApplicationIcon>Resources\favicon.ico</ApplicationIcon>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
 
     <!-- Single-file publish settings -->
     <PublishSingleFile>true</PublishSingleFile>
@@ -47,6 +48,12 @@
     <PackageReference Include="Serilog.Settings.Configuration" Version="8.0.4" />
     <PackageReference Include="Serilog.Enrichers.Process" Version="3.0.0" />
     <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
+  </ItemGroup>
+
+  <!-- Exclude colocated test files and shared test infrastructure from the shipping assembly -->
+  <ItemGroup>
+    <Compile Remove="**/Tests/**/*.cs" />
+    <Compile Remove="TestInfrastructure/**/*.cs" />
   </ItemGroup>
 
   <!-- PawnIO installer bundling (optional, see PawnIOInstaller.cs) -->

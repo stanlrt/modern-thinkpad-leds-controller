@@ -10,7 +10,7 @@ public sealed class LedBehaviorService : IDisposable
 {
     private readonly LedController _leds;
     private readonly AppSettings _settings;
-    private readonly LedBlinkController _blinkMonitor;
+    private readonly ILedBlinkController _blinkMonitor;
     private HotkeyCycleOptions _hotkeyCycleOptions = HotkeyCycleOptions.On | HotkeyCycleOptions.Off;
     private int _hotkeyCycleIndex = -1;
 
@@ -37,6 +37,16 @@ public sealed class LedBehaviorService : IDisposable
         _leds = leds;
         _settings = settings;
         _blinkMonitor = new LedBlinkController(leds, settings.BlinkIntervalMs);
+    }
+
+    /// <summary>
+    /// Internal constructor for testing: accepts an injected blink controller.
+    /// </summary>
+    internal LedBehaviorService(LedController leds, AppSettings settings, ILedBlinkController blinkMonitor)
+    {
+        _leds = leds;
+        _settings = settings;
+        _blinkMonitor = blinkMonitor;
     }
 
     public void Initialize(IReadOnlyDictionary<Led, LedMapping> mappings)

@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <!-- Windows targeting is required because the app project references WPF assemblies -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Xunit.StaFact" Version="1.1.11" />
+    <PackageReference Include="FluentAssertions" Version="7.0.0" />
+    <PackageReference Include="coverlet.collector" Version="6.0.4">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <!-- Reference the app project so we can access its types -->
+  <ItemGroup>
+    <ProjectReference Include="..\ModernThinkPadLEDsController\ModernThinkPadLEDsController.csproj" />
+  </ItemGroup>
+
+  <!-- Compile colocated test files from the app project tree -->
+  <ItemGroup>
+    <Compile Include="..\ModernThinkPadLEDsController\**\Tests\**\*.cs" />
+    <Compile Include="..\ModernThinkPadLEDsController\TestInfrastructure\**\*.cs" />
+  </ItemGroup>
+
+</Project>

@@ -7,7 +7,7 @@ namespace ModernThinkPadLEDsController.Shell;
 /// <summary>
 /// Owns shell-level interactions with the main window.
 /// </summary>
-public sealed class MainWindowHost
+public sealed class MainWindowHost : IUiDispatcher
 {
     private readonly MainWindow _mainWindow;
 
