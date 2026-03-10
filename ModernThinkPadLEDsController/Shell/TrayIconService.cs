@@ -1,3 +1,5 @@
+using System.IO;
+using System.Windows;
 using System.Windows.Controls;
 using H.NotifyIcon;
 using H.NotifyIcon.Core;
@@ -31,18 +33,22 @@ public sealed class TrayIconService : IDisposable
 
             _taskbarIcon.ToolTipText = "Modern ThinkPad LEDs Controller";
 
-            string iconPath = System.IO.Path.Combine(AppContext.BaseDirectory, "Resources", "favicon.ico");
-            System.Diagnostics.Debug.WriteLine($"Looking for icon at: {iconPath}");
-            System.Diagnostics.Debug.WriteLine($"Icon file exists: {System.IO.File.Exists(iconPath)}");
-
-            if (System.IO.File.Exists(iconPath))
+            // Load icon from WPF embedded resource using pack:// URI
+            // This works with trimming and doesn't require Windows Forms
+            Uri iconUri = new Uri("pack://application:,,,/Resources/favicon.ico");
+            try
             {
-                _taskbarIcon.Icon = new System.Drawing.Icon(iconPath);
-                System.Diagnostics.Debug.WriteLine("Icon loaded successfully");
+                System.Windows.Resources.StreamResourceInfo resourceInfo = Application.GetResourceStream(iconUri);
+                if (resourceInfo != null)
+                {
+                    using Stream iconStream = resourceInfo.Stream;
+                    _taskbarIcon.Icon = new System.Drawing.Icon(iconStream);
+                }
             }
-            else
+            catch (IOException ex)
             {
-                System.Diagnostics.Debug.WriteLine("Icon file not found!");
+                System.Diagnostics.Debug.WriteLine($"Failed to load icon from resources: {ex.Message}");
+                // Icon is optional - tray will still work without it
             }
 
             _taskbarIcon.ContextMenu = menu;

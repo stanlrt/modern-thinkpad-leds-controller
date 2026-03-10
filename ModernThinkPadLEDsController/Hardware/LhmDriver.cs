@@ -1,11 +1,11 @@
-using LibreHardwareMonitor.PawnIo;
 using System.ServiceProcess;
 using Serilog;
+using ModernThinkPadLEDsController.Hardware.PawnIo;
 
 namespace ModernThinkPadLEDsController.Hardware;
 
 /// <summary>
-/// Wraps PawnIO-backed port access from LibreHardwareMonitor.
+/// Wraps PawnIO-backed port access using local PawnIO implementation.
 /// </summary>
 public sealed class LhmDriver : IPortIO, IDisposable
 {
@@ -47,6 +47,14 @@ public sealed class LhmDriver : IPortIO, IDisposable
         {
             Log.Debug("Instantiating LpcAcpiEc module");
             LpcAcpiEc pawnModule = new LpcAcpiEc();
+
+            if (!pawnModule.IsLoaded)
+            {
+                Log.Error("LpcAcpiEc module failed to load");
+                pawnModule.Dispose();
+                return false;
+            }
+
             driver = new LhmDriver(pawnModule);
             Log.Information("LHM driver opened successfully");
             return true;
@@ -111,7 +119,7 @@ public sealed class LhmDriver : IPortIO, IDisposable
 
         _disposed = true;
         Log.Debug("Closing LHM driver");
-        _pawnModule.Close();
+        _pawnModule.Dispose();
         Log.Information("LHM driver disposed");
     }
 }
