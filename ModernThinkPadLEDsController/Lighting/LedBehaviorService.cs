@@ -157,6 +157,11 @@ public sealed class LedBehaviorService : IDisposable
 
             foreach (Led led in _fullscreenManagedLeds)
             {
+                if (!Mappings.ContainsKey(led))
+                {
+                    continue;
+                }
+
                 ApplyCurrentLedState(led);
             }
 

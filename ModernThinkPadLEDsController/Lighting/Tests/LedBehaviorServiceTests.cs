@@ -221,6 +221,23 @@ public sealed class LedBehaviorServiceTests
     }
 
     [Fact]
+    public void OnFullscreenChanged_Exit_PartialMapping_DoesNotThrow()
+    {
+        // Regression: exiting fullscreen with a partial mapping (only Led.Power) must not
+        // throw KeyNotFoundException when the exit loop processes the other managed LEDs
+        // (Mute, Microphone, FnLock, Camera) that are absent from the mapping.
+        AppSettings settings = TestSettingsBuilder.Default();
+        settings.DimLedsWhenFullscreen = true;
+        (LedBehaviorService svc, _, _, _) = Build(settings);
+        svc.Initialize(TestSettingsBuilder.SingleMapping(Led.Power, LedMode.On));
+
+        svc.OnFullscreenChanged(isFullscreen: true, currentBacklight: 100);
+        Action exit = () => svc.OnFullscreenChanged(isFullscreen: false, currentBacklight: 100);
+
+        exit.Should().NotThrow<KeyNotFoundException>();
+    }
+
+    [Fact]
     public void OnFullscreenChanged_DimDisabled_DoesNothing()
     {
         AppSettings settings = TestSettingsBuilder.Default();
