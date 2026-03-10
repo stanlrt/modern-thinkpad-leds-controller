@@ -30,6 +30,7 @@ jobs:
         # Remove --verify-no-changes locally to auto-fix instead.
         run: >
           dotnet format ModernThinkPadLEDsController/ModernThinkPadLEDsController.csproj
+          --no-restore
           --verify-no-changes
           --verbosity diagnostic
 
