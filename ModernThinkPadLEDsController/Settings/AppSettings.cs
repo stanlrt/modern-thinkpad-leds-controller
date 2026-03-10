@@ -67,6 +67,7 @@ public sealed class AppSettings
                 string json = File.ReadAllText(_filePath);
                 AppSettings settings = JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
                 settings.Hotkey ??= new HotkeyBinding();
+                settings.Validate();
                 return settings;
             }
         }
@@ -78,6 +79,25 @@ public sealed class AppSettings
 
         return new AppSettings();
     }
+
+    /// <summary>
+    /// Clamps interval settings to safe operating ranges.
+    /// Prevents monitors from crashing or spinning with extreme or negative values
+    /// that could have been written by a hand-edited settings file.
+    /// </summary>
+    public void Validate()
+    {
+        BlinkIntervalMs = Math.Clamp(BlinkIntervalMs, MinBlinkIntervalMs, MaxBlinkIntervalMs);
+        LedReapplyIntervalMs = Math.Clamp(LedReapplyIntervalMs, MinLedReapplyIntervalMs, MaxLedReapplyIntervalMs);
+        DiskPollIntervalMs = Math.Clamp(DiskPollIntervalMs, MinDiskPollIntervalMs, MaxDiskPollIntervalMs);
+    }
+
+    public const int MinBlinkIntervalMs = 100;
+    public const int MaxBlinkIntervalMs = 10_000;
+    public const int MinLedReapplyIntervalMs = 250;
+    public const int MaxLedReapplyIntervalMs = 10_000;
+    public const int MinDiskPollIntervalMs = 100;
+    public const int MaxDiskPollIntervalMs = 10_000;
 
     public bool Save()
     {

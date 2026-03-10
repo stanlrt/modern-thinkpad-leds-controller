@@ -67,7 +67,11 @@ public sealed class EcController
                     return true;
                 }
             }
-            catch { return false; }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "EC port read failed during WaitPortStatus (port 0x{Port:X2})", EC_CTRLPORT);
+                return false;
+            }
 
             Thread.Sleep(tick);
         }
@@ -84,14 +88,22 @@ public sealed class EcController
     private bool WritePort(ushort port, byte data)
     {
         try { _io.WriteByte(port, data); return true; }
-        catch { return false; }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "EC port write failed (port 0x{Port:X2}, data 0x{Data:X2})", port, data);
+            return false;
+        }
     }
 
     private bool ReadPort(ushort port, out byte data)
     {
         data = 0;
         try { data = _io.ReadByte(port); return true; }
-        catch { return false; }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "EC port read failed (port 0x{Port:X2})", port);
+            return false;
+        }
     }
 
     /// <summary>
