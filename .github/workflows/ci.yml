@@ -61,10 +61,9 @@ jobs:
         run: dotnet restore ModernThinkPadLEDsController.Tests/ModernThinkPadLEDsController.Tests.csproj
 
       - name: Run tests
-        # dotnet test builds the project implicitly before running — no
-        # separate build step needed.
         run: >
           dotnet test ModernThinkPadLEDsController.Tests/ModernThinkPadLEDsController.Tests.csproj
+          --no-restore
           --configuration Release
           --logger "trx;LogFileName=test-results.trx"
           --collect:"XPlat Code Coverage"

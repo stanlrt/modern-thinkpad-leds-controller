@@ -62,9 +62,10 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
     /// <summary>
     /// Internal constructor for testing the reapply tick in isolation.
     /// <para>
-    /// <strong>Only <see cref="ExecuteReapplyTick"/> is safe to call on instances created with
-    /// this constructor.</strong> All other methods will throw <see cref="NullReferenceException"/>
-    /// because the monitor, presentation, and dispatcher fields are intentionally left null.
+    /// <strong>Only <see cref="ExecuteReapplyTick"/> and <see cref="Dispose"/> are safe to call
+    /// on instances created with this constructor.</strong> All other methods will throw
+    /// <see cref="NullReferenceException"/> because the monitor, presentation, and dispatcher
+    /// fields are intentionally left null.
     /// </para>
     /// </summary>
     internal HardwareRuntimeCoordinator(
