@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using ModernThinkPadLEDsController.Hardware;
 using ModernThinkPadLEDsController.Lighting;
 using ModernThinkPadLEDsController.Monitoring;
@@ -17,7 +18,7 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
     private readonly AppSettings _settings;
     private readonly HardwareAccessController _hardwareAccess;
     private readonly MainPresentationService _presentation;
-    private readonly MainWindowHost _windowHost;
+    private readonly IUiDispatcher _dispatcher;
     private readonly DiskActivityMonitor _diskMonitor;
     private readonly KeyboardBacklightMonitor _keyboardBacklightMonitor;
     private readonly MicrophoneMuteMonitor _microphoneMuteMonitor;
@@ -34,7 +35,7 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
         AppSettings settings,
         HardwareAccessController hardwareAccess,
         MainPresentationService presentation,
-        MainWindowHost windowHost,
+        IUiDispatcher dispatcher,
         DiskActivityMonitor diskMonitor,
         KeyboardBacklightMonitor keyboardBacklightMonitor,
         MicrophoneMuteMonitor microphoneMuteMonitor,
@@ -47,7 +48,7 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
         _settings = settings;
         _hardwareAccess = hardwareAccess;
         _presentation = presentation;
-        _windowHost = windowHost;
+        _dispatcher = dispatcher;
         _diskMonitor = diskMonitor;
         _keyboardBacklightMonitor = keyboardBacklightMonitor;
         _microphoneMuteMonitor = microphoneMuteMonitor;
@@ -56,6 +57,33 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
         _fullscreenMonitor = fullscreenMonitor;
         _ledBehavior = ledBehavior;
         _logger = logger;
+    }
+
+    /// <summary>
+    /// Internal constructor for testing the reapply tick in isolation.
+    /// <para>
+    /// <strong>Only <see cref="ExecuteReapplyTick"/> and <see cref="Dispose"/> are safe to call
+    /// on instances created with this constructor.</strong> All other methods will throw
+    /// <see cref="NullReferenceException"/> because the monitor, presentation, and dispatcher
+    /// fields are intentionally left null.
+    /// </para>
+    /// </summary>
+    internal HardwareRuntimeCoordinator(
+        HardwareAccessController hardwareAccess,
+        LedBehaviorService ledBehavior)
+    {
+        _hardwareAccess = hardwareAccess;
+        _ledBehavior = ledBehavior;
+        _logger = NullLogger<HardwareRuntimeCoordinator>.Instance;
+        _settings = null!;
+        _presentation = null!;
+        _dispatcher = null!;
+        _diskMonitor = null!;
+        _keyboardBacklightMonitor = null!;
+        _microphoneMuteMonitor = null!;
+        _speakerMuteMonitor = null!;
+        _powerEventMonitor = null!;
+        _fullscreenMonitor = null!;
     }
 
     public bool DiskMonitoringAvailable => _diskMonitor.IsAvailable;
@@ -150,9 +178,22 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
         _eventsWired = false;
     }
 
+    /// <summary>
+    /// Applies one reapply-loop tick: reasserts managed LED states if hardware is enabled
+    /// and any LED needs periodic backstop. Extracted for deterministic testing without
+    /// waiting on real Task.Delay timing.
+    /// </summary>
+    internal void ExecuteReapplyTick()
+    {
+        if (_hardwareAccess.IsEnabled && _ledBehavior.NeedsPeriodicReapply())
+        {
+            _ledBehavior.ReapplyManagedStates();
+        }
+    }
+
     private void OnDiskModeLedsChanged(bool hasDiskModes)
     {
-        _windowHost.Dispatch(() =>
+        _dispatcher.Dispatch(() =>
         {
             _logger.LogDebug("Disk mode LEDs changed: {HasDiskModes}", hasDiskModes);
 
@@ -175,7 +216,7 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
 
     private void OnLedConfigurationChanged()
     {
-        _windowHost.Dispatch(UpdateLedReapplyLoopState);
+        _dispatcher.Dispatch(UpdateLedReapplyLoopState);
     }
 
     private void OnDiskStateChanged(DiskActivityState state)
@@ -185,7 +226,7 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
             return;
         }
 
-        _windowHost.Dispatch(() =>
+        _dispatcher.Dispatch(() =>
         {
             _logger.LogDebug("Disk state changed: {State}", state);
             _ledBehavior.OnDiskStateChanged(state);
@@ -194,7 +235,7 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
 
     private void OnMicrophoneMuteStateChanged(bool isMuted)
     {
-        _windowHost.Dispatch(() =>
+        _dispatcher.Dispatch(() =>
         {
             _logger.LogDebug("Microphone mute state changed: {IsMuted}", isMuted);
             _ledBehavior.ObserveMicrophoneMuteState(isMuted);
@@ -203,7 +244,7 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
 
     private void OnSpeakerMuteStateChanged(bool isMuted)
     {
-        _windowHost.Dispatch(() =>
+        _dispatcher.Dispatch(() =>
         {
             _logger.LogDebug("Speaker mute state changed: {IsMuted}", isMuted);
             _ledBehavior.ObserveSpeakerMuteState(isMuted);
@@ -212,7 +253,7 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
 
     private void OnSystemSuspending()
     {
-        _windowHost.Dispatch(() =>
+        _dispatcher.Dispatch(() =>
         {
             _logger.LogInformation("System suspending - stopping monitors");
             StopLedReapplyLoop();
@@ -222,7 +263,7 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
 
     private void OnSystemResumed()
     {
-        _windowHost.Dispatch(() =>
+        _dispatcher.Dispatch(() =>
         {
             _logger.LogInformation("System resumed - restarting monitors");
             if (!_hardwareAccess.IsEnabled)
@@ -282,13 +323,7 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
                     int intervalMs = Math.Max(MIN_LED_REAPPLY_INTERVAL_MS, _settings.LedReapplyIntervalMs);
                     await Task.Delay(intervalMs, token);
 
-                    _windowHost.Dispatch(() =>
-                    {
-                        if (_hardwareAccess.IsEnabled && _ledBehavior.NeedsPeriodicReapply())
-                        {
-                            _ledBehavior.ReapplyManagedStates();
-                        }
-                    });
+                    _dispatcher.Dispatch(ExecuteReapplyTick);
                 }
             }
             catch (OperationCanceledException)
@@ -329,7 +364,7 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
             return;
         }
 
-        _windowHost.Dispatch(() =>
+        _dispatcher.Dispatch(() =>
         {
             _logger.LogDebug("Lid state changed: {IsOpen}", isOpen);
             if (isOpen && _settings.RememberKeyboardBacklight && _settings.SavedKeyboardBacklight is int savedKeyboardBacklight)
@@ -346,7 +381,7 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
             return;
         }
 
-        _windowHost.Dispatch(() =>
+        _dispatcher.Dispatch(() =>
         {
             _logger.LogDebug("Fullscreen state changed: {IsFullscreen}", isFullscreen);
 

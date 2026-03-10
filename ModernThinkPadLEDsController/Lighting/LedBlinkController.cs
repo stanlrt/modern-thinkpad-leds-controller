@@ -5,7 +5,7 @@ namespace ModernThinkPadLEDsController.Lighting;
 /// <summary>
 /// Tracks which LEDs are in Blink mode and actively toggles them
 /// </summary>
-public sealed class LedBlinkController : IDisposable
+public sealed class LedBlinkController : ILedBlinkController
 {
     private readonly LedController _leds;
     private readonly Dictionary<Led, byte?> _blinkingLeds = new();
