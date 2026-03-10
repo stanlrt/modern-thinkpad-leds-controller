@@ -34,7 +34,7 @@ public sealed class AppSettings
     public byte? FnLockCustomId { get; set; }
     public byte? CameraCustomId { get; set; }
 
-    public HotkeyCycleOptions HotkeyCycleOptions { get; set; } = AppSettingsDefaults.DefaultHotkeyCycleOptions;
+    public HotkeyCycleOptions HotkeyCycleOptions { get; set; } = AppSettingsDefaults.DEFAULT_HOTKEY_CYCLE_OPTIONS;
 
     /// <summary>
     /// Gets or sets the global hotkey binding.
@@ -42,9 +42,9 @@ public sealed class AppSettings
     /// </summary>
     public HotkeyBinding Hotkey { get; set; } = new();
 
-    public int BlinkIntervalMs { get; set; } = AppSettingsDefaults.BlinkIntervalMs;
-    public int LedReapplyIntervalMs { get; set; } = AppSettingsDefaults.LedReapplyIntervalMs;
-    public int DiskPollIntervalMs { get; set; } = AppSettingsDefaults.DiskPollIntervalMs;
+    public int BlinkIntervalMs { get; set; } = AppSettingsDefaults.BLINK_INTERVAL_MS;
+    public int LedReapplyIntervalMs { get; set; } = AppSettingsDefaults.LED_REAPPLY_INTERVAL_MS;
+    public int DiskPollIntervalMs { get; set; } = AppSettingsDefaults.DISK_POLL_INTERVAL_MS;
 
     public bool RememberKeyboardBacklight { get; set; }
 
@@ -87,9 +87,9 @@ public sealed class AppSettings
     /// </summary>
     public void Validate()
     {
-        BlinkIntervalMs = Math.Clamp(BlinkIntervalMs, AppSettingsDefaults.MinBlinkIntervalMs, AppSettingsDefaults.MaxBlinkIntervalMs);
-        LedReapplyIntervalMs = Math.Clamp(LedReapplyIntervalMs, AppSettingsDefaults.MinLedReapplyIntervalMs, AppSettingsDefaults.MaxLedReapplyIntervalMs);
-        DiskPollIntervalMs = Math.Clamp(DiskPollIntervalMs, AppSettingsDefaults.MinDiskPollIntervalMs, AppSettingsDefaults.MaxDiskPollIntervalMs);
+        BlinkIntervalMs = Math.Clamp(BlinkIntervalMs, AppSettingsDefaults.MIN_BLINK_INTERVAL_MS, AppSettingsDefaults.MAX_BLINK_INTERVAL_MS);
+        LedReapplyIntervalMs = Math.Clamp(LedReapplyIntervalMs, AppSettingsDefaults.MIN_LED_REAPPLY_INTERVAL_MS, AppSettingsDefaults.MAX_LED_REAPPLY_INTERVAL_MS);
+        DiskPollIntervalMs = Math.Clamp(DiskPollIntervalMs, AppSettingsDefaults.MIN_DISK_POLL_INTERVAL_MS, AppSettingsDefaults.MAX_DISK_POLL_INTERVAL_MS);
     }
 
     public bool Save()

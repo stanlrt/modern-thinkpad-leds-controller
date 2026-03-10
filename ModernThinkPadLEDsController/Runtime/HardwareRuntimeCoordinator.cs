@@ -318,7 +318,7 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
             {
                 while (!token.IsCancellationRequested)
                 {
-                    int intervalMs = Math.Max(AppSettingsDefaults.MinLedReapplyIntervalMs, _settings.LedReapplyIntervalMs);
+                    int intervalMs = Math.Max(AppSettingsDefaults.MIN_LED_REAPPLY_INTERVAL_MS, _settings.LedReapplyIntervalMs);
                     await Task.Delay(intervalMs, token);
 
                     _dispatcher.Dispatch(ExecuteReapplyTick);

@@ -18,7 +18,7 @@ public enum DiskActivityState { Idle = 0, Read = 1, Write = 2, ReadWrite = 3 }
 /// </summary>
 public sealed class DiskActivityMonitor : ILifecycleMonitor
 {
-    private const int MIN_INTERVAL_MS = AppSettingsDefaults.MinDiskPollIntervalMs;
+    private const int MIN_INTERVAL_MS = AppSettingsDefaults.MIN_DISK_POLL_INTERVAL_MS;
 
     /// <summary>
     /// StateChanged fires on the background thread. The caller must dispatch

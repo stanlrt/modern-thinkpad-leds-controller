@@ -204,7 +204,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         {
             BlinkIntervalMs = _settings.BlinkIntervalMs;
             LedReapplyIntervalMs = _settings.LedReapplyIntervalMs;
-            DiskPollIntervalMs = Math.Max(AppSettingsDefaults.MinDiskPollIntervalMs, _settings.DiskPollIntervalMs);
+            DiskPollIntervalMs = Math.Max(AppSettingsDefaults.MIN_DISK_POLL_INTERVAL_MS, _settings.DiskPollIntervalMs);
             RememberKeyboardBacklight = _settings.RememberKeyboardBacklight;
 
             // When no brightness has been persisted yet, read the current hardware level
