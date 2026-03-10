@@ -83,6 +83,13 @@ public partial class App : System.Windows.Application
 
             _logger.LogDebug("Application startup initiated");
             _logger.LogDebug("Command line arguments: {Args}", string.Join(" ", e.Args));
+
+#if DEBUG
+            _logger.LogWarning("Running in DEBUG configuration - memory usage will be 30-50% higher than Release");
+#else
+            _logger.LogInformation("Running in RELEASE configuration");
+#endif
+
             _logger.LogInformation("Hardware access status: {Status}", hardwareAccess.GetStatusDescription());
             LoggingConfiguration.LogEnvironmentDetails();
 

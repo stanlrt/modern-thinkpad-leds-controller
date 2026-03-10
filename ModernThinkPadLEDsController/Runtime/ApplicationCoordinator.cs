@@ -79,6 +79,16 @@ public sealed class ApplicationCoordinator : IDisposable
         _runtime.StartInitialDiskMonitoring();
 
         _isInitialized = true;
+
+        // Force GC to reclaim memory from initialization allocations that are no longer needed.
+        // On systems with plenty of RAM, the GC is lazy and keeps unused memory.
+        // This forces a cleanup after all services are initialized.
+        _logger.LogDebug("Forcing garbage collection after initialization");
+        GC.Collect(2, GCCollectionMode.Aggressive, blocking: true, compacting: true);
+        GC.WaitForPendingFinalizers();
+        // One more collection to clean up anything finalized
+        GC.Collect(2, GCCollectionMode.Aggressive, blocking: true, compacting: true);
+        _logger.LogDebug("Garbage collection completed");
     }
 
     public void EnsureMainWindowHandle()
