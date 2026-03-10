@@ -11,7 +11,7 @@
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <ApplicationIcon>Resources\favicon.ico</ApplicationIcon>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
-    
+
     <!-- Version -->
     <Version>1.2.1</Version>
     <AssemblyVersion>1.2.1.0</AssemblyVersion>

@@ -41,7 +41,7 @@ jobs:
           Write-Host "PawnIO installer downloaded to $destinationPath"
 
       - name: Restore dependencies
-        run: dotnet restore ModernThinkPadLEDsController/ModernThinkPadLEDsController.csproj /p:PublishReadyToRun=true /p:RuntimeIdentifier=win-x64
+        run: dotnet restore ModernThinkPadLEDsController/ModernThinkPadLEDsController.csproj /p:RuntimeIdentifier=win-x64
 
       - name: Publish Release Build
         run: >
@@ -52,6 +52,9 @@ jobs:
           /p:PublishSingleFile=true
           /p:SelfContained=true
           /p:RuntimeIdentifier=win-x64
+          /p:PublishReadyToRun=false
+          /p:DebugType=None
+          /p:DebugSymbols=false
 
       - name: Cache .NET Tools
         uses: actions/cache@v4
@@ -88,7 +91,7 @@ jobs:
           Write-Host "Current directory: $(Get-Location)"
           Write-Host "`nListing files in current directory:"
           Get-ChildItem -Filter "*.msi" | Format-Table Name, Length
-          
+
           $msiFile = "${{ steps.build_msi.outputs.msi_name }}"
           if (-not (Test-Path $msiFile)) {
             Write-Error "MSI file not found at: $msiFile"
