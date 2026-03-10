@@ -13,8 +13,6 @@ namespace ModernThinkPadLEDsController.Runtime;
 /// </summary>
 public sealed class HardwareRuntimeCoordinator : IDisposable
 {
-    private const int MIN_LED_REAPPLY_INTERVAL_MS = 250;
-
     private readonly AppSettings _settings;
     private readonly HardwareAccessController _hardwareAccess;
     private readonly MainPresentationService _presentation;
@@ -320,7 +318,7 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
             {
                 while (!token.IsCancellationRequested)
                 {
-                    int intervalMs = Math.Max(MIN_LED_REAPPLY_INTERVAL_MS, _settings.LedReapplyIntervalMs);
+                    int intervalMs = Math.Max(AppSettingsDefaults.MinLedReapplyIntervalMs, _settings.LedReapplyIntervalMs);
                     await Task.Delay(intervalMs, token);
 
                     _dispatcher.Dispatch(ExecuteReapplyTick);

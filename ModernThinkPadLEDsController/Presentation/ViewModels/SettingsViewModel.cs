@@ -2,7 +2,6 @@ using System.Diagnostics.CodeAnalysis;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ModernThinkPadLEDsController.Hardware;
-using ModernThinkPadLEDsController.Monitoring;
 using ModernThinkPadLEDsController.Settings;
 using ModernThinkPadLEDsController.Shell;
 
@@ -205,7 +204,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         {
             BlinkIntervalMs = _settings.BlinkIntervalMs;
             LedReapplyIntervalMs = _settings.LedReapplyIntervalMs;
-            DiskPollIntervalMs = Math.Max(DiskActivityMonitor.MIN_INTERVAL_MS, _settings.DiskPollIntervalMs);
+            DiskPollIntervalMs = Math.Max(AppSettingsDefaults.MinDiskPollIntervalMs, _settings.DiskPollIntervalMs);
             RememberKeyboardBacklight = _settings.RememberKeyboardBacklight;
 
             // When no brightness has been persisted yet, read the current hardware level

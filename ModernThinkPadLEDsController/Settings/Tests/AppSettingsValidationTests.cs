@@ -16,7 +16,7 @@ public sealed class AppSettingsValidationTests
     {
         AppSettings settings = new() { BlinkIntervalMs = -1 };
         settings.Validate();
-        settings.BlinkIntervalMs.Should().Be(AppSettings.MinBlinkIntervalMs);
+        settings.BlinkIntervalMs.Should().Be(AppSettingsDefaults.MinBlinkIntervalMs);
     }
 
     [Fact]
@@ -24,7 +24,7 @@ public sealed class AppSettingsValidationTests
     {
         AppSettings settings = new() { BlinkIntervalMs = 0 };
         settings.Validate();
-        settings.BlinkIntervalMs.Should().Be(AppSettings.MinBlinkIntervalMs);
+        settings.BlinkIntervalMs.Should().Be(AppSettingsDefaults.MinBlinkIntervalMs);
     }
 
     [Fact]
@@ -32,7 +32,7 @@ public sealed class AppSettingsValidationTests
     {
         AppSettings settings = new() { BlinkIntervalMs = 99_999 };
         settings.Validate();
-        settings.BlinkIntervalMs.Should().Be(AppSettings.MaxBlinkIntervalMs);
+        settings.BlinkIntervalMs.Should().Be(AppSettingsDefaults.MaxBlinkIntervalMs);
     }
 
     [Fact]
@@ -50,7 +50,7 @@ public sealed class AppSettingsValidationTests
     {
         AppSettings settings = new() { LedReapplyIntervalMs = 10 };
         settings.Validate();
-        settings.LedReapplyIntervalMs.Should().Be(AppSettings.MinLedReapplyIntervalMs);
+        settings.LedReapplyIntervalMs.Should().Be(AppSettingsDefaults.MinLedReapplyIntervalMs);
     }
 
     [Fact]
@@ -58,7 +58,7 @@ public sealed class AppSettingsValidationTests
     {
         AppSettings settings = new() { LedReapplyIntervalMs = 50_000 };
         settings.Validate();
-        settings.LedReapplyIntervalMs.Should().Be(AppSettings.MaxLedReapplyIntervalMs);
+        settings.LedReapplyIntervalMs.Should().Be(AppSettingsDefaults.MaxLedReapplyIntervalMs);
     }
 
     [Fact]
@@ -76,7 +76,7 @@ public sealed class AppSettingsValidationTests
     {
         AppSettings settings = new() { DiskPollIntervalMs = 50 };
         settings.Validate();
-        settings.DiskPollIntervalMs.Should().Be(AppSettings.MinDiskPollIntervalMs);
+        settings.DiskPollIntervalMs.Should().Be(AppSettingsDefaults.MinDiskPollIntervalMs);
     }
 
     [Fact]
@@ -84,7 +84,7 @@ public sealed class AppSettingsValidationTests
     {
         AppSettings settings = new() { DiskPollIntervalMs = int.MinValue };
         settings.Validate();
-        settings.DiskPollIntervalMs.Should().Be(AppSettings.MinDiskPollIntervalMs);
+        settings.DiskPollIntervalMs.Should().Be(AppSettingsDefaults.MinDiskPollIntervalMs);
     }
 
     [Fact]
@@ -92,7 +92,7 @@ public sealed class AppSettingsValidationTests
     {
         AppSettings settings = new() { DiskPollIntervalMs = 100_000 };
         settings.Validate();
-        settings.DiskPollIntervalMs.Should().Be(AppSettings.MaxDiskPollIntervalMs);
+        settings.DiskPollIntervalMs.Should().Be(AppSettingsDefaults.MaxDiskPollIntervalMs);
     }
 
     [Fact]
@@ -110,14 +110,14 @@ public sealed class AppSettingsValidationTests
     {
         AppSettings settings = new()
         {
-            BlinkIntervalMs = AppSettings.MinBlinkIntervalMs,
-            LedReapplyIntervalMs = AppSettings.MinLedReapplyIntervalMs,
-            DiskPollIntervalMs = AppSettings.MinDiskPollIntervalMs,
+            BlinkIntervalMs = AppSettingsDefaults.MinBlinkIntervalMs,
+            LedReapplyIntervalMs = AppSettingsDefaults.MinLedReapplyIntervalMs,
+            DiskPollIntervalMs = AppSettingsDefaults.MinDiskPollIntervalMs,
         };
         settings.Validate();
-        settings.BlinkIntervalMs.Should().Be(AppSettings.MinBlinkIntervalMs);
-        settings.LedReapplyIntervalMs.Should().Be(AppSettings.MinLedReapplyIntervalMs);
-        settings.DiskPollIntervalMs.Should().Be(AppSettings.MinDiskPollIntervalMs);
+        settings.BlinkIntervalMs.Should().Be(AppSettingsDefaults.MinBlinkIntervalMs);
+        settings.LedReapplyIntervalMs.Should().Be(AppSettingsDefaults.MinLedReapplyIntervalMs);
+        settings.DiskPollIntervalMs.Should().Be(AppSettingsDefaults.MinDiskPollIntervalMs);
     }
 
     [Fact]
@@ -125,14 +125,14 @@ public sealed class AppSettingsValidationTests
     {
         AppSettings settings = new()
         {
-            BlinkIntervalMs = AppSettings.MaxBlinkIntervalMs,
-            LedReapplyIntervalMs = AppSettings.MaxLedReapplyIntervalMs,
-            DiskPollIntervalMs = AppSettings.MaxDiskPollIntervalMs,
+            BlinkIntervalMs = AppSettingsDefaults.MaxBlinkIntervalMs,
+            LedReapplyIntervalMs = AppSettingsDefaults.MaxLedReapplyIntervalMs,
+            DiskPollIntervalMs = AppSettingsDefaults.MaxDiskPollIntervalMs,
         };
         settings.Validate();
-        settings.BlinkIntervalMs.Should().Be(AppSettings.MaxBlinkIntervalMs);
-        settings.LedReapplyIntervalMs.Should().Be(AppSettings.MaxLedReapplyIntervalMs);
-        settings.DiskPollIntervalMs.Should().Be(AppSettings.MaxDiskPollIntervalMs);
+        settings.BlinkIntervalMs.Should().Be(AppSettingsDefaults.MaxBlinkIntervalMs);
+        settings.LedReapplyIntervalMs.Should().Be(AppSettingsDefaults.MaxLedReapplyIntervalMs);
+        settings.DiskPollIntervalMs.Should().Be(AppSettingsDefaults.MaxDiskPollIntervalMs);
     }
 
     // ── Default settings pass validation ─────────────────────────────────

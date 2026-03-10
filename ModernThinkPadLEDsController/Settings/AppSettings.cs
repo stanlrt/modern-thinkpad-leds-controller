@@ -34,7 +34,7 @@ public sealed class AppSettings
     public byte? FnLockCustomId { get; set; }
     public byte? CameraCustomId { get; set; }
 
-    public HotkeyCycleOptions HotkeyCycleOptions { get; set; } = HotkeyCycleOptions.On | HotkeyCycleOptions.Off;
+    public HotkeyCycleOptions HotkeyCycleOptions { get; set; } = AppSettingsDefaults.DefaultHotkeyCycleOptions;
 
     /// <summary>
     /// Gets or sets the global hotkey binding.
@@ -42,9 +42,9 @@ public sealed class AppSettings
     /// </summary>
     public HotkeyBinding Hotkey { get; set; } = new();
 
-    public int BlinkIntervalMs { get; set; } = 500;
-    public int LedReapplyIntervalMs { get; set; } = 1000;
-    public int DiskPollIntervalMs { get; set; } = 300;
+    public int BlinkIntervalMs { get; set; } = AppSettingsDefaults.BlinkIntervalMs;
+    public int LedReapplyIntervalMs { get; set; } = AppSettingsDefaults.LedReapplyIntervalMs;
+    public int DiskPollIntervalMs { get; set; } = AppSettingsDefaults.DiskPollIntervalMs;
 
     public bool RememberKeyboardBacklight { get; set; }
 
@@ -87,17 +87,10 @@ public sealed class AppSettings
     /// </summary>
     public void Validate()
     {
-        BlinkIntervalMs = Math.Clamp(BlinkIntervalMs, MinBlinkIntervalMs, MaxBlinkIntervalMs);
-        LedReapplyIntervalMs = Math.Clamp(LedReapplyIntervalMs, MinLedReapplyIntervalMs, MaxLedReapplyIntervalMs);
-        DiskPollIntervalMs = Math.Clamp(DiskPollIntervalMs, MinDiskPollIntervalMs, MaxDiskPollIntervalMs);
+        BlinkIntervalMs = Math.Clamp(BlinkIntervalMs, AppSettingsDefaults.MinBlinkIntervalMs, AppSettingsDefaults.MaxBlinkIntervalMs);
+        LedReapplyIntervalMs = Math.Clamp(LedReapplyIntervalMs, AppSettingsDefaults.MinLedReapplyIntervalMs, AppSettingsDefaults.MaxLedReapplyIntervalMs);
+        DiskPollIntervalMs = Math.Clamp(DiskPollIntervalMs, AppSettingsDefaults.MinDiskPollIntervalMs, AppSettingsDefaults.MaxDiskPollIntervalMs);
     }
-
-    public const int MinBlinkIntervalMs = 100;
-    public const int MaxBlinkIntervalMs = 10_000;
-    public const int MinLedReapplyIntervalMs = 250;
-    public const int MaxLedReapplyIntervalMs = 10_000;
-    public const int MinDiskPollIntervalMs = 100;
-    public const int MaxDiskPollIntervalMs = 10_000;
 
     public bool Save()
     {
