@@ -33,7 +33,7 @@ It also adds:
 
 ## A note about BSODs
 
-### Risks
+### Disclaimer
 
 This app makes no guarantee that it will not cause BSODs. It directly communicates with the EC registers. I cannot assure that it is bug-free, nor that PawnIO is. I am not responsible in any way for any damage to your system.
 
