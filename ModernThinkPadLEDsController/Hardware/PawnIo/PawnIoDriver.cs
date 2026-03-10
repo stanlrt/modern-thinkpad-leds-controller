@@ -79,12 +79,16 @@ internal sealed class PawnIoDriver : IDisposable
             IntPtr.Zero);
 
         if (handle.IsInvalid)
+        {
             return new PawnIoDriver(handle);
+        }
 
         // Load binary module from embedded resource
         using Stream? stream = assembly.GetManifestResourceStream(resourceName);
         if (stream is null)
+        {
             return new PawnIoDriver(handle);
+        }
 
         using MemoryStream memory = new();
         stream.CopyTo(memory);
@@ -94,7 +98,9 @@ internal sealed class PawnIoDriver : IDisposable
         {
             uint bytesReturned = 0;
             if (DeviceIoControl(handle.DangerousGetHandle(), (uint)ControlCode.LoadBinary, pIn, (uint)bin.Length, null, 0u, ref bytesReturned, IntPtr.Zero))
+            {
                 return new PawnIoDriver(handle);
+            }
         }
 
         return new PawnIoDriver(new SafeFileHandle(IntPtr.Zero, true));
@@ -106,7 +112,9 @@ internal sealed class PawnIoDriver : IDisposable
     public unsafe long[] Execute(string name, long[] input, int outLength)
     {
         if (!IsLoaded)
+        {
             return new long[outLength];
+        }
 
         byte[] output = new byte[outLength * sizeof(long)];
         byte[] totalInput = new byte[(input.Length * sizeof(long)) + FN_NAME_LENGTH];
@@ -131,12 +139,16 @@ internal sealed class PawnIoDriver : IDisposable
     public void Dispose()
     {
         if (_disposed)
+        {
             return;
+        }
 
         _disposed = true;
 
         if (IsLoaded)
+        {
             _handle.Close();
+        }
     }
 
     private enum ControlCode : uint

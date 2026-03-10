@@ -1,5 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Serilog;
 using Serilog.Events;
 using System.IO;
@@ -105,14 +103,6 @@ public static class LoggingConfiguration
             // Rethrow so the app shows the error
             throw new InvalidOperationException("Failed to initialize logging system. See emergency.log for details.", ex);
         }
-    }
-
-    /// <summary>
-    /// Adds Serilog to the host builder's logging pipeline.
-    /// </summary>
-    public static IHostBuilder ConfigureLogging(this IHostBuilder hostBuilder)
-    {
-        return hostBuilder.UseSerilog();
     }
 
     /// <summary>

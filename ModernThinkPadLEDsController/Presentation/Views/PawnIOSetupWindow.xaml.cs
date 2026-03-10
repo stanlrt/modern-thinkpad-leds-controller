@@ -31,7 +31,7 @@ public partial class PawnIOSetupWindow : FluentWindow
     public PawnIOSetupWindow()
     {
         InitializeComponent();
-        _logger = LoggerFactory.Create(builder => builder.AddDebug()).CreateLogger<PawnIOSetupWindow>();
+        _logger = LoggerFactory.Create(_ => { }).CreateLogger<PawnIOSetupWindow>();
 
         _logger.LogInformation("PawnIO setup window opened");
     }

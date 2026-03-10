@@ -2,8 +2,9 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows;
+using DryIoc;
+using DryIoc.Microsoft.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ModernThinkPadLEDsController.Hardware;
 using ModernThinkPadLEDsController.Lighting;
@@ -41,7 +42,7 @@ public partial class App : System.Windows.Application
     private const int _SW_RESTORE = 9;
 #pragma warning restore IDE1006 // Naming Styles
 
-    private IHost? _host;
+    private IServiceProvider? _serviceProvider;
     private ILogger<App>? _logger;
     private ApplicationCoordinator? _app;
     private SettingsPersistenceService? _settingsPersistence;
@@ -70,15 +71,15 @@ public partial class App : System.Windows.Application
             base.OnStartup(e);
             emergencyLogger.Log("base.OnStartup() completed");
 
-            // Build dependency injection host
-            _host = CreateHostBuilder(e.Args).Build();
-            _logger = _host.Services.GetRequiredService<ILogger<App>>();
+            // Build dependency injection container
+            _serviceProvider = CreateServiceProvider(e.Args);
+            _logger = _serviceProvider.GetRequiredService<ILogger<App>>();
             _exceptionCoordinator = new ApplicationExceptionCoordinator(
                 Dispatcher,
                 () => _logger,
                 DisposeApplicationResources,
                 Shutdown);
-            HardwareAccessController hardwareAccess = _host.Services.GetRequiredService<HardwareAccessController>();
+            HardwareAccessController hardwareAccess = _serviceProvider.GetRequiredService<HardwareAccessController>();
 
             _logger.LogDebug("Application startup initiated");
             _logger.LogDebug("Command line arguments: {Args}", string.Join(" ", e.Args));
@@ -138,96 +139,106 @@ public partial class App : System.Windows.Application
     }
 
     /// <summary>
-    /// Creates the dependency injection host for the application.
+    /// Creates the dependency injection container for the application.
     /// This configures all services and logging infrastructure.
     /// </summary>
-    private static IHostBuilder CreateHostBuilder(string[] args)
+    private static IServiceProvider CreateServiceProvider(string[] args)
     {
-        return Host.CreateDefaultBuilder(args)
-            .ConfigureLogging()
-            .ConfigureServices((_, services) =>
+        Container container = new Container(rules => rules
+            .WithoutThrowOnRegisteringDisposableTransient()
+            .WithTrackingDisposableTransients());
+
+        ServiceCollection services = new();
+
+        services.AddLogging(builder =>
+        {
+            builder.ClearProviders();
+            builder.AddSerilog(dispose: false); // Serilog already initialized in OnStartup
+        });
+
+        AppSettings settings = AppSettings.Load();
+        bool startedInSafeMode = args.Any(IsSafeModeArgument);
+        bool startWithHardwareAccess = settings.EnableHardwareAccess && !startedInSafeMode;
+        string? startupReason = null;
+        if (!startWithHardwareAccess)
+        {
+            startupReason = startedInSafeMode
+                ? "Started with --safe-mode."
+                : "Disabled in app settings.";
+        }
+
+        services.AddSingleton(settings);
+        services.AddSingleton(new HardwareAccessController(
+            isEnabled: startWithHardwareAccess,
+            driverLoaded: startWithHardwareAccess,
+            startupReason: startupReason));
+
+        // Hardware layer - driver must be validated before use
+        if (startWithHardwareAccess)
+        {
+            services.AddSingleton<LhmDriver>(__ =>
             {
-                AppSettings settings = AppSettings.Load();
-                bool startedInSafeMode = args.Any(IsSafeModeArgument);
-                bool startWithHardwareAccess = settings.EnableHardwareAccess && !startedInSafeMode;
-                string? startupReason = null;
-                if (!startWithHardwareAccess)
+                if (!LhmDriver.TryOpen(out LhmDriver? driver) || driver is null)
                 {
-                    startupReason = startedInSafeMode
-                        ? "Started with --safe-mode."
-                        : "Disabled in app settings.";
+                    throw new LhmDriverInitializationException("Failed to initialize LHM driver");
                 }
 
-                services.AddSingleton(settings);
-                services.AddSingleton(new HardwareAccessController(
-                    isEnabled: startWithHardwareAccess,
-                    driverLoaded: startWithHardwareAccess,
-                    startupReason: startupReason));
-
-                // Hardware layer - driver must be validated before use
-                if (startWithHardwareAccess)
-                {
-                    services.AddSingleton<LhmDriver>(__ =>
-                    {
-                        if (!LhmDriver.TryOpen(out LhmDriver? driver) || driver is null)
-                        {
-                            throw new LhmDriverInitializationException("Failed to initialize LHM driver");
-                        }
-
-                        return driver;
-                    });
-
-                    // Register LhmDriver as IPortIO so EcController can resolve it
-                    services.AddSingleton<IPortIO>(sp => sp.GetRequiredService<LhmDriver>());
-                }
-                else
-                {
-                    services.AddSingleton<IPortIO, NoOpPortIO>();
-                }
-
-                services.AddSingleton<EcController>();
-                services.AddSingleton<LedController>();
-                services.AddSingleton<HotkeyService>();
-                services.AddSingleton<LedBehaviorService>();
-                services.AddSingleton<ISettingsRuntimeService, SettingsRuntimeService>();
-
-                // Monitoring services
-                services.AddSingleton<DiskActivityMonitor>(sp =>
-                {
-                    AppSettings settings = sp.GetRequiredService<AppSettings>();
-                    DiskActivityMonitor monitor = new DiskActivityMonitor(settings.DiskPollIntervalMs);
-                    monitor.TryInitialize(); // Initialize on creation
-                    return monitor;
-                });
-                services.AddSingleton<KeyboardBacklightMonitor>();
-                services.AddSingleton<MicrophoneMuteMonitor>();
-                services.AddSingleton<SpeakerMuteMonitor>();
-                services.AddSingleton<PowerEventMonitor>();
-                services.AddSingleton<FullscreenMonitor>();
-
-                // UI services
-                services.AddSingleton<TrayIconService>(__ =>
-                {
-                    TrayIconService tray = new TrayIconService();
-                    tray.Initialize();
-                    return tray;
-                });
-
-                // ViewModels
-                services.AddSingleton<MainViewModel>();
-                services.AddSingleton<SettingsViewModel>();
-
-                // Main window
-                services.AddSingleton<MainWindow>();
-                services.AddSingleton<MainWindowHost>();
-                services.AddSingleton<IUiDispatcher>(sp => sp.GetRequiredService<MainWindowHost>());
-                services.AddSingleton<MainPresentationService>();
-                services.AddSingleton<SettingsPersistenceService>();
-                services.AddSingleton<HotkeyConfigurationService>();
-                services.AddSingleton<ShellCoordinator>();
-                services.AddSingleton<HardwareRuntimeCoordinator>();
-                services.AddSingleton<ApplicationCoordinator>();
+                return driver;
             });
+
+            // Register LhmDriver as IPortIO so EcController can resolve it
+            services.AddSingleton<IPortIO>(sp => sp.GetRequiredService<LhmDriver>());
+        }
+        else
+        {
+            services.AddSingleton<IPortIO, NoOpPortIO>();
+        }
+
+        services.AddSingleton<EcController>();
+        services.AddSingleton<LedController>();
+        services.AddSingleton<HotkeyService>();
+        services.AddSingleton<LedBehaviorService>();
+        services.AddSingleton<ISettingsRuntimeService, SettingsRuntimeService>();
+
+        // Monitoring services
+        services.AddSingleton<DiskActivityMonitor>(sp =>
+        {
+            AppSettings settings = sp.GetRequiredService<AppSettings>();
+            DiskActivityMonitor monitor = new DiskActivityMonitor(settings.DiskPollIntervalMs);
+            monitor.TryInitialize(); // Initialize on creation
+            return monitor;
+        });
+        services.AddSingleton<KeyboardBacklightMonitor>();
+        services.AddSingleton<MicrophoneMuteMonitor>();
+        services.AddSingleton<SpeakerMuteMonitor>();
+        services.AddSingleton<PowerEventMonitor>();
+        services.AddSingleton<FullscreenMonitor>();
+
+        // UI services
+        services.AddSingleton<TrayIconService>(__ =>
+        {
+            TrayIconService tray = new TrayIconService();
+            tray.Initialize();
+            return tray;
+        });
+
+        // ViewModels
+        services.AddSingleton<MainViewModel>();
+        services.AddSingleton<SettingsViewModel>();
+
+        // Main window
+        services.AddSingleton<MainWindow>();
+        services.AddSingleton<MainWindowHost>();
+        services.AddSingleton<IUiDispatcher>(sp => sp.GetRequiredService<MainWindowHost>());
+        services.AddSingleton<MainPresentationService>();
+        services.AddSingleton<SettingsPersistenceService>();
+        services.AddSingleton<HotkeyConfigurationService>();
+        services.AddSingleton<ShellCoordinator>();
+        services.AddSingleton<HardwareRuntimeCoordinator>();
+        services.AddSingleton<ApplicationCoordinator>();
+
+        // Build and return service provider
+        return container.WithDependencyInjectionAdapter(services).BuildServiceProvider();
     }
 
     private static bool IsSafeModeArgument(string arg)
@@ -322,8 +333,8 @@ public partial class App : System.Windows.Application
         _logger?.LogInformation("Resolving services from DI container");
 
         // Resolve all services - this triggers construction and validation
-        _app = _host!.Services.GetRequiredService<ApplicationCoordinator>();
-        _settingsPersistence = _host.Services.GetRequiredService<SettingsPersistenceService>();
+        _app = _serviceProvider!.GetRequiredService<ApplicationCoordinator>();
+        _settingsPersistence = _serviceProvider!.GetRequiredService<SettingsPersistenceService>();
 
         _logger?.LogInformation("All services resolved successfully");
     }
@@ -363,9 +374,9 @@ public partial class App : System.Windows.Application
     {
         try
         {
-            _logger?.LogDebug("Disposing DI host (will dispose all services automatically)");
-            _host?.Dispose();
-            _host = null;
+            _logger?.LogDebug("Disposing DI service provider (will dispose all services automatically)");
+            (_serviceProvider as IDisposable)?.Dispose();
+            _serviceProvider = null;
         }
         catch (Exception ex)
         {

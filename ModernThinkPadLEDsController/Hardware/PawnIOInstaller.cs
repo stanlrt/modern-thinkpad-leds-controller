@@ -13,7 +13,7 @@ public static class PawnIOInstaller
     private const string INSTALLER_RESOURCE_NAME = "ModernThinkPadLEDsController.Resources.PawnIO-Setup.exe";
     private const string TEMP_INSTALLER_NAME = "PawnIO-Setup.exe";
 
-    private static readonly ILogger _logger = LoggerFactory.Create(builder => builder.AddDebug()).CreateLogger("PawnIOInstaller");
+    private static readonly ILogger _logger = LoggerFactory.Create(_ => { }).CreateLogger("PawnIOInstaller");
 
     public static bool IsPawnIOInstalled()
     {
