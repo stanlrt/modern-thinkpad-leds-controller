@@ -83,6 +83,20 @@ jobs:
           echo "msi_name=$msiName" >> $env:GITHUB_OUTPUT
           echo "version=${{ github.ref_name }}" >> $env:GITHUB_OUTPUT
 
+      - name: Verify MSI file exists
+        run: |
+          Write-Host "Current directory: $(Get-Location)"
+          Write-Host "`nListing files in current directory:"
+          Get-ChildItem -Filter "*.msi" | Format-Table Name, Length
+          
+          $msiFile = "${{ steps.build_msi.outputs.msi_name }}"
+          if (-not (Test-Path $msiFile)) {
+            Write-Error "MSI file not found at: $msiFile"
+            exit 1
+          }
+          Write-Host "`nMSI file found: $msiFile"
+          Write-Host "File size: $((Get-Item $msiFile).Length / 1MB) MB"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
