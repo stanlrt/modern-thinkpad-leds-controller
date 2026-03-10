@@ -9,7 +9,6 @@ namespace ModernThinkPadLEDsController.Shell;
 /// </summary>
 public sealed class HotkeyBinding
 {
-    private const int K_KEY = 0x4B;
     private enum ModifierVirtualKey
     {
         Shift = 0x10,
@@ -31,8 +30,8 @@ public sealed class HotkeyBinding
     [DllImport("user32.dll")]
     private static extern short GetKeyState(ModifierVirtualKey virtualKey);
 
-    public HotkeyModifiers Modifiers { get; set; } = HotkeyModifiers.Win | HotkeyModifiers.Shift;
-    public int VirtualKey { get; set; } = K_KEY;
+    public HotkeyModifiers Modifiers { get; set; } = AppSettingsDefaults.HOTKEY_MODIFIERS;
+    public int VirtualKey { get; set; } = AppSettingsDefaults.HOTKEY_VIRTUAL_KEY;
 
     public static HotkeyBinding FromCurrentKeyPress(Key key)
     {

@@ -66,14 +66,14 @@ public sealed partial class MainViewModel : ObservableObject
     /// --- Hotkey cycle config ---
     /// Which states should LEDs in HotkeyControlled mode cycle through?
     /// </summary>
-    [ObservableProperty] private bool _hotkeyCycleOn = true;
-    [ObservableProperty] private bool _hotkeyCycleOff = true;
+    [ObservableProperty] private bool _hotkeyCycleOn;
+    [ObservableProperty] private bool _hotkeyCycleOff;
     [ObservableProperty] private bool _hotkeyCycleBlink;
 
     /// <summary>
     /// Display text for the current hotkey combination (e.g., "Win + Shift + K")
     /// </summary>
-    [ObservableProperty] private string _hotkeyDisplayText = "Win + Shift + K";
+    [ObservableProperty] private string _hotkeyDisplayText = string.Empty;
 
     /// <summary>
     /// Flag to indicate when user is recording a new hotkey
@@ -113,6 +113,11 @@ public sealed partial class MainViewModel : ObservableObject
             [Led.FnLock] = FnLock,
             [Led.Camera] = Camera,
         };
+
+        _hotkeyCycleOn = (_settings.HotkeyCycleOptions & HotkeyCycleOptions.On) != 0;
+        _hotkeyCycleOff = (_settings.HotkeyCycleOptions & HotkeyCycleOptions.Off) != 0;
+        _hotkeyCycleBlink = (_settings.HotkeyCycleOptions & HotkeyCycleOptions.Blink) != 0;
+        _hotkeyDisplayText = FormatHotkeyDisplay(_settings.Hotkey);
 
         _ledBehavior.Initialize(_mappings);
         UpdateHotkeyCycleBehavior();

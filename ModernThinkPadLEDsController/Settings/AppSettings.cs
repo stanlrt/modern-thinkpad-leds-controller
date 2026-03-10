@@ -10,6 +10,9 @@ namespace ModernThinkPadLEDsController;
 
 /// <summary>
 /// Represents the application settings, stored in JSON at %APPDATA%\ModernThinkPadLEDsController\settings.json.
+/// Property initializers in this type are fallback values only. They are used for first-run
+/// settings creation and for newly added properties missing from an older saved settings.json.
+/// When a value already exists in the user's saved settings.json, deserialization preserves it.
 /// </summary>
 public sealed class AppSettings
 {
@@ -18,13 +21,13 @@ public sealed class AppSettings
         "ModernThinkPadLEDsController",
         "settings.json");
 
-    public LedMode PowerMode { get; set; } = LedMode.Default;
-    public LedMode MuteMode { get; set; } = LedMode.Default;
-    public LedMode RedDotMode { get; set; } = LedMode.Default;
-    public LedMode MicrophoneMode { get; set; } = LedMode.Default;
-    public LedMode SleepMode { get; set; } = LedMode.Default;
-    public LedMode FnLockMode { get; set; } = LedMode.Default;
-    public LedMode CameraMode { get; set; } = LedMode.Default;
+    public LedMode PowerMode { get; set; } = AppSettingsDefaults.LED_MODE;
+    public LedMode MuteMode { get; set; } = AppSettingsDefaults.LED_MODE;
+    public LedMode RedDotMode { get; set; } = AppSettingsDefaults.LED_MODE;
+    public LedMode MicrophoneMode { get; set; } = AppSettingsDefaults.LED_MODE;
+    public LedMode SleepMode { get; set; } = AppSettingsDefaults.LED_MODE;
+    public LedMode FnLockMode { get; set; } = AppSettingsDefaults.LED_MODE;
+    public LedMode CameraMode { get; set; } = AppSettingsDefaults.LED_MODE;
 
     public byte? PowerCustomId { get; set; }
     public byte? MuteCustomId { get; set; }
@@ -34,50 +37,58 @@ public sealed class AppSettings
     public byte? FnLockCustomId { get; set; }
     public byte? CameraCustomId { get; set; }
 
-    public HotkeyCycleOptions HotkeyCycleOptions { get; set; } = AppSettingsDefaults.DEFAULT_HOTKEY_CYCLE_OPTIONS;
+    public HotkeyCycleOptions HotkeyCycleOptions { get; set; } = AppSettingsDefaults.HOTKEY_CYCLE_OPTIONS;
 
     /// <summary>
     /// Gets or sets the global hotkey binding.
-    /// Default is Win + Shift + K.
+    /// The fallback default is Win + Shift + K when no saved hotkey exists yet.
     /// </summary>
-    public HotkeyBinding Hotkey { get; set; } = new();
+    public HotkeyBinding Hotkey { get; set; } = AppSettingsDefaults.CreateDefaultHotkeyBinding();
 
     public int BlinkIntervalMs { get; set; } = AppSettingsDefaults.BLINK_INTERVAL_MS;
     public int LedReapplyIntervalMs { get; set; } = AppSettingsDefaults.LED_REAPPLY_INTERVAL_MS;
     public int DiskPollIntervalMs { get; set; } = AppSettingsDefaults.DISK_POLL_INTERVAL_MS;
 
-    public bool RememberKeyboardBacklight { get; set; }
+    public bool RememberKeyboardBacklight { get; set; } = AppSettingsDefaults.REMEMBER_KEYBOARD_BACKLIGHT;
 
     /// <summary>
     /// Raw brightness value (0-255); null means no saved value yet
     /// </summary>
     public int? SavedKeyboardBacklight { get; set; }
 
-    public bool DimLedsWhenFullscreen { get; set; }
-    public bool SuppressDiskCounterWarning { get; set; }
-    public bool PersistSettingsOnChange { get; set; } = true;
-    public bool EnableHardwareAccess { get; set; } = true;
+    public bool DimLedsWhenFullscreen { get; set; } = AppSettingsDefaults.DIM_LEDS_WHEN_FULLSCREEN;
+    public bool SuppressDiskCounterWarning { get; set; } = AppSettingsDefaults.SUPPRESS_DISK_COUNTER_WARNING;
+    public bool PersistSettingsOnChange { get; set; } = AppSettingsDefaults.PERSIST_SETTINGS_ON_CHANGE;
+    public bool EnableHardwareAccess { get; set; } = AppSettingsDefaults.ENABLE_HARDWARE_ACCESS;
 
     public static AppSettings Load()
+        => LoadFromPath(_filePath);
+
+    internal static AppSettings LoadFromPath(string filePath)
     {
         try
         {
-            if (File.Exists(_filePath))
+            if (File.Exists(filePath))
             {
-                string json = File.ReadAllText(_filePath);
-                AppSettings settings = JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
-                settings.Hotkey ??= new HotkeyBinding();
-                settings.Validate();
-                return settings;
+                string json = File.ReadAllText(filePath);
+                return DeserializeAndNormalize(json);
             }
         }
         catch (Exception ex)
         {
-            Log.Warning(ex, "Failed to load settings from {SettingsPath}; using defaults", _filePath);
-            PreserveUnreadableSettingsFile();
+            Log.Warning(ex, "Failed to load settings from {SettingsPath}; preserving file and using fallback defaults", filePath);
+            PreserveUnreadableSettingsFile(filePath);
         }
 
-        return new AppSettings();
+        return CreateDefaultSettings();
+    }
+
+    internal static AppSettings DeserializeAndNormalize(string json)
+    {
+        AppSettings settings = JsonSerializer.Deserialize<AppSettings>(json) ?? CreateDefaultSettings();
+        settings.Hotkey ??= AppSettingsDefaults.CreateDefaultHotkeyBinding();
+        settings.Validate();
+        return settings;
     }
 
     /// <summary>
@@ -108,16 +119,18 @@ public sealed class AppSettings
         }
     }
 
-    private static void PreserveUnreadableSettingsFile()
+    private static AppSettings CreateDefaultSettings() => new();
+
+    private static void PreserveUnreadableSettingsFile(string filePath)
     {
         try
         {
-            if (!File.Exists(_filePath))
+            if (!File.Exists(filePath))
             {
                 return;
             }
 
-            string directory = Path.GetDirectoryName(_filePath)!;
+            string directory = Path.GetDirectoryName(filePath)!;
             string timestamp = DateTime.Now.ToString("yyyyMMddHHmmss");
             string backupPath = Path.Combine(directory, $"settings.corrupt.{timestamp}.json");
 
@@ -126,12 +139,12 @@ public sealed class AppSettings
                 backupPath = Path.Combine(directory, $"settings.corrupt.{timestamp}.{suffix}.json");
             }
 
-            File.Move(_filePath, backupPath);
+            File.Move(filePath, backupPath);
             Log.Warning("Preserved unreadable settings file at {BackupPath}", backupPath);
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Failed to preserve unreadable settings file {SettingsPath}", _filePath);
+            Log.Error(ex, "Failed to preserve unreadable settings file {SettingsPath}", filePath);
         }
     }
 
