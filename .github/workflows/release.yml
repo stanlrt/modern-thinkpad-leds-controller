@@ -74,6 +74,7 @@ jobs:
           wix build -arch x64 `
             -ext WixToolset.UI.wixext `
             -d PublishDir=publish `
+            -d ProjectDir=Installer `
             -d Version=$version `
             -out $msiName `
             Installer\Product.wxs
@@ -89,7 +90,7 @@ jobs:
           name: Release ${{ steps.build_msi.outputs.version }}
           draft: false
           prerelease: false
-          generate_release_notes: true
+          generate_release_notes: false
           body: |
             ## Installation
             1. Download the `.msi` installer below
@@ -107,4 +108,49 @@ jobs:
             - Clean uninstall via Add/Remove Programs
 
             ## What's Changed
-            <!-- Release notes will be auto-generated below -->
+
+            ### ✨ New Features
+            - **Custom hotkey support** for LED control cycles
+            - **Keyboard backlight slider** for fine-grained brightness control
+            - **Auto-start on installation** for seamless user experience
+            - Enhanced tray icon and application icons (MSI installer and app)
+
+            ### 🐛 Bug Fixes
+            - Fixed LED behavior issues:
+              - LED modes now correctly override observed mute state
+              - All LEDs can now blink (previously restricted)
+              - Mute button now properly reverts to default state when pressed
+              - LEDs now switch to hotkey cycle state correctly
+              - Fixed fullscreen dimming override issues and guard against LEDs absent from partial mappings
+            - Fixed hotkey cycles not being persisted across restarts
+            - Fixed atomic hardware controls to prevent race conditions
+            - Fixed dimming issues and ensured previous hotkey settings aren't lost
+            - Fixed runtime side effects during settings loading
+            - Resolved WPF .NET compatibility issues
+            - Fixed title bar display issue
+            - Restored horizontal scroll functionality
+
+            ### 🏗️ Code Quality & Architecture
+            - **Adopted colocated test files** with comprehensive unit and component tests
+            - Added test infrastructure and seams for better testability
+            - **Centralized settings management** with unified defaults, min/max values, and validation
+            - Refactored to **domain-driven structure** for improved code organization
+            - Broke apart MainViewModel for better separation of concerns
+            - Cleaned up MainWindow, App, AppSettings, and LedMode classes
+            - Improved installer state machine
+            - Removed all compiler warnings and fixed linting issues
+            - Fixed bare catch blocks and fragile exception matching patterns
+
+            ### 🔧 CI/CD & Testing
+            - Added **GitHub Actions workflows** for automated testing
+            - Merged format-lint and test workflows into unified CI pipeline
+            - Added component and unit tests with proper test infrastructure
+            - Improved test execution with `--no-restore` flag optimizations
+
+            ### 📚 Documentation & Maintenance
+            - Updated license information (LICENSE file)
+            - Improved documentation and README files
+            - Added more detailed logging for debugging
+            - Better XML documentation for test constructors
+
+            **Full Changelog**: https://github.com/stanlrt/modern-thinkpad-leds-controller/compare/v1.0.0...v1.1.0
