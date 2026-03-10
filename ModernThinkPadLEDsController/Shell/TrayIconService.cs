@@ -20,13 +20,13 @@ public sealed class TrayIconService : IDisposable
     {
         try
         {
-            System.Windows.Controls.MenuItem showItem = new System.Windows.Controls.MenuItem { Header = "Show" };
+            MenuItem showItem = new() { Header = "Show" };
             showItem.Click += (_, _) => ShowWindowRequested?.Invoke();
 
-            System.Windows.Controls.MenuItem exitItem = new System.Windows.Controls.MenuItem { Header = "Exit" };
+            MenuItem exitItem = new() { Header = "Exit" };
             exitItem.Click += (_, _) => ExitRequested?.Invoke();
 
-            System.Windows.Controls.ContextMenu menu = new System.Windows.Controls.ContextMenu();
+            ContextMenu menu = new();
             menu.Items.Add(showItem);
             menu.Items.Add(new Separator());
             menu.Items.Add(exitItem);
@@ -35,7 +35,7 @@ public sealed class TrayIconService : IDisposable
 
             // Load icon from WPF embedded resource using pack:// URI
             // This works with trimming and doesn't require Windows Forms
-            Uri iconUri = new Uri("pack://application:,,,/Resources/favicon.ico");
+            Uri iconUri = new("pack://application:,,,/Resources/favicon.ico");
             try
             {
                 System.Windows.Resources.StreamResourceInfo resourceInfo = Application.GetResourceStream(iconUri);
@@ -51,8 +51,10 @@ public sealed class TrayIconService : IDisposable
                 // Icon is optional - tray will still work without it
             }
 
-            _taskbarIcon.ContextMenu = menu;
-            _taskbarIcon.MenuActivation = PopupActivationMode.RightClick;
+            // Don't assign ContextMenu directly - handle manually to fix first-click positioning
+            _taskbarIcon.MenuActivation = PopupActivationMode.None; // Disable default behavior
+            _taskbarIcon.TrayRightMouseUp += (_, _) => menu.IsOpen = true;
+
             _taskbarIcon.TrayLeftMouseUp += (_, _) => ShowWindowRequested?.Invoke();
             _taskbarIcon.TrayMouseDoubleClick += (_, _) => ShowWindowRequested?.Invoke();
 
