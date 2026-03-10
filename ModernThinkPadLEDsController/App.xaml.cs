@@ -102,7 +102,7 @@ public partial class App : System.Windows.Application
                 ResolveServices();
                 _app!.ExitRequested += RequestExit;
             }
-            catch (InvalidOperationException ex) when (ex.Message.Contains("LHM driver"))
+            catch (LhmDriverInitializationException ex)
             {
                 _logger.LogError(ex, "Failed to initialize driver - showing PawnIO setup window");
                 PawnIOSetupWindow setup = new PawnIOSetupWindow();
@@ -171,7 +171,7 @@ public partial class App : System.Windows.Application
                     {
                         if (!LhmDriver.TryOpen(out LhmDriver? driver) || driver is null)
                         {
-                            throw new InvalidOperationException("Failed to initialize LHM driver");
+                            throw new LhmDriverInitializationException("Failed to initialize LHM driver");
                         }
 
                         return driver;
