@@ -13,12 +13,12 @@ namespace ModernThinkPadLEDsController.Runtime.Tests;
 /// </summary>
 public sealed class HardwareRuntimeCoordinatorTickTests
 {
-    private static (LedController Leds, FakePortIO Io) BuildLedController(bool hardwareEnabled = true)
+    private static (LedController Leds, FakePortIO Io, HardwareAccessController Access) BuildLedController(bool hardwareEnabled = true)
     {
         FakePortIO io = new();
         EcController ec = new(io);
         HardwareAccessController access = new(hardwareEnabled, driverLoaded: false, startupReason: null);
-        return (new LedController(ec, access), io);
+        return (new LedController(ec, access), io, access);
     }
 
     private static LedBehaviorService BuildBehaviorService(
@@ -37,12 +37,11 @@ public sealed class HardwareRuntimeCoordinatorTickTests
     [Fact]
     public void ExecuteReapplyTick_HardwareEnabled_NeedsReapply_CallsReapplyManagedStates()
     {
-        (LedController leds, FakePortIO io) = BuildLedController(hardwareEnabled: true);
+        (LedController leds, FakePortIO io, HardwareAccessController access) = BuildLedController(hardwareEnabled: true);
         LedBehaviorService behavior = BuildBehaviorService(
             leds,
             TestSettingsBuilder.SingleMapping(Led.Power, LedMode.On));
 
-        HardwareAccessController access = new(isEnabled: true, driverLoaded: false, startupReason: null);
         HardwareRuntimeCoordinator coordinator = new(access, behavior);
 
         // Prime the cache so the first write fills it
@@ -57,12 +56,11 @@ public sealed class HardwareRuntimeCoordinatorTickTests
     [Fact]
     public void ExecuteReapplyTick_HardwareDisabled_DoesNotWrite()
     {
-        (LedController leds, FakePortIO io) = BuildLedController(hardwareEnabled: false);
+        (LedController leds, FakePortIO io, HardwareAccessController access) = BuildLedController(hardwareEnabled: false);
         LedBehaviorService behavior = BuildBehaviorService(
             leds,
             TestSettingsBuilder.SingleMapping(Led.Power, LedMode.On));
 
-        HardwareAccessController access = new(isEnabled: false, driverLoaded: false, startupReason: null);
         HardwareRuntimeCoordinator coordinator = new(access, behavior);
 
         coordinator.ExecuteReapplyTick();
@@ -73,12 +71,11 @@ public sealed class HardwareRuntimeCoordinatorTickTests
     [Fact]
     public void ExecuteReapplyTick_NoManagedLeds_DoesNotWrite()
     {
-        (LedController leds, FakePortIO io) = BuildLedController(hardwareEnabled: true);
+        (LedController leds, FakePortIO io, HardwareAccessController access) = BuildLedController(hardwareEnabled: true);
         LedBehaviorService behavior = BuildBehaviorService(
             leds,
             TestSettingsBuilder.SingleMapping(Led.Power, LedMode.DiskRead));
 
-        HardwareAccessController access = new(isEnabled: true, driverLoaded: false, startupReason: null);
         HardwareRuntimeCoordinator coordinator = new(access, behavior);
 
         coordinator.ExecuteReapplyTick();
@@ -91,12 +88,11 @@ public sealed class HardwareRuntimeCoordinatorTickTests
     [Fact]
     public void ExecuteReapplyTick_CalledTwice_WritesEachTime()
     {
-        (LedController leds, FakePortIO io) = BuildLedController(hardwareEnabled: true);
+        (LedController leds, FakePortIO io, HardwareAccessController access) = BuildLedController(hardwareEnabled: true);
         LedBehaviorService behavior = BuildBehaviorService(
             leds,
             TestSettingsBuilder.SingleMapping(Led.Power, LedMode.On));
 
-        HardwareAccessController access = new(isEnabled: true, driverLoaded: false, startupReason: null);
         HardwareRuntimeCoordinator coordinator = new(access, behavior);
 
         behavior.ApplyAll();
