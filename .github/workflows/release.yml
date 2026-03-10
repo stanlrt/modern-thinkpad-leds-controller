@@ -41,7 +41,7 @@ jobs:
           Write-Host "PawnIO installer downloaded to $destinationPath"
 
       - name: Restore dependencies
-        run: dotnet restore ModernThinkPadLEDsController/ModernThinkPadLEDsController.csproj
+        run: dotnet restore ModernThinkPadLEDsController/ModernThinkPadLEDsController.csproj /p:PublishReadyToRun=true /p:RuntimeIdentifier=win-x64
 
       - name: Publish Release Build
         run: >
@@ -52,7 +52,6 @@ jobs:
           /p:PublishSingleFile=true
           /p:SelfContained=true
           /p:RuntimeIdentifier=win-x64
-          /p:PublishReadyToRun=true
 
       - name: Cache .NET Tools
         uses: actions/cache@v4
