@@ -200,6 +200,16 @@ public sealed partial class SettingsViewModel : ObservableObject
     public string AppVersion { get; } =
         System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "—";
 
+
+    public int MinBlinkIntervalMs => AppSettingsDefaults.MIN_BLINK_INTERVAL_MS;
+    public int MaxBlinkIntervalMs => AppSettingsDefaults.MAX_BLINK_INTERVAL_MS;
+
+    public int MinLedReapplyIntervalMs => AppSettingsDefaults.MIN_LED_REAPPLY_INTERVAL_MS;
+    public int MaxLedReapplyIntervalMs => AppSettingsDefaults.MAX_LED_REAPPLY_INTERVAL_MS;
+
+    public int MinDiskPollIntervalMs => AppSettingsDefaults.MIN_DISK_POLL_INTERVAL_MS;
+    public int MaxDiskPollIntervalMs => AppSettingsDefaults.MAX_DISK_POLL_INTERVAL_MS;
+
     // -------------------------------------------------------------------------
     // Constructor + initialization
     // -------------------------------------------------------------------------

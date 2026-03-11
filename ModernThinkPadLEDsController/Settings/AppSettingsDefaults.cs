@@ -55,20 +55,20 @@ public static class AppSettingsDefaults
     public const int MIN_BLINK_INTERVAL_MS = 100;
 
     /// <summary>Minimum allowed LED reapply interval in milliseconds.</summary>
-    public const int MIN_LED_REAPPLY_INTERVAL_MS = 250;
+    public const int MIN_LED_REAPPLY_INTERVAL_MS = 100;
 
     /// <summary>Minimum allowed disk-activity polling interval in milliseconds.</summary>
     public const int MIN_DISK_POLL_INTERVAL_MS = 100;
 
 
     /// <summary>Maximum allowed LED blink interval in milliseconds.</summary>
-    public const int MAX_BLINK_INTERVAL_MS = 10_000;
+    public const int MAX_BLINK_INTERVAL_MS = 5000;
 
     /// <summary>Maximum allowed LED reapply interval in milliseconds.</summary>
-    public const int MAX_LED_REAPPLY_INTERVAL_MS = 10_000;
+    public const int MAX_LED_REAPPLY_INTERVAL_MS = 2000;
 
     /// <summary>Maximum allowed disk-activity polling interval in milliseconds.</summary>
-    public const int MAX_DISK_POLL_INTERVAL_MS = 10_000;
+    public const int MAX_DISK_POLL_INTERVAL_MS = 1000;
 
     /// <summary>
     /// Creates the default global hotkey binding.
