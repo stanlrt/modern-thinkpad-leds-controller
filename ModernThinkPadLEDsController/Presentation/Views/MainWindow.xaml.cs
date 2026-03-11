@@ -40,6 +40,7 @@ public partial class MainWindow : FluentWindow
 
     private void OnWindowInitialized(object? sender, EventArgs e)
     {
+        WindowSizing.RegisterSizingEvents(this);
         TryAttachHorizontalMouseWheelHook();
     }
 
