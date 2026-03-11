@@ -1,4 +1,5 @@
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using H.NotifyIcon;
@@ -15,21 +16,51 @@ public sealed class TrayIconService : IDisposable
     public event Action? ExitRequested;
 
     private readonly TaskbarIcon _taskbarIcon = new();
+    private Window? _helperWindow;
+
+    [DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
 
     public void Initialize()
     {
         try
         {
+            // Create a hidden window to provide a valid window handle for focus management
+            // This ensures the context menu can properly close when clicking outside,
+            // even when the main window is hidden
+            _helperWindow = new Window
+            {
+                Width = 0,
+                Height = 0,
+                WindowStyle = WindowStyle.None,
+                ShowInTaskbar = false,
+                ShowActivated = false
+            };
+            // Create the window handle without showing it
+            new System.Windows.Interop.WindowInteropHelper(_helperWindow).EnsureHandle();
+
             MenuItem showItem = new() { Header = "Show" };
             showItem.Click += (_, _) => ShowWindowRequested?.Invoke();
 
             MenuItem exitItem = new() { Header = "Exit" };
             exitItem.Click += (_, _) => ExitRequested?.Invoke();
 
-            ContextMenu menu = new();
+            ContextMenu menu = new()
+            {
+                StaysOpen = false,
+                Placement = System.Windows.Controls.Primitives.PlacementMode.MousePoint
+            };
             menu.Items.Add(showItem);
             menu.Items.Add(new Separator());
             menu.Items.Add(exitItem);
+
+            // Ensure menu closes when it loses focus
+            menu.Closed += (_, _) => { };
+            menu.Loaded += (_, _) =>
+            {
+                // Set focus to menu when it opens to enable proper focus loss detection
+                menu.Focus();
+            };
 
             _taskbarIcon.ToolTipText = "Modern ThinkPad LEDs Controller";
 
@@ -53,7 +84,17 @@ public sealed class TrayIconService : IDisposable
 
             // Don't assign ContextMenu directly - handle manually to fix first-click positioning
             _taskbarIcon.MenuActivation = PopupActivationMode.None; // Disable default behavior
-            _taskbarIcon.TrayRightMouseUp += (_, _) => menu.IsOpen = true;
+            _taskbarIcon.TrayRightMouseUp += (_, _) =>
+            {
+                // Bring helper window to foreground briefly to enable proper focus tracking for the menu
+                // This is a workaround for WPF context menus opened from system tray
+                if (_helperWindow != null)
+                {
+                    IntPtr handle = new System.Windows.Interop.WindowInteropHelper(_helperWindow).Handle;
+                    SetForegroundWindow(handle);
+                }
+                menu.IsOpen = true;
+            };
 
             _taskbarIcon.TrayLeftMouseUp += (_, _) => ShowWindowRequested?.Invoke();
             _taskbarIcon.TrayMouseDoubleClick += (_, _) => ShowWindowRequested?.Invoke();
@@ -71,6 +112,10 @@ public sealed class TrayIconService : IDisposable
         }
     }
 
-    public void Dispose() => _taskbarIcon.Dispose();
+    public void Dispose()
+    {
+        _taskbarIcon.Dispose();
+        _helperWindow?.Close();
+    }
 }
 
