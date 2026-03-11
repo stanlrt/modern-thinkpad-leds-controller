@@ -48,8 +48,12 @@ public static class LoggingConfiguration
 
             EmergencyLog("Configuring Serilog LoggerConfiguration...");
             Log.Logger = new LoggerConfiguration()
-                // Set minimum log level - Information for production, Debug for troubleshooting
+                // Set minimum log level - Debug for development, Information for production
+#if DEBUG
                 .MinimumLevel.Debug()
+#else
+                .MinimumLevel.Information()
+#endif
                 .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
                 .MinimumLevel.Override("System", LogEventLevel.Warning)
 

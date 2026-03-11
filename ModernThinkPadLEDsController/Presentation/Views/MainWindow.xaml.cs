@@ -1,9 +1,11 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
 using ModernThinkPadLEDsController.Shell;
 using ModernThinkPadLEDsController.Presentation.ViewModels;
 using Wpf.Ui.Controls;
@@ -13,13 +15,31 @@ namespace ModernThinkPadLEDsController.Presentation.Views;
 /// <summary>
 /// Hosts the main settings and LED configuration UI.
 /// </summary>
-public partial class MainWindow : FluentWindow
+public partial class MainWindow : FluentWindow, INotifyPropertyChanged
 {
 
     private const int WM_MOUSEHWHEEL = 0x020E;
     private const double SCROLL_SENSITIVITY = 3.0;
+    private const string HOTKEY_HINT_IDLE = "Click to change the hotkey combination";
+    private const string HOTKEY_HINT_RECORDING = "Click outside the box to cancel";
+
     private bool _horizontalMouseWheelHookAttached;
     private readonly HotkeyConfigurationService _hotkeyConfiguration;
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    public string HotkeyHintText
+    {
+        get;
+        set
+        {
+            if (field != value)
+            {
+                field = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HotkeyHintText)));
+            }
+        }
+    } = HOTKEY_HINT_IDLE;
 
     public MainViewModel MainVm { get; }
     public SettingsViewModel SettingsVm { get; }
@@ -49,6 +69,47 @@ public partial class MainWindow : FluentWindow
         TryAttachHorizontalMouseWheelHook();
     }
 
+    private void SetLedNameWidths()
+    {
+        // Find the longest LED name and measure it in bold to set consistent column width
+        const string longestText = "Fn/Caps Lock"; // Known to be the longest
+
+        // Find any LED name TextBlock to get font properties
+        if (FindName("FnLockLedName") is not System.Windows.Controls.TextBlock sampleTextBlock)
+        {
+            return;
+        }
+
+        // Measure the longest text in bold
+        Typeface typeface = new Typeface(
+            sampleTextBlock.FontFamily,
+            sampleTextBlock.FontStyle,
+            FontWeights.Bold,
+            sampleTextBlock.FontStretch);
+
+        FormattedText formattedText = new FormattedText(
+            longestText,
+            CultureInfo.CurrentCulture,
+            FlowDirection.LeftToRight,
+            typeface,
+            sampleTextBlock.FontSize,
+            sampleTextBlock.Foreground,
+            VisualTreeHelper.GetDpi(this).PixelsPerDip);
+
+        double requiredWidth = formattedText.Width;
+
+        // Apply this width to all LED name TextBlocks
+        string[] ledNames = { "Power", "Mute", "RedDot", "Microphone", "Sleep", "FnLock", "Camera" };
+        foreach (string ledName in ledNames)
+        {
+            if (FindName($"{ledName}LedName") is System.Windows.Controls.TextBlock textBlock)
+            {
+                textBlock.MinWidth = requiredWidth;
+                textBlock.HorizontalAlignment = HorizontalAlignment.Left;
+            }
+        }
+    }
+
     private void TryAttachHorizontalMouseWheelHook()
     {
         if (_horizontalMouseWheelHookAttached)
@@ -70,6 +131,7 @@ public partial class MainWindow : FluentWindow
 
         source.AddHook(OnHorizontalMouseWheel);
         _horizontalMouseWheelHookAttached = true;
+        SetLedNameWidths();
         SourceInitialized -= OnWindowInitialized;
         Loaded -= OnWindowLoaded;
     }
@@ -129,6 +191,7 @@ public partial class MainWindow : FluentWindow
     {
         MainVm.IsRecordingHotkey = true;
         MainVm.HotkeyDisplayText = "Press your keys...";
+        HotkeyHintText = HOTKEY_HINT_RECORDING;
     }
 
     private void OnHotkeyLostFocus(object sender, RoutedEventArgs e)
@@ -138,6 +201,8 @@ public partial class MainWindow : FluentWindow
             MainVm.IsRecordingHotkey = false;
             // Restore previous hotkey display if user didn't press anything
             UpdateHotkeyDisplayFromSettings();
+            HotkeyHintText = HOTKEY_HINT_IDLE;
+
         }
     }
 

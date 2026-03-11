@@ -1043,7 +1043,7 @@
                                          LostFocus="OnHotkeyLostFocus"
                                          HorizontalAlignment="Left"/>
                             </Border>
-                            <TextBlock Text="Click to change the hotkey combination"
+                            <TextBlock Text="{Binding HotkeyHintText, Mode=OneWay}"
                                        FontSize="11"
                                        Opacity="0.6"
                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
