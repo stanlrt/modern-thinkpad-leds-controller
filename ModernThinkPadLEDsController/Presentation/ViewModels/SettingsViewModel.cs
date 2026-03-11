@@ -15,6 +15,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     private readonly AppSettings _settings;
     private readonly ISettingsRuntimeService _runtime;
     private Action? _saveSettingsCallback;
+    private Action? _updateRuntimeStateCallback;
 
     /// <summary>
     /// Flag to prevent triggering saves during initial load
@@ -76,6 +77,20 @@ public sealed partial class SettingsViewModel : ObservableObject
     }
 
     [ObservableProperty]
+    private bool _enforceKeyboardBacklight;
+
+    partial void OnEnforceKeyboardBacklightChanged(bool value)
+    {
+        if (_isLoading)
+            return;
+
+        _settings.EnforceKeyboardBacklight = value;
+        OnPropertyChanged(nameof(ShowKeyboardBrightnessSlider));
+        _updateRuntimeStateCallback?.Invoke();
+        TriggerSave();
+    }
+
+    [ObservableProperty]
     private int _keyboardBrightnessLevel;
 
     partial void OnKeyboardBrightnessLevelChanged(int value)
@@ -97,6 +112,11 @@ public sealed partial class SettingsViewModel : ObservableObject
     /// Returns the keyboard brightness as a percentage (0-100%).
     /// </summary>
     public int KeyboardBrightnessPercent => KeyboardBrightnessLevel * 100 / 255;
+
+    /// <summary>
+    /// Returns true if keyboard brightness slider should be shown (when enforcement is enabled).
+    /// </summary>
+    public bool ShowKeyboardBrightnessSlider => EnforceKeyboardBacklight;
 
     /// <summary>
     /// Returns true if keyboard brightness is set to a low value that may appear off on some ThinkPads.
@@ -206,6 +226,7 @@ public sealed partial class SettingsViewModel : ObservableObject
             LedReapplyIntervalMs = _settings.LedReapplyIntervalMs;
             DiskPollIntervalMs = Math.Max(AppSettingsDefaults.MIN_DISK_POLL_INTERVAL_MS, _settings.DiskPollIntervalMs);
             RememberKeyboardBacklight = _settings.RememberKeyboardBacklight;
+            EnforceKeyboardBacklight = _settings.EnforceKeyboardBacklight;
 
             // When no brightness has been persisted yet, read the current hardware level
             // to seed the UI without writing the value back to hardware during startup.
@@ -237,6 +258,11 @@ public sealed partial class SettingsViewModel : ObservableObject
     {
         _saveSettingsCallback = callback;
     }
+    public void SetUpdateRuntimeStateCallback(Action callback)
+    {
+        _updateRuntimeStateCallback = callback;
+    }
+
 
     /// <summary>
     /// Trigger save callback if PersistSettingsOnChange is enabled and not currently loading.

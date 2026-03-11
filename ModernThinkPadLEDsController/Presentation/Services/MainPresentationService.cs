@@ -1,5 +1,6 @@
 using System.Windows.Input;
 using ModernThinkPadLEDsController.Presentation.ViewModels;
+using ModernThinkPadLEDsController.Settings;
 using ModernThinkPadLEDsController.Shell;
 
 namespace ModernThinkPadLEDsController.Presentation.Services;
@@ -11,13 +12,16 @@ public sealed class MainPresentationService
 {
     private readonly MainViewModel _mainViewModel;
     private readonly SettingsViewModel _settingsViewModel;
+    private readonly ISettingsRuntimeService _runtime;
 
     public MainPresentationService(
         MainViewModel mainViewModel,
-        SettingsViewModel settingsViewModel)
+        SettingsViewModel settingsViewModel,
+        ISettingsRuntimeService runtime)
     {
         _mainViewModel = mainViewModel;
         _settingsViewModel = settingsViewModel;
+        _runtime = runtime;
     }
 
     public bool HasDiskModeLeds => _mainViewModel.HasDiskModeLeds;
@@ -49,6 +53,7 @@ public sealed class MainPresentationService
     {
         _mainViewModel.SetSaveCallback(callback);
         _settingsViewModel.SetSaveCallback(callback);
+        _settingsViewModel.SetUpdateRuntimeStateCallback(TriggerLedConfigurationChanged);
     }
 
     public void SetDiskMonitoringAvailable(bool isAvailable)
@@ -61,8 +66,26 @@ public sealed class MainPresentationService
         return _mainViewModel.FormatHotkeyDisplay(hotkey);
     }
 
-    public void SetKeyboardBrightnessLevel(int level)
+    public void SetKeyboardBrightnessLevel(int level, bool forceWrite = false)
     {
-        _settingsViewModel.KeyboardBrightnessLevel = level;
+        if (forceWrite)
+        {
+            // Bypass ViewModel to avoid triggering change handler
+            // Call runtime service directly with forceWrite to bypass cache
+            _runtime.SetKeyboardBrightnessLevel(level, forceWrite: true);
+        }
+        else
+        {
+            // Use normal path through ViewModel for UI-initiated changes
+            _settingsViewModel.KeyboardBrightnessLevel = level;
+        }
+    }
+
+    /// <summary>
+    /// Triggers LED configuration changed event to update reapply loop state.
+    /// </summary>
+    public void TriggerLedConfigurationChanged()
+    {
+        _mainViewModel.TriggerConfigurationChanged();
     }
 }

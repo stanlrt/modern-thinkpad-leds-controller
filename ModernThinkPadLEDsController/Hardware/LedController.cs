@@ -70,7 +70,7 @@ public sealed class LedController
     /// <summary>
     /// Set keyboard backlight to any raw byte value (0-255)
     /// </summary>
-    public bool SetKeyboardBacklightRaw(byte level)
+    public bool SetKeyboardBacklightRaw(byte level, bool forceWrite = false)
     {
         if (!_hardwareAccess.IsEnabled)
         {
@@ -78,11 +78,14 @@ public sealed class LedController
             return false;
         }
 
-        lock (_cacheLock)
+        if (!forceWrite)
         {
-            if (_lastKeyboardBacklightLevel == level)
+            lock (_cacheLock)
             {
-                return true;
+                if (_lastKeyboardBacklightLevel == level)
+                {
+                    return true;
+                }
             }
         }
 

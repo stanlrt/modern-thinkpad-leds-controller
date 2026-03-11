@@ -14,7 +14,7 @@ public interface ISettingsRuntimeService
     void UpdateLedReapplyInterval(int intervalMs);
     void UpdateDiskPollInterval(int intervalMs);
     bool TryGetCurrentKeyboardBrightness(out byte level);
-    void SetKeyboardBrightnessLevel(int level);
+    void SetKeyboardBrightnessLevel(int level, bool forceWrite = false);
     void SetFullscreenPollingEnabled(bool enabled);
     HardwareAccessPreferenceChangeResult SetHardwareAccessEnabled(bool enabled);
     string GetHardwareAccessStatus();
@@ -73,9 +73,9 @@ public sealed class SettingsRuntimeService : ISettingsRuntimeService
         return _ledController.GetKeyboardBacklightRaw(out level);
     }
 
-    public void SetKeyboardBrightnessLevel(int level)
+    public void SetKeyboardBrightnessLevel(int level, bool forceWrite = false)
     {
-        _ledController.SetKeyboardBacklightRaw((byte)level);
+        _ledController.SetKeyboardBacklightRaw((byte)level, forceWrite);
     }
 
     public void SetFullscreenPollingEnabled(bool enabled)

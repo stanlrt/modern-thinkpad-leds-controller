@@ -52,6 +52,12 @@ public sealed class AppSettings
     public bool RememberKeyboardBacklight { get; set; } = AppSettingsDefaults.REMEMBER_KEYBOARD_BACKLIGHT;
 
     /// <summary>
+    /// When enabled, the keyboard backlight level is periodically re-applied every LED-interval
+    /// to prevent external changes from overriding the user's preferred level.
+    /// </summary>
+    public bool EnforceKeyboardBacklight { get; set; } = AppSettingsDefaults.ENFORCE_KEYBOARD_BACKLIGHT;
+
+    /// <summary>
     /// Raw brightness value (0-255); null means no saved value yet
     /// </summary>
     public int? SavedKeyboardBacklight { get; set; }

@@ -266,6 +266,14 @@ public sealed partial class MainViewModel : ObservableObject
         _saveSettingsCallback = callback;
     }
 
+    /// <summary>
+    /// Manually triggers the LedConfigurationChanged event to update runtime state.
+    /// </summary>
+    public void TriggerConfigurationChanged()
+    {
+        LedConfigurationChanged?.Invoke();
+    }
+
     // -------------------------------------------------------------------------
     // Hotkey display formatting
     // -------------------------------------------------------------------------

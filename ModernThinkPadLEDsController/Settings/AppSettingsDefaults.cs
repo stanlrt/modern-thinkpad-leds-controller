@@ -36,6 +36,9 @@ public static class AppSettingsDefaults
     /// <summary>Default setting for whether to remember keyboard backlight level.</summary>
     public const bool REMEMBER_KEYBOARD_BACKLIGHT = false;
 
+    /// <summary>Default setting for whether to periodically enforce keyboard backlight level.</summary>
+    public const bool ENFORCE_KEYBOARD_BACKLIGHT = false;
+
     /// <summary>Default setting for whether to dim LEDs when a fullscreen app is active.</summary>
     public const bool DIM_LEDS_WHEN_FULLSCREEN = false;
 

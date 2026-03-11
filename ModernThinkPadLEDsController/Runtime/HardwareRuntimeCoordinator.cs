@@ -187,6 +187,14 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
         {
             _ledBehavior.ReapplyManagedStates();
         }
+
+        // Periodically enforce keyboard backlight level if enabled
+        // Skip if _settings/_presentation are null (test constructor scenario)
+        if (_settings is not null && _presentation is not null &&
+            _hardwareAccess.IsEnabled && _settings.EnforceKeyboardBacklight && _settings.SavedKeyboardBacklight is int savedLevel)
+        {
+            _presentation.SetKeyboardBrightnessLevel(savedLevel, forceWrite: true);
+        }
     }
 
     private void OnDiskModeLedsChanged(bool hasDiskModes)
@@ -345,7 +353,10 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
             return;
         }
 
-        if (_ledBehavior.NeedsPeriodicReapply())
+        bool needsReapply = _ledBehavior.NeedsPeriodicReapply() ||
+                           (_settings.EnforceKeyboardBacklight && _settings.SavedKeyboardBacklight.HasValue);
+
+        if (needsReapply)
         {
             StartLedReapplyLoop();
         }

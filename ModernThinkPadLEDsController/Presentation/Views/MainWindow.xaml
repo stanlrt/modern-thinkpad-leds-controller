@@ -1133,18 +1133,43 @@
                     <!-- ── Keyboard Backlight tab ── -->
                     <TabItem Header="Keyboard Backlight">
                         <StackPanel Margin="10,12">
+                            <CheckBox Content="Set custom keyboard brightness level (re-applied every LED interval, see App Settings)"
+                                      IsChecked="{Binding SettingsVm.EnforceKeyboardBacklight}"
+                                      Padding="0,4"/>
                             <controls:LabeledSlider
+                                Visibility="{Binding SettingsVm.ShowKeyboardBrightnessSlider, Converter={StaticResource BoolToVis}}"
                                 Label="Brightness Level"
                                 Minimum="0"
+                                Margin="0,16,0,0"
                                 Maximum="255"
                                 Value="{Binding SettingsVm.KeyboardBrightnessLevel}"
                                 TickFrequency="1"
-                                Unit="%"
+                                Unit="/ 255"
                                 Description="Some ThinkPads only support few predefined levels. Value will get floored."/>
+
+                            <!-- WarningBanner uses MultiBinding style trigger to show only when both conditions are met -->
                             <controls:WarningBanner
                                 Margin="0,8,0,0"
-                                Visibility="{Binding SettingsVm.ShowKeyboardBrightnessWarning, Converter={StaticResource BoolToVis}}"
-                                Message="Values below 25% may appear completely off on some ThinkPad models."/>
+                                Message="Values below 25% may appear completely off on some ThinkPad models.">
+                                <controls:WarningBanner.Style>
+                                    <Style TargetType="controls:WarningBanner">
+                                        <Setter Property="Visibility"
+                                                Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding SettingsVm.ShowKeyboardBrightnessSlider}"
+                                                               Value="True"/>
+                                                    <Condition Binding="{Binding SettingsVm.ShowKeyboardBrightnessWarning}"
+                                                               Value="True"/>
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="Visibility"
+                                                        Value="Visible"/>
+                                            </MultiDataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </controls:WarningBanner.Style>
+                            </controls:WarningBanner>
 
                             <TextBlock Text="Additional options"
                                        FontWeight="SemiBold"
