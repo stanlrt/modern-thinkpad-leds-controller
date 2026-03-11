@@ -1,4 +1,3 @@
-using System;
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Extensions.Logging;
@@ -84,7 +83,7 @@ public partial class PawnIOSetupWindow : FluentWindow
         {
             _logger.LogWarning("PawnIO installation failed after embedded installer ran");
             TransitionToState(SetupState.InstallationFailed,
-                "PawnIO installation did not complete successfully. Please try installing manually or contact support.",
+                "PawnIO installation did not complete successfully. Please try installing manually or open an issue on GitHub.",
                 System.Windows.Media.Brushes.Red);
         }
     }

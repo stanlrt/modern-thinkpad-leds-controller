@@ -1,6 +1,4 @@
-using System.IO;
 using System.Runtime.InteropServices;
-using System.Threading;
 using System.Windows;
 using DryIoc;
 using DryIoc.Microsoft.DependencyInjection;
@@ -21,22 +19,24 @@ using Serilog;
 namespace ModernThinkPadLEDsController;
 
 /// <summary>Root app manager.</summary>
-public partial class App : System.Windows.Application
+public partial class App : Application
 {
     private static readonly string[] _safeModeArguments = ["--safe-mode", "--no-hardware"];
 
+    [LibraryImport("user32.dll", EntryPoint = "SetForegroundWindow", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool SetForegroundWindow(IntPtr hWnd);
 
-    [DllImport("user32.dll")]
-    private static extern bool SetForegroundWindow(IntPtr hWnd);
+    [LibraryImport("user32.dll", EntryPoint = "ShowWindow", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
-    [DllImport("user32.dll")]
-    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+    [LibraryImport("user32.dll", EntryPoint = "IsIconic", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool IsIconic(IntPtr hWnd);
 
-    [DllImport("user32.dll")]
-    private static extern bool IsIconic(IntPtr hWnd);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern IntPtr FindWindow(string? lpClassName, string? lpWindowName);
+    [LibraryImport("user32.dll", EntryPoint = "FindWindowW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+    private static partial IntPtr FindWindow(string? lpClassName, string? lpWindowName);
 
 #pragma warning disable IDE1006 // Naming Styles
     private const int _SW_RESTORE = 9;
@@ -106,7 +106,7 @@ public partial class App : System.Windows.Application
 
             if (!TryInitializeSingleInstance())
             {
-                return;
+                return; // Another instance is already running, we can kill the current one
             }
 
             try
@@ -142,7 +142,7 @@ public partial class App : System.Windows.Application
                          $"Stack Trace:\n{ex.StackTrace}\n\n" +
                          $"See logs at: {StartupEmergencyLogger.LogDirectory}";
 
-            System.Windows.MessageBox.Show(message, "Startup Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(message, "Startup Error", MessageBoxButton.OK, MessageBoxImage.Error);
 
             LoggingConfiguration.CloseAndFlush();
             Shutdown();
@@ -263,7 +263,7 @@ public partial class App : System.Windows.Application
     {
         _logger?.LogDebug("Checking for existing application instance");
 
-        _singleInstanceMutex = new System.Threading.Mutex(
+        _singleInstanceMutex = new Mutex(
             initiallyOwned: true,
             name: "ModernThinkPadLEDsController_SingleInstance",
             out bool isFirstInstance);
@@ -282,7 +282,7 @@ public partial class App : System.Windows.Application
             else
             {
                 _logger?.LogWarning("Could not find/activate existing window - showing message");
-                System.Windows.MessageBox.Show(
+                MessageBox.Show(
                     "Modern ThinkPad LEDs Controller is already running.\n\nLook for its icon in the system tray.",
                     "Already Running",
                     MessageBoxButton.OK,
