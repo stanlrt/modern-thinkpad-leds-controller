@@ -56,8 +56,8 @@
     <!-- Custom action to launch application after install -->
     <CustomAction
       Id="LaunchApplication"
-      FileRef="MainExecutable"
-      ExeCommand=""
+      Directory="INSTALLFOLDER"
+      ExeCommand="[INSTALLFOLDER]ModernThinkPadLEDsController.exe"
       Execute="immediate"
       Impersonate="yes"
       Return="asyncNoWait" />
