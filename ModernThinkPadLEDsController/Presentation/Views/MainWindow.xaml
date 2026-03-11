@@ -20,6 +20,19 @@
         <converters:EnumToBoolConverter x:Key="EnumToBool"/>
         <converters:HexByteConverter x:Key="HexByte"/>
         <BooleanToVisibilityConverter  x:Key="BoolToVis"/>
+
+        <!-- Style for RadioButtons with hover effect on LED names -->
+        <Style x:Key="LedRadioStyle"
+               TargetType="RadioButton"
+               BasedOn="{StaticResource {x:Type RadioButton}}">
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver"
+                         Value="True">
+                    <Setter Property="Tag"
+                            Value="Hovered"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
     </ui:FluentWindow.Resources>
 
     <Grid>
@@ -56,759 +69,944 @@
                 <!-- ============================================================ -->
                 <ui:Card Padding="12,10"
                          Margin="0,0,0,32">
-                    <!-- Horizontal scroll for table only -->
-                    <ScrollViewer x:Name="TableScrollViewer"
-                                  HorizontalScrollBarVisibility="Auto"
-                                  VerticalScrollBarVisibility="Disabled"
-                                  PreviewMouseWheel="TableScrollViewer_PreviewMouseWheel"
-                                  Padding="0,0,0,8"
-                                  PanningMode="Both">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <!-- LED name   -->
-                                <ColumnDefinition Width="Auto"/>
-                                <!-- Default    -->
-                                <ColumnDefinition Width="Auto"/>
-                                <!-- On         -->
-                                <ColumnDefinition Width="Auto"/>
-                                <!-- Off        -->
-                                <ColumnDefinition Width="Auto"/>
-                                <!-- Blink      -->
-                                <ColumnDefinition Width="Auto"/>
-                                <!-- Hotkey     -->
-                                <ColumnDefinition Width="Auto"/>
-                                <!-- Disk Write -->
-                                <ColumnDefinition Width="Auto"/>
-                                <!-- Disk Read  -->
-                                <ColumnDefinition Width="Auto"/>
-                                <!-- LED Mapping -->
-                            </Grid.ColumnDefinitions>
+                    <!-- Split table: sticky LED names + scrollable content -->
+                    <Grid Grid.IsSharedSizeScope="True">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <!-- Sticky LED names -->
+                            <ColumnDefinition Width="*"/>
+                            <!-- Scrollable content -->
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Fixed LED names column -->
+                        <Grid Grid.Column="0"
+                              Margin="0,0,0,8">
                             <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <!-- header     -->
-                                <RowDefinition Height="Auto"/>
-                                <!-- Power      -->
-                                <RowDefinition Height="Auto"/>
-                                <!-- Mute       -->
-                                <RowDefinition Height="Auto"/>
-                                <!-- Red Dot    -->
-                                <RowDefinition Height="Auto"/>
-                                <!-- Microphone -->
-                                <RowDefinition Height="Auto"/>
-                                <!-- Sleep      -->
-                                <RowDefinition Height="Auto"/>
-                                <!-- Fn Lock    -->
-                                <RowDefinition Height="Auto"/>
-                                <!-- Camera     -->
+                                <RowDefinition Height="Auto"
+                                               SharedSizeGroup="Row0"/>
+                                <RowDefinition Height="Auto"
+                                               SharedSizeGroup="Row1"/>
+                                <RowDefinition Height="Auto"
+                                               SharedSizeGroup="Row2"/>
+                                <RowDefinition Height="Auto"
+                                               SharedSizeGroup="Row3"/>
+                                <RowDefinition Height="Auto"
+                                               SharedSizeGroup="Row4"/>
+                                <RowDefinition Height="Auto"
+                                               SharedSizeGroup="Row5"/>
+                                <RowDefinition Height="Auto"
+                                               SharedSizeGroup="Row6"/>
+                                <RowDefinition Height="Auto"
+                                               SharedSizeGroup="Row7"/>
                             </Grid.RowDefinitions>
 
-                            <!-- ── Header row ── -->
                             <TextBlock Grid.Row="0"
-                                       Grid.Column="0"
                                        Text="LED"
                                        FontWeight="SemiBold"
                                        VerticalAlignment="Bottom"
                                        Margin="4,0,20,6"/>
-
-                            <controls:LabelWithHelp Grid.Row="0"
-                                                    Grid.Column="1"
-                                                    HorizontalAlignment="Left"
-                                                    VerticalAlignment="Bottom"
-                                                    Margin="8,0,16,6"
-                                                    Label="Default"
-                                                    FontWeight="SemiBold"
-                                                    HelpText="Let the LED follow the default OS behaviour."/>
-
-                            <TextBlock Grid.Row="0"
-                                       Grid.Column="2"
-                                       Text="On"
-                                       FontWeight="SemiBold"
-                                       HorizontalAlignment="Left"
-                                       VerticalAlignment="Bottom"
-                                       Margin="8,0,16,6"/>
-                            <TextBlock Grid.Row="0"
-                                       Grid.Column="3"
-                                       Text="Off"
-                                       FontWeight="SemiBold"
-                                       HorizontalAlignment="Left"
-                                       VerticalAlignment="Bottom"
-                                       Margin="8,0,16,6"/>
-                            <TextBlock Grid.Row="0"
-                                       Grid.Column="4"
-                                       Text="Blink"
-                                       FontWeight="SemiBold"
-                                       HorizontalAlignment="Left"
-                                       VerticalAlignment="Bottom"
-                                       Margin="8,0,16,6"/>
-
-                            <controls:LabelWithHelp Grid.Row="0"
-                                                    Grid.Column="5"
-                                                    HorizontalAlignment="Left"
-                                                    VerticalAlignment="Bottom"
-                                                    Margin="8,0,16,6"
-                                                    Label="Hotkey"
-                                                    FontWeight="SemiBold"
-                                                    HelpText="Make the LED cycle through the selected states each time the hotkey is pressed. Configure the states in the Hotkey tab below."/>
-
-                            <controls:LabelWithHelp Grid.Row="0"
-                                                    Grid.Column="6"
-                                                    HorizontalAlignment="Left"
-                                                    VerticalAlignment="Bottom"
-                                                    Margin="8,0,16,6"
-                                                    Label="Disk Write"
-                                                    FontWeight="SemiBold"
-                                                    HelpText="LED turns on whenever disk write activity is detected. Configure the polling interval in the Disk tab below."/>
-
-                            <controls:LabelWithHelp Grid.Row="0"
-                                                    Grid.Column="7"
-                                                    HorizontalAlignment="Left"
-                                                    VerticalAlignment="Bottom"
-                                                    Margin="8,0,0,6"
-                                                    Label="Disk Read"
-                                                    FontWeight="SemiBold"
-                                                    HelpText="LED turns on whenever disk read activity is detected. Configure the polling interval in the Disk tab below."/>
-
-                            <controls:LabelWithHelp Grid.Row="0"
-                                                    Grid.Column="8"
-                                                    HorizontalAlignment="Left"
-                                                    VerticalAlignment="Bottom"
-                                                    Margin="8,0,0,6"
-                                                    Label="Reg addr"
-                                                    FontWeight="SemiBold"
-                                                    HelpText="Custom EC register ID (hex). Leave empty to use the default. Use this if your laptop uses different register IDs. Find values on ThinkWiki or via trial &amp; error with the Custom EC Write dialog."/>
-
-                            <!-- ── Power ── -->
-                            <TextBlock Grid.Row="1"
-                                       Grid.Column="0"
+                            <TextBlock x:Name="PowerLedName"
+                                       Grid.Row="1"
                                        Text="Power"
                                        VerticalAlignment="Center"
                                        Margin="4,6,20,6"/>
-                            <RadioButton Grid.Row="1"
-                                         Grid.Column="1"
-                                         GroupName="g_Power"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsChecked="{Binding MainVm.Power.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Default}}"/>
-                            <RadioButton Grid.Row="1"
-                                         Grid.Column="2"
-                                         GroupName="g_Power"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsChecked="{Binding MainVm.Power.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.On}}"/>
-                            <RadioButton Grid.Row="1"
-                                         Grid.Column="3"
-                                         GroupName="g_Power"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsChecked="{Binding MainVm.Power.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Off}}"/>
-                            <RadioButton Grid.Row="1"
-                                         Grid.Column="4"
-                                         GroupName="g_Power"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsChecked="{Binding MainVm.Power.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Blink}}"/>
-                            <RadioButton Grid.Row="1"
-                                         Grid.Column="5"
-                                         GroupName="g_Power"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsChecked="{Binding MainVm.Power.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.HotkeyControlled}}"/>
-                            <RadioButton Grid.Row="1"
-                                         Grid.Column="6"
-                                         GroupName="g_Power"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsEnabled="{Binding MainVm.DiskRadiosEnabled}"
-                                         ToolTipService.ShowOnDisabled="True"
-                                         IsChecked="{Binding MainVm.Power.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.DiskWrite}}">
-                                <RadioButton.Style>
-                                    <Style TargetType="RadioButton"
-                                           BasedOn="{StaticResource {x:Type RadioButton}}">
-                                        <Style.Triggers>
-                                            <Trigger Property="IsEnabled"
-                                                     Value="False">
-                                                <Setter Property="ToolTip"
-                                                        Value="Disabled: disk monitoring is unavailable on your device."/>
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </RadioButton.Style>
-                            </RadioButton>
-                            <RadioButton Grid.Row="1"
-                                         Grid.Column="7"
-                                         GroupName="g_Power"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,0,6"
-                                         IsEnabled="{Binding MainVm.DiskRadiosEnabled}"
-                                         ToolTipService.ShowOnDisabled="True"
-                                         IsChecked="{Binding MainVm.Power.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.DiskRead}}">
-                                <RadioButton.Style>
-                                    <Style TargetType="RadioButton"
-                                           BasedOn="{StaticResource {x:Type RadioButton}}">
-                                        <Style.Triggers>
-                                            <Trigger Property="IsEnabled"
-                                                     Value="False">
-                                                <Setter Property="ToolTip"
-                                                        Value="Disabled: disk monitoring is unavailable on your device."/>
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </RadioButton.Style>
-                            </RadioButton>
-                            <controls:HexRegisterInput Grid.Row="1"
-                                                       Grid.Column="8"
-                                                       HexExample="00"
-                                                       Value="{Binding MainVm.Power.CustomRegisterId}"/>
-
-                            <!-- ── Mute ── -->
-                            <TextBlock Grid.Row="2"
-                                       Grid.Column="0"
+                            <TextBlock x:Name="MuteLedName"
+                                       Grid.Row="2"
                                        Text="Mute"
                                        VerticalAlignment="Center"
                                        Margin="4,6,20,6"/>
-                            <RadioButton Grid.Row="2"
-                                         Grid.Column="1"
-                                         GroupName="g_Mute"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsChecked="{Binding MainVm.Mute.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Default}}"/>
-                            <RadioButton Grid.Row="2"
-                                         Grid.Column="2"
-                                         GroupName="g_Mute"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsChecked="{Binding MainVm.Mute.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.On}}"/>
-                            <RadioButton Grid.Row="2"
-                                         Grid.Column="3"
-                                         GroupName="g_Mute"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsChecked="{Binding MainVm.Mute.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Off}}"/>
-                            <RadioButton Grid.Row="2"
-                                         Grid.Column="4"
-                                         GroupName="g_Mute"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsChecked="{Binding MainVm.Mute.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Blink}}"/>
-                            <RadioButton Grid.Row="2"
-                                         Grid.Column="5"
-                                         GroupName="g_Mute"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsChecked="{Binding MainVm.Mute.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.HotkeyControlled}}"/>
-                            <RadioButton Grid.Row="2"
-                                         Grid.Column="6"
-                                         GroupName="g_Mute"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsEnabled="{Binding MainVm.DiskRadiosEnabled}"
-                                         ToolTipService.ShowOnDisabled="True"
-                                         IsChecked="{Binding MainVm.Mute.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.DiskWrite}}">
-                                <RadioButton.Style>
-                                    <Style TargetType="RadioButton"
-                                           BasedOn="{StaticResource {x:Type RadioButton}}">
-                                        <Style.Triggers>
-                                            <Trigger Property="IsEnabled"
-                                                     Value="False">
-                                                <Setter Property="ToolTip"
-                                                        Value="Disabled: disk monitoring is unavailable on your device."/>
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </RadioButton.Style>
-                            </RadioButton>
-                            <RadioButton Grid.Row="2"
-                                         Grid.Column="7"
-                                         GroupName="g_Mute"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,0,6"
-                                         IsEnabled="{Binding MainVm.DiskRadiosEnabled}"
-                                         ToolTipService.ShowOnDisabled="True"
-                                         IsChecked="{Binding MainVm.Mute.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.DiskRead}}">
-                                <RadioButton.Style>
-                                    <Style TargetType="RadioButton"
-                                           BasedOn="{StaticResource {x:Type RadioButton}}">
-                                        <Style.Triggers>
-                                            <Trigger Property="IsEnabled"
-                                                     Value="False">
-                                                <Setter Property="ToolTip"
-                                                        Value="Disabled: disk monitoring is unavailable on your device."/>
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </RadioButton.Style>
-                            </RadioButton>
-                            <controls:HexRegisterInput Grid.Row="2"
-                                                       Grid.Column="8"
-                                                       HexExample="04"
-                                                       Value="{Binding MainVm.Mute.CustomRegisterId}"/>
-
-                            <!-- ── Red Dot ── -->
-                            <TextBlock Grid.Row="3"
-                                       Grid.Column="0"
+                            <TextBlock x:Name="RedDotLedName"
+                                       Grid.Row="3"
                                        Text="Red Dot"
                                        VerticalAlignment="Center"
                                        Margin="4,6,20,6"/>
-                            <RadioButton Grid.Row="3"
-                                         Grid.Column="1"
-                                         GroupName="g_RedDot"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsChecked="{Binding MainVm.RedDot.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Default}}"/>
-                            <RadioButton Grid.Row="3"
-                                         Grid.Column="2"
-                                         GroupName="g_RedDot"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsChecked="{Binding MainVm.RedDot.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.On}}"/>
-                            <RadioButton Grid.Row="3"
-                                         Grid.Column="3"
-                                         GroupName="g_RedDot"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsChecked="{Binding MainVm.RedDot.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Off}}"/>
-                            <RadioButton Grid.Row="3"
-                                         Grid.Column="4"
-                                         GroupName="g_RedDot"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsChecked="{Binding MainVm.RedDot.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Blink}}"/>
-                            <RadioButton Grid.Row="3"
-                                         Grid.Column="5"
-                                         GroupName="g_RedDot"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsChecked="{Binding MainVm.RedDot.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.HotkeyControlled}}"/>
-                            <RadioButton Grid.Row="3"
-                                         Grid.Column="6"
-                                         GroupName="g_RedDot"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsEnabled="{Binding MainVm.DiskRadiosEnabled}"
-                                         ToolTipService.ShowOnDisabled="True"
-                                         IsChecked="{Binding MainVm.RedDot.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.DiskWrite}}">
-                                <RadioButton.Style>
-                                    <Style TargetType="RadioButton"
-                                           BasedOn="{StaticResource {x:Type RadioButton}}">
-                                        <Style.Triggers>
-                                            <Trigger Property="IsEnabled"
-                                                     Value="False">
-                                                <Setter Property="ToolTip"
-                                                        Value="Disabled: disk monitoring is unavailable on your device."/>
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </RadioButton.Style>
-                            </RadioButton>
-                            <RadioButton Grid.Row="3"
-                                         Grid.Column="7"
-                                         GroupName="g_RedDot"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,0,6"
-                                         IsEnabled="{Binding MainVm.DiskRadiosEnabled}"
-                                         ToolTipService.ShowOnDisabled="True"
-                                         IsChecked="{Binding MainVm.RedDot.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.DiskRead}}">
-                                <RadioButton.Style>
-                                    <Style TargetType="RadioButton"
-                                           BasedOn="{StaticResource {x:Type RadioButton}}">
-                                        <Style.Triggers>
-                                            <Trigger Property="IsEnabled"
-                                                     Value="False">
-                                                <Setter Property="ToolTip"
-                                                        Value="Disabled: disk monitoring is unavailable on your device."/>
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </RadioButton.Style>
-                            </RadioButton>
-                            <controls:HexRegisterInput Grid.Row="3"
-                                                       Grid.Column="8"
-                                                       HexExample="0A"
-                                                       Value="{Binding MainVm.RedDot.CustomRegisterId}"/>
-
-                            <!-- ── Microphone ── -->
-                            <TextBlock Grid.Row="4"
-                                       Grid.Column="0"
+                            <TextBlock x:Name="MicrophoneLedName"
+                                       Grid.Row="4"
                                        Text="Microphone"
                                        VerticalAlignment="Center"
                                        Margin="4,6,20,6"/>
-                            <RadioButton Grid.Row="4"
-                                         Grid.Column="1"
-                                         GroupName="g_Microphone"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsChecked="{Binding MainVm.Microphone.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Default}}"/>
-                            <RadioButton Grid.Row="4"
-                                         Grid.Column="2"
-                                         GroupName="g_Microphone"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsChecked="{Binding MainVm.Microphone.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.On}}"/>
-                            <RadioButton Grid.Row="4"
-                                         Grid.Column="3"
-                                         GroupName="g_Microphone"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsChecked="{Binding MainVm.Microphone.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Off}}"/>
-                            <RadioButton Grid.Row="4"
-                                         Grid.Column="4"
-                                         GroupName="g_Microphone"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsChecked="{Binding MainVm.Microphone.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Blink}}"/>
-                            <RadioButton Grid.Row="4"
-                                         Grid.Column="5"
-                                         GroupName="g_Microphone"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsChecked="{Binding MainVm.Microphone.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.HotkeyControlled}}"/>
-                            <RadioButton Grid.Row="4"
-                                         Grid.Column="6"
-                                         GroupName="g_Microphone"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsEnabled="{Binding MainVm.DiskRadiosEnabled}"
-                                         ToolTipService.ShowOnDisabled="True"
-                                         IsChecked="{Binding MainVm.Microphone.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.DiskWrite}}">
-                                <RadioButton.Style>
-                                    <Style TargetType="RadioButton"
-                                           BasedOn="{StaticResource {x:Type RadioButton}}">
-                                        <Style.Triggers>
-                                            <Trigger Property="IsEnabled"
-                                                     Value="False">
-                                                <Setter Property="ToolTip"
-                                                        Value="Disabled: disk monitoring is unavailable on your device."/>
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </RadioButton.Style>
-                            </RadioButton>
-                            <RadioButton Grid.Row="4"
-                                         Grid.Column="7"
-                                         GroupName="g_Microphone"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,0,6"
-                                         IsEnabled="{Binding MainVm.DiskRadiosEnabled}"
-                                         ToolTipService.ShowOnDisabled="True"
-                                         IsChecked="{Binding MainVm.Microphone.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.DiskRead}}">
-                                <RadioButton.Style>
-                                    <Style TargetType="RadioButton"
-                                           BasedOn="{StaticResource {x:Type RadioButton}}">
-                                        <Style.Triggers>
-                                            <Trigger Property="IsEnabled"
-                                                     Value="False">
-                                                <Setter Property="ToolTip"
-                                                        Value="Disabled: disk monitoring is unavailable on your device."/>
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </RadioButton.Style>
-                            </RadioButton>
-                            <controls:HexRegisterInput Grid.Row="4"
-                                                       Grid.Column="8"
-                                                       HexExample="0E"
-                                                       Value="{Binding MainVm.Microphone.CustomRegisterId}"/>
-
-                            <!-- ── Sleep ── -->
-                            <TextBlock Grid.Row="5"
-                                       Grid.Column="0"
+                            <TextBlock x:Name="SleepLedName"
+                                       Grid.Row="5"
                                        Text="Sleep"
                                        VerticalAlignment="Center"
                                        Margin="4,6,20,6"/>
-                            <RadioButton Grid.Row="5"
-                                         Grid.Column="1"
-                                         GroupName="g_Sleep"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsChecked="{Binding MainVm.Sleep.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Default}}"/>
-                            <RadioButton Grid.Row="5"
-                                         Grid.Column="2"
-                                         GroupName="g_Sleep"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsChecked="{Binding MainVm.Sleep.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.On}}"/>
-                            <RadioButton Grid.Row="5"
-                                         Grid.Column="3"
-                                         GroupName="g_Sleep"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsChecked="{Binding MainVm.Sleep.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Off}}"/>
-                            <RadioButton Grid.Row="5"
-                                         Grid.Column="4"
-                                         GroupName="g_Sleep"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsChecked="{Binding MainVm.Sleep.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Blink}}"/>
-                            <RadioButton Grid.Row="5"
-                                         Grid.Column="5"
-                                         GroupName="g_Sleep"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsChecked="{Binding MainVm.Sleep.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.HotkeyControlled}}"/>
-                            <RadioButton Grid.Row="5"
-                                         Grid.Column="6"
-                                         GroupName="g_Sleep"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsEnabled="{Binding MainVm.DiskRadiosEnabled}"
-                                         ToolTipService.ShowOnDisabled="True"
-                                         IsChecked="{Binding MainVm.Sleep.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.DiskWrite}}">
-                                <RadioButton.Style>
-                                    <Style TargetType="RadioButton"
-                                           BasedOn="{StaticResource {x:Type RadioButton}}">
-                                        <Style.Triggers>
-                                            <Trigger Property="IsEnabled"
-                                                     Value="False">
-                                                <Setter Property="ToolTip"
-                                                        Value="Disabled: disk monitoring is unavailable on your device."/>
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </RadioButton.Style>
-                            </RadioButton>
-                            <RadioButton Grid.Row="5"
-                                         Grid.Column="7"
-                                         GroupName="g_Sleep"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,0,6"
-                                         IsEnabled="{Binding MainVm.DiskRadiosEnabled}"
-                                         ToolTipService.ShowOnDisabled="True"
-                                         IsChecked="{Binding MainVm.Sleep.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.DiskRead}}">
-                                <RadioButton.Style>
-                                    <Style TargetType="RadioButton"
-                                           BasedOn="{StaticResource {x:Type RadioButton}}">
-                                        <Style.Triggers>
-                                            <Trigger Property="IsEnabled"
-                                                     Value="False">
-                                                <Setter Property="ToolTip"
-                                                        Value="Disabled: disk monitoring is unavailable on your device."/>
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </RadioButton.Style>
-                            </RadioButton>
-                            <controls:HexRegisterInput Grid.Row="5"
-                                                       Grid.Column="8"
-                                                       HexExample="07"
-                                                       Value="{Binding MainVm.Sleep.CustomRegisterId}"/>
-
-                            <!-- ── Fn Lock ── -->
-                            <TextBlock Grid.Row="6"
-                                       Grid.Column="0"
+                            <TextBlock x:Name="FnLockLedName"
+                                       Grid.Row="6"
                                        Text="Fn/Caps Lock"
                                        VerticalAlignment="Center"
                                        Margin="4,6,20,6"/>
-                            <RadioButton Grid.Row="6"
-                                         Grid.Column="1"
-                                         GroupName="g_FnLock"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsChecked="{Binding MainVm.FnLock.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Default}}"/>
-                            <RadioButton Grid.Row="6"
-                                         Grid.Column="2"
-                                         GroupName="g_FnLock"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsChecked="{Binding MainVm.FnLock.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.On}}"/>
-                            <RadioButton Grid.Row="6"
-                                         Grid.Column="3"
-                                         GroupName="g_FnLock"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsChecked="{Binding MainVm.FnLock.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Off}}"/>
-                            <RadioButton Grid.Row="6"
-                                         Grid.Column="4"
-                                         GroupName="g_FnLock"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsChecked="{Binding MainVm.FnLock.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Blink}}"/>
-                            <RadioButton Grid.Row="6"
-                                         Grid.Column="5"
-                                         GroupName="g_FnLock"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsChecked="{Binding MainVm.FnLock.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.HotkeyControlled}}"/>
-                            <RadioButton Grid.Row="6"
-                                         Grid.Column="6"
-                                         GroupName="g_FnLock"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsEnabled="{Binding MainVm.DiskRadiosEnabled}"
-                                         ToolTipService.ShowOnDisabled="True"
-                                         IsChecked="{Binding MainVm.FnLock.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.DiskWrite}}">
-                                <RadioButton.Style>
-                                    <Style TargetType="RadioButton"
-                                           BasedOn="{StaticResource {x:Type RadioButton}}">
-                                        <Style.Triggers>
-                                            <Trigger Property="IsEnabled"
-                                                     Value="False">
-                                                <Setter Property="ToolTip"
-                                                        Value="Disabled: disk monitoring is unavailable on your device."/>
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </RadioButton.Style>
-                            </RadioButton>
-                            <RadioButton Grid.Row="6"
-                                         Grid.Column="7"
-                                         GroupName="g_FnLock"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,0,6"
-                                         IsEnabled="{Binding MainVm.DiskRadiosEnabled}"
-                                         ToolTipService.ShowOnDisabled="True"
-                                         IsChecked="{Binding MainVm.FnLock.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.DiskRead}}">
-                                <RadioButton.Style>
-                                    <Style TargetType="RadioButton"
-                                           BasedOn="{StaticResource {x:Type RadioButton}}">
-                                        <Style.Triggers>
-                                            <Trigger Property="IsEnabled"
-                                                     Value="False">
-                                                <Setter Property="ToolTip"
-                                                        Value="Disabled: disk monitoring is unavailable on your device."/>
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </RadioButton.Style>
-                            </RadioButton>
-                            <controls:HexRegisterInput Grid.Row="6"
-                                                       Grid.Column="8"
-                                                       HexExample="06"
-                                                       Value="{Binding MainVm.FnLock.CustomRegisterId}"/>
-
-                            <!-- ── Camera ── -->
-                            <TextBlock Grid.Row="7"
-                                       Grid.Column="0"
+                            <TextBlock x:Name="CameraLedName"
+                                       Grid.Row="7"
                                        Text="Camera"
                                        VerticalAlignment="Center"
                                        Margin="4,6,20,6"/>
-                            <RadioButton Grid.Row="7"
-                                         Grid.Column="1"
-                                         GroupName="g_Camera"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsChecked="{Binding MainVm.Camera.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Default}}"/>
-                            <RadioButton Grid.Row="7"
-                                         Grid.Column="2"
-                                         GroupName="g_Camera"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsChecked="{Binding MainVm.Camera.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.On}}"/>
-                            <RadioButton Grid.Row="7"
-                                         Grid.Column="3"
-                                         GroupName="g_Camera"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsChecked="{Binding MainVm.Camera.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Off}}"/>
-                            <RadioButton Grid.Row="7"
-                                         Grid.Column="4"
-                                         GroupName="g_Camera"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsChecked="{Binding MainVm.Camera.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Blink}}"/>
-                            <RadioButton Grid.Row="7"
-                                         Grid.Column="5"
-                                         GroupName="g_Camera"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsChecked="{Binding MainVm.Camera.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.HotkeyControlled}}"/>
-                            <RadioButton Grid.Row="7"
-                                         Grid.Column="6"
-                                         GroupName="g_Camera"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,16,6"
-                                         IsEnabled="{Binding MainVm.DiskRadiosEnabled}"
-                                         ToolTipService.ShowOnDisabled="True"
-                                         IsChecked="{Binding MainVm.Camera.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.DiskWrite}}">
-                                <RadioButton.Style>
-                                    <Style TargetType="RadioButton"
-                                           BasedOn="{StaticResource {x:Type RadioButton}}">
-                                        <Style.Triggers>
-                                            <Trigger Property="IsEnabled"
-                                                     Value="False">
-                                                <Setter Property="ToolTip"
-                                                        Value="Disabled: disk monitoring is unavailable on your device."/>
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </RadioButton.Style>
-                            </RadioButton>
-                            <RadioButton Grid.Row="7"
-                                         Grid.Column="7"
-                                         GroupName="g_Camera"
-                                         HorizontalAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="8,6,0,6"
-                                         IsEnabled="{Binding MainVm.DiskRadiosEnabled}"
-                                         ToolTipService.ShowOnDisabled="True"
-                                         IsChecked="{Binding MainVm.Camera.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.DiskRead}}">
-                                <RadioButton.Style>
-                                    <Style TargetType="RadioButton"
-                                           BasedOn="{StaticResource {x:Type RadioButton}}">
-                                        <Style.Triggers>
-                                            <Trigger Property="IsEnabled"
-                                                     Value="False">
-                                                <Setter Property="ToolTip"
-                                                        Value="Disabled: disk monitoring is unavailable on your device."/>
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </RadioButton.Style>
-                            </RadioButton>
-                            <controls:HexRegisterInput Grid.Row="7"
-                                                       Grid.Column="8"
-                                                       HexExample="0F"
-                                                       Value="{Binding MainVm.Camera.CustomRegisterId}"/>
                         </Grid>
-                    </ScrollViewer>
+
+                        <!-- Scrollable content -->
+                        <ScrollViewer x:Name="TableScrollViewer"
+                                      Grid.Column="1"
+                                      HorizontalScrollBarVisibility="Auto"
+                                      VerticalScrollBarVisibility="Disabled"
+                                      PreviewMouseWheel="TableScrollViewer_PreviewMouseWheel"
+                                      Padding="0,0,0,8"
+                                      PanningMode="Both">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <!-- Default    -->
+                                    <ColumnDefinition Width="Auto"/>
+                                    <!-- On         -->
+                                    <ColumnDefinition Width="Auto"/>
+                                    <!-- Off        -->
+                                    <ColumnDefinition Width="Auto"/>
+                                    <!-- Blink      -->
+                                    <ColumnDefinition Width="Auto"/>
+                                    <!-- Hotkey     -->
+                                    <ColumnDefinition Width="Auto"/>
+                                    <!-- Disk Write -->
+                                    <ColumnDefinition Width="Auto"/>
+                                    <!-- Disk Read  -->
+                                    <ColumnDefinition Width="Auto"/>
+                                    <!-- LED Mapping -->
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"
+                                                   SharedSizeGroup="Row0"/>
+                                    <RowDefinition Height="Auto"
+                                                   SharedSizeGroup="Row1"/>
+                                    <RowDefinition Height="Auto"
+                                                   SharedSizeGroup="Row2"/>
+                                    <RowDefinition Height="Auto"
+                                                   SharedSizeGroup="Row3"/>
+                                    <RowDefinition Height="Auto"
+                                                   SharedSizeGroup="Row4"/>
+                                    <RowDefinition Height="Auto"
+                                                   SharedSizeGroup="Row5"/>
+                                    <RowDefinition Height="Auto"
+                                                   SharedSizeGroup="Row6"/>
+                                    <RowDefinition Height="Auto"
+                                                   SharedSizeGroup="Row7"/>
+                                </Grid.RowDefinitions>
+
+                                <!-- ── Header row ── -->
+                                <controls:LabelWithHelp x:Name="DefaultModeHeader"
+                                                        Grid.Row="0"
+                                                        Grid.Column="0"
+                                                        HorizontalAlignment="Left"
+                                                        VerticalAlignment="Bottom"
+                                                        Margin="8,0,16,6"
+                                                        Label="Default"
+                                                        FontWeight="SemiBold"
+                                                        HelpText="Let the LED follow the default OS behaviour."/>
+
+                                <TextBlock x:Name="OnModeHeader"
+                                           Grid.Row="0"
+                                           Grid.Column="1"
+                                           Text="On"
+                                           FontWeight="SemiBold"
+                                           HorizontalAlignment="Left"
+                                           VerticalAlignment="Bottom"
+                                           Margin="8,0,16,6"/>
+                                <TextBlock x:Name="OffModeHeader"
+                                           Grid.Row="0"
+                                           Grid.Column="2"
+                                           Text="Off"
+                                           FontWeight="SemiBold"
+                                           HorizontalAlignment="Left"
+                                           VerticalAlignment="Bottom"
+                                           Margin="8,0,16,6"/>
+                                <TextBlock x:Name="BlinkModeHeader"
+                                           Grid.Row="0"
+                                           Grid.Column="3"
+                                           Text="Blink"
+                                           FontWeight="SemiBold"
+                                           HorizontalAlignment="Left"
+                                           VerticalAlignment="Bottom"
+                                           Margin="8,0,16,6"/>
+
+                                <controls:LabelWithHelp x:Name="HotkeyModeHeader"
+                                                        Grid.Row="0"
+                                                        Grid.Column="4"
+                                                        HorizontalAlignment="Left"
+                                                        VerticalAlignment="Bottom"
+                                                        Margin="8,0,16,6"
+                                                        Label="Hotkey"
+                                                        FontWeight="SemiBold"
+                                                        HelpText="Make the LED cycle through the selected states each time the hotkey is pressed. Configure the states in the Hotkey tab below."/>
+
+                                <controls:LabelWithHelp x:Name="DiskWriteModeHeader"
+                                                        Grid.Row="0"
+                                                        Grid.Column="5"
+                                                        HorizontalAlignment="Left"
+                                                        VerticalAlignment="Bottom"
+                                                        Margin="8,0,16,6"
+                                                        Label="Disk Write"
+                                                        FontWeight="SemiBold"
+                                                        HelpText="LED turns on whenever disk write activity is detected. Configure the polling interval in the Disk tab below."/>
+
+                                <controls:LabelWithHelp x:Name="DiskReadModeHeader"
+                                                        Grid.Row="0"
+                                                        Grid.Column="6"
+                                                        HorizontalAlignment="Left"
+                                                        VerticalAlignment="Bottom"
+                                                        Margin="8,0,0,6"
+                                                        Label="Disk Read"
+                                                        FontWeight="SemiBold"
+                                                        HelpText="LED turns on whenever disk read activity is detected. Configure the polling interval in the Disk tab below."/>
+
+                                <controls:LabelWithHelp Grid.Row="0"
+                                                        Grid.Column="7"
+                                                        HorizontalAlignment="Left"
+                                                        VerticalAlignment="Bottom"
+                                                        Margin="8,0,0,6"
+                                                        Label="Reg addr"
+                                                        FontWeight="SemiBold"
+                                                        HelpText="Custom EC register ID (hex). Leave empty to use the default. Use this if your laptop uses different register IDs. Find values on ThinkWiki or via trial &amp; error with the Custom EC Write dialog."/>
+
+                                <!-- ── Power ── -->
+                                <RadioButton Grid.Row="1"
+                                             Grid.Column="0"
+                                             GroupName="g_Power"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="Power"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsChecked="{Binding MainVm.Power.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Default}}"/>
+                                <RadioButton Grid.Row="1"
+                                             Grid.Column="1"
+                                             GroupName="g_Power"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="Power"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsChecked="{Binding MainVm.Power.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.On}}"/>
+                                <RadioButton Grid.Row="1"
+                                             Grid.Column="2"
+                                             GroupName="g_Power"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="Power"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsChecked="{Binding MainVm.Power.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Off}}"/>
+                                <RadioButton Grid.Row="1"
+                                             Grid.Column="3"
+                                             GroupName="g_Power"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="Power"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsChecked="{Binding MainVm.Power.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Blink}}"/>
+                                <RadioButton Grid.Row="1"
+                                             Grid.Column="4"
+                                             GroupName="g_Power"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="Power"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsChecked="{Binding MainVm.Power.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.HotkeyControlled}}"/>
+                                <RadioButton Grid.Row="1"
+                                             Grid.Column="5"
+                                             GroupName="g_Power"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="Power"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsEnabled="{Binding MainVm.DiskRadiosEnabled}"
+                                             ToolTipService.ShowOnDisabled="True"
+                                             IsChecked="{Binding MainVm.Power.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.DiskWrite}}">
+                                    <RadioButton.Style>
+                                        <Style TargetType="RadioButton"
+                                               BasedOn="{StaticResource {x:Type RadioButton}}">
+                                            <Style.Triggers>
+                                                <Trigger Property="IsEnabled"
+                                                         Value="False">
+                                                    <Setter Property="ToolTip"
+                                                            Value="Disabled: disk monitoring is unavailable on your device."/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </RadioButton.Style>
+                                </RadioButton>
+                                <RadioButton Grid.Row="1"
+                                             Grid.Column="6"
+                                             GroupName="g_Power"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,0,6"
+                                             Tag="Power"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsEnabled="{Binding MainVm.DiskRadiosEnabled}"
+                                             ToolTipService.ShowOnDisabled="True"
+                                             IsChecked="{Binding MainVm.Power.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.DiskRead}}">
+                                    <RadioButton.Style>
+                                        <Style TargetType="RadioButton"
+                                               BasedOn="{StaticResource {x:Type RadioButton}}">
+                                            <Style.Triggers>
+                                                <Trigger Property="IsEnabled"
+                                                         Value="False">
+                                                    <Setter Property="ToolTip"
+                                                            Value="Disabled: disk monitoring is unavailable on your device."/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </RadioButton.Style>
+                                </RadioButton>
+                                <controls:HexRegisterInput Grid.Row="1"
+                                                           Grid.Column="7"
+                                                           HexExample="00"
+                                                           Value="{Binding MainVm.Power.CustomRegisterId}"/>
+
+                                <!-- ── Mute ── -->
+                                <RadioButton Grid.Row="2"
+                                             Grid.Column="0"
+                                             GroupName="g_Mute"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="Mute"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsChecked="{Binding MainVm.Mute.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Default}}"/>
+                                <RadioButton Grid.Row="2"
+                                             Grid.Column="1"
+                                             GroupName="g_Mute"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="Mute"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsChecked="{Binding MainVm.Mute.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.On}}"/>
+                                <RadioButton Grid.Row="2"
+                                             Grid.Column="2"
+                                             GroupName="g_Mute"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="Mute"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsChecked="{Binding MainVm.Mute.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Off}}"/>
+                                <RadioButton Grid.Row="2"
+                                             Grid.Column="3"
+                                             GroupName="g_Mute"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="Mute"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsChecked="{Binding MainVm.Mute.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Blink}}"/>
+                                <RadioButton Grid.Row="2"
+                                             Grid.Column="4"
+                                             GroupName="g_Mute"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="Mute"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsChecked="{Binding MainVm.Mute.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.HotkeyControlled}}"/>
+                                <RadioButton Grid.Row="2"
+                                             Grid.Column="5"
+                                             GroupName="g_Mute"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="Mute"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsEnabled="{Binding MainVm.DiskRadiosEnabled}"
+                                             ToolTipService.ShowOnDisabled="True"
+                                             IsChecked="{Binding MainVm.Mute.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.DiskWrite}}">
+                                    <RadioButton.Style>
+                                        <Style TargetType="RadioButton"
+                                               BasedOn="{StaticResource {x:Type RadioButton}}">
+                                            <Style.Triggers>
+                                                <Trigger Property="IsEnabled"
+                                                         Value="False">
+                                                    <Setter Property="ToolTip"
+                                                            Value="Disabled: disk monitoring is unavailable on your device."/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </RadioButton.Style>
+                                </RadioButton>
+                                <RadioButton Grid.Row="2"
+                                             Grid.Column="6"
+                                             GroupName="g_Mute"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,0,6"
+                                             Tag="Mute"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsEnabled="{Binding MainVm.DiskRadiosEnabled}"
+                                             ToolTipService.ShowOnDisabled="True"
+                                             IsChecked="{Binding MainVm.Mute.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.DiskRead}}">
+                                    <RadioButton.Style>
+                                        <Style TargetType="RadioButton"
+                                               BasedOn="{StaticResource {x:Type RadioButton}}">
+                                            <Style.Triggers>
+                                                <Trigger Property="IsEnabled"
+                                                         Value="False">
+                                                    <Setter Property="ToolTip"
+                                                            Value="Disabled: disk monitoring is unavailable on your device."/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </RadioButton.Style>
+                                </RadioButton>
+                                <controls:HexRegisterInput Grid.Row="2"
+                                                           Grid.Column="7"
+                                                           HexExample="04"
+                                                           Value="{Binding MainVm.Mute.CustomRegisterId}"/>
+
+                                <!-- ── Red Dot ── -->
+                                <RadioButton Grid.Row="3"
+                                             Grid.Column="0"
+                                             GroupName="g_RedDot"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="RedDot"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsChecked="{Binding MainVm.RedDot.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Default}}"/>
+                                <RadioButton Grid.Row="3"
+                                             Grid.Column="1"
+                                             GroupName="g_RedDot"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="RedDot"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsChecked="{Binding MainVm.RedDot.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.On}}"/>
+                                <RadioButton Grid.Row="3"
+                                             Grid.Column="2"
+                                             GroupName="g_RedDot"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="RedDot"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsChecked="{Binding MainVm.RedDot.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Off}}"/>
+                                <RadioButton Grid.Row="3"
+                                             Grid.Column="3"
+                                             GroupName="g_RedDot"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="RedDot"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsChecked="{Binding MainVm.RedDot.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Blink}}"/>
+                                <RadioButton Grid.Row="3"
+                                             Grid.Column="4"
+                                             GroupName="g_RedDot"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="RedDot"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsChecked="{Binding MainVm.RedDot.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.HotkeyControlled}}"/>
+                                <RadioButton Grid.Row="3"
+                                             Grid.Column="5"
+                                             GroupName="g_RedDot"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="RedDot"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsEnabled="{Binding MainVm.DiskRadiosEnabled}"
+                                             ToolTipService.ShowOnDisabled="True"
+                                             IsChecked="{Binding MainVm.RedDot.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.DiskWrite}}">
+                                    <RadioButton.Style>
+                                        <Style TargetType="RadioButton"
+                                               BasedOn="{StaticResource {x:Type RadioButton}}">
+                                            <Style.Triggers>
+                                                <Trigger Property="IsEnabled"
+                                                         Value="False">
+                                                    <Setter Property="ToolTip"
+                                                            Value="Disabled: disk monitoring is unavailable on your device."/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </RadioButton.Style>
+                                </RadioButton>
+                                <RadioButton Grid.Row="3"
+                                             Grid.Column="6"
+                                             GroupName="g_RedDot"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,0,6"
+                                             Tag="RedDot"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsEnabled="{Binding MainVm.DiskRadiosEnabled}"
+                                             ToolTipService.ShowOnDisabled="True"
+                                             IsChecked="{Binding MainVm.RedDot.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.DiskRead}}">
+                                    <RadioButton.Style>
+                                        <Style TargetType="RadioButton"
+                                               BasedOn="{StaticResource {x:Type RadioButton}}">
+                                            <Style.Triggers>
+                                                <Trigger Property="IsEnabled"
+                                                         Value="False">
+                                                    <Setter Property="ToolTip"
+                                                            Value="Disabled: disk monitoring is unavailable on your device."/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </RadioButton.Style>
+                                </RadioButton>
+                                <controls:HexRegisterInput Grid.Row="3"
+                                                           Grid.Column="7"
+                                                           HexExample="0A"
+                                                           Value="{Binding MainVm.RedDot.CustomRegisterId}"/>
+
+                                <!-- ── Microphone ── -->
+                                <RadioButton Grid.Row="4"
+                                             Grid.Column="0"
+                                             GroupName="g_Microphone"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="Microphone"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsChecked="{Binding MainVm.Microphone.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Default}}"/>
+                                <RadioButton Grid.Row="4"
+                                             Grid.Column="1"
+                                             GroupName="g_Microphone"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="Microphone"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsChecked="{Binding MainVm.Microphone.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.On}}"/>
+                                <RadioButton Grid.Row="4"
+                                             Grid.Column="2"
+                                             GroupName="g_Microphone"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="Microphone"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsChecked="{Binding MainVm.Microphone.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Off}}"/>
+                                <RadioButton Grid.Row="4"
+                                             Grid.Column="3"
+                                             GroupName="g_Microphone"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="Microphone"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsChecked="{Binding MainVm.Microphone.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Blink}}"/>
+                                <RadioButton Grid.Row="4"
+                                             Grid.Column="4"
+                                             GroupName="g_Microphone"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="Microphone"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsChecked="{Binding MainVm.Microphone.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.HotkeyControlled}}"/>
+                                <RadioButton Grid.Row="4"
+                                             Grid.Column="5"
+                                             GroupName="g_Microphone"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="Microphone"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsEnabled="{Binding MainVm.DiskRadiosEnabled}"
+                                             ToolTipService.ShowOnDisabled="True"
+                                             IsChecked="{Binding MainVm.Microphone.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.DiskWrite}}">
+                                    <RadioButton.Style>
+                                        <Style TargetType="RadioButton"
+                                               BasedOn="{StaticResource {x:Type RadioButton}}">
+                                            <Style.Triggers>
+                                                <Trigger Property="IsEnabled"
+                                                         Value="False">
+                                                    <Setter Property="ToolTip"
+                                                            Value="Disabled: disk monitoring is unavailable on your device."/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </RadioButton.Style>
+                                </RadioButton>
+                                <RadioButton Grid.Row="4"
+                                             Grid.Column="6"
+                                             GroupName="g_Microphone"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,0,6"
+                                             Tag="Microphone"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsEnabled="{Binding MainVm.DiskRadiosEnabled}"
+                                             ToolTipService.ShowOnDisabled="True"
+                                             IsChecked="{Binding MainVm.Microphone.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.DiskRead}}">
+                                    <RadioButton.Style>
+                                        <Style TargetType="RadioButton"
+                                               BasedOn="{StaticResource {x:Type RadioButton}}">
+                                            <Style.Triggers>
+                                                <Trigger Property="IsEnabled"
+                                                         Value="False">
+                                                    <Setter Property="ToolTip"
+                                                            Value="Disabled: disk monitoring is unavailable on your device."/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </RadioButton.Style>
+                                </RadioButton>
+                                <controls:HexRegisterInput Grid.Row="4"
+                                                           Grid.Column="7"
+                                                           HexExample="0E"
+                                                           Value="{Binding MainVm.Microphone.CustomRegisterId}"/>
+
+                                <!-- ── Sleep ── -->
+                                <RadioButton Grid.Row="5"
+                                             Grid.Column="0"
+                                             GroupName="g_Sleep"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="Sleep"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsChecked="{Binding MainVm.Sleep.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Default}}"/>
+                                <RadioButton Grid.Row="5"
+                                             Grid.Column="1"
+                                             GroupName="g_Sleep"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="Sleep"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsChecked="{Binding MainVm.Sleep.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.On}}"/>
+                                <RadioButton Grid.Row="5"
+                                             Grid.Column="2"
+                                             GroupName="g_Sleep"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="Sleep"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsChecked="{Binding MainVm.Sleep.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Off}}"/>
+                                <RadioButton Grid.Row="5"
+                                             Grid.Column="3"
+                                             GroupName="g_Sleep"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="Sleep"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsChecked="{Binding MainVm.Sleep.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Blink}}"/>
+                                <RadioButton Grid.Row="5"
+                                             Grid.Column="4"
+                                             GroupName="g_Sleep"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="Sleep"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsChecked="{Binding MainVm.Sleep.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.HotkeyControlled}}"/>
+                                <RadioButton Grid.Row="5"
+                                             Grid.Column="5"
+                                             GroupName="g_Sleep"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="Sleep"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsEnabled="{Binding MainVm.DiskRadiosEnabled}"
+                                             ToolTipService.ShowOnDisabled="True"
+                                             IsChecked="{Binding MainVm.Sleep.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.DiskWrite}}">
+                                    <RadioButton.Style>
+                                        <Style TargetType="RadioButton"
+                                               BasedOn="{StaticResource {x:Type RadioButton}}">
+                                            <Style.Triggers>
+                                                <Trigger Property="IsEnabled"
+                                                         Value="False">
+                                                    <Setter Property="ToolTip"
+                                                            Value="Disabled: disk monitoring is unavailable on your device."/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </RadioButton.Style>
+                                </RadioButton>
+                                <RadioButton Grid.Row="5"
+                                             Grid.Column="6"
+                                             GroupName="g_Sleep"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,0,6"
+                                             Tag="Sleep"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsEnabled="{Binding MainVm.DiskRadiosEnabled}"
+                                             ToolTipService.ShowOnDisabled="True"
+                                             IsChecked="{Binding MainVm.Sleep.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.DiskRead}}">
+                                    <RadioButton.Style>
+                                        <Style TargetType="RadioButton"
+                                               BasedOn="{StaticResource {x:Type RadioButton}}">
+                                            <Style.Triggers>
+                                                <Trigger Property="IsEnabled"
+                                                         Value="False">
+                                                    <Setter Property="ToolTip"
+                                                            Value="Disabled: disk monitoring is unavailable on your device."/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </RadioButton.Style>
+                                </RadioButton>
+                                <controls:HexRegisterInput Grid.Row="5"
+                                                           Grid.Column="7"
+                                                           HexExample="07"
+                                                           Value="{Binding MainVm.Sleep.CustomRegisterId}"/>
+
+                                <!-- ── Fn Lock ── -->
+                                <RadioButton Grid.Row="6"
+                                             Grid.Column="0"
+                                             GroupName="g_FnLock"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="FnLock"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsChecked="{Binding MainVm.FnLock.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Default}}"/>
+                                <RadioButton Grid.Row="6"
+                                             Grid.Column="1"
+                                             GroupName="g_FnLock"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="FnLock"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsChecked="{Binding MainVm.FnLock.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.On}}"/>
+                                <RadioButton Grid.Row="6"
+                                             Grid.Column="2"
+                                             GroupName="g_FnLock"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="FnLock"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsChecked="{Binding MainVm.FnLock.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Off}}"/>
+                                <RadioButton Grid.Row="6"
+                                             Grid.Column="3"
+                                             GroupName="g_FnLock"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="FnLock"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsChecked="{Binding MainVm.FnLock.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Blink}}"/>
+                                <RadioButton Grid.Row="6"
+                                             Grid.Column="4"
+                                             GroupName="g_FnLock"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="FnLock"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsChecked="{Binding MainVm.FnLock.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.HotkeyControlled}}"/>
+                                <RadioButton Grid.Row="6"
+                                             Grid.Column="5"
+                                             GroupName="g_FnLock"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="FnLock"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsEnabled="{Binding MainVm.DiskRadiosEnabled}"
+                                             ToolTipService.ShowOnDisabled="True"
+                                             IsChecked="{Binding MainVm.FnLock.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.DiskWrite}}">
+                                    <RadioButton.Style>
+                                        <Style TargetType="RadioButton"
+                                               BasedOn="{StaticResource {x:Type RadioButton}}">
+                                            <Style.Triggers>
+                                                <Trigger Property="IsEnabled"
+                                                         Value="False">
+                                                    <Setter Property="ToolTip"
+                                                            Value="Disabled: disk monitoring is unavailable on your device."/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </RadioButton.Style>
+                                </RadioButton>
+                                <RadioButton Grid.Row="6"
+                                             Grid.Column="6"
+                                             GroupName="g_FnLock"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,0,6"
+                                             Tag="FnLock"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsEnabled="{Binding MainVm.DiskRadiosEnabled}"
+                                             ToolTipService.ShowOnDisabled="True"
+                                             IsChecked="{Binding MainVm.FnLock.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.DiskRead}}">
+                                    <RadioButton.Style>
+                                        <Style TargetType="RadioButton"
+                                               BasedOn="{StaticResource {x:Type RadioButton}}">
+                                            <Style.Triggers>
+                                                <Trigger Property="IsEnabled"
+                                                         Value="False">
+                                                    <Setter Property="ToolTip"
+                                                            Value="Disabled: disk monitoring is unavailable on your device."/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </RadioButton.Style>
+                                </RadioButton>
+                                <controls:HexRegisterInput Grid.Row="6"
+                                                           Grid.Column="7"
+                                                           HexExample="06"
+                                                           Value="{Binding MainVm.FnLock.CustomRegisterId}"/>
+
+                                <!-- ── Camera ── -->
+                                <RadioButton Grid.Row="7"
+                                             Grid.Column="0"
+                                             GroupName="g_Camera"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="Camera"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsChecked="{Binding MainVm.Camera.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Default}}"/>
+                                <RadioButton Grid.Row="7"
+                                             Grid.Column="1"
+                                             GroupName="g_Camera"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="Camera"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsChecked="{Binding MainVm.Camera.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.On}}"/>
+                                <RadioButton Grid.Row="7"
+                                             Grid.Column="2"
+                                             GroupName="g_Camera"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="Camera"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsChecked="{Binding MainVm.Camera.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Off}}"/>
+                                <RadioButton Grid.Row="7"
+                                             Grid.Column="3"
+                                             GroupName="g_Camera"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="Camera"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsChecked="{Binding MainVm.Camera.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.Blink}}"/>
+                                <RadioButton Grid.Row="7"
+                                             Grid.Column="4"
+                                             GroupName="g_Camera"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="Camera"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsChecked="{Binding MainVm.Camera.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.HotkeyControlled}}"/>
+                                <RadioButton Grid.Row="7"
+                                             Grid.Column="5"
+                                             GroupName="g_Camera"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,16,6"
+                                             Tag="Camera"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsEnabled="{Binding MainVm.DiskRadiosEnabled}"
+                                             ToolTipService.ShowOnDisabled="True"
+                                             IsChecked="{Binding MainVm.Camera.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.DiskWrite}}">
+                                    <RadioButton.Style>
+                                        <Style TargetType="RadioButton"
+                                               BasedOn="{StaticResource {x:Type RadioButton}}">
+                                            <Style.Triggers>
+                                                <Trigger Property="IsEnabled"
+                                                         Value="False">
+                                                    <Setter Property="ToolTip"
+                                                            Value="Disabled: disk monitoring is unavailable on your device."/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </RadioButton.Style>
+                                </RadioButton>
+                                <RadioButton Grid.Row="7"
+                                             Grid.Column="6"
+                                             GroupName="g_Camera"
+                                             HorizontalAlignment="Left"
+                                             VerticalAlignment="Center"
+                                             Margin="8,6,0,6"
+                                             Tag="Camera"
+                                             MouseEnter="OnLedRowMouseEnter"
+                                             MouseLeave="OnLedRowMouseLeave"
+                                             IsEnabled="{Binding MainVm.DiskRadiosEnabled}"
+                                             ToolTipService.ShowOnDisabled="True"
+                                             IsChecked="{Binding MainVm.Camera.Mode, Converter={StaticResource EnumToBool}, ConverterParameter={x:Static lighting:LedMode.DiskRead}}">
+                                    <RadioButton.Style>
+                                        <Style TargetType="RadioButton"
+                                               BasedOn="{StaticResource {x:Type RadioButton}}">
+                                            <Style.Triggers>
+                                                <Trigger Property="IsEnabled"
+                                                         Value="False">
+                                                    <Setter Property="ToolTip"
+                                                            Value="Disabled: disk monitoring is unavailable on your device."/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </RadioButton.Style>
+                                </RadioButton>
+                                <controls:HexRegisterInput Grid.Row="7"
+                                                           Grid.Column="7"
+                                                           HexExample="0F"
+                                                           Value="{Binding MainVm.Camera.CustomRegisterId}"/>
+                            </Grid>
+                        </ScrollViewer>
+                    </Grid>
                 </ui:Card>
 
 
@@ -1030,4 +1228,5 @@
         </ScrollViewer>
     </Grid>
 </ui:FluentWindow>
+
 

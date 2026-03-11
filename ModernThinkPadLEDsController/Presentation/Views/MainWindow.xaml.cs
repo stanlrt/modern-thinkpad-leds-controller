@@ -177,5 +177,95 @@ public partial class MainWindow : FluentWindow
         return (short)((long)wParam >> SHIFT_TO_HIGH_WORD);
     }
 
+    // --- LED row hover effects ---
+
+    private void OnLedRowMouseEnter(object sender, MouseEventArgs e)
+    {
+        if (sender is FrameworkElement element && element.Tag is string ledName)
+        {
+            if (FindName($"{ledName}LedName") is System.Windows.Controls.TextBlock ledNameTextBlock)
+            {
+                ledNameTextBlock.FontWeight = FontWeights.Bold;
+            }
+
+            // Bold the mode header
+            int column = Grid.GetColumn(element);
+            BoldModeHeader(column, true);
+        }
+    }
+
+    private void OnLedRowMouseLeave(object sender, MouseEventArgs e)
+    {
+        if (sender is FrameworkElement element && element.Tag is string ledName)
+        {
+            if (FindName($"{ledName}LedName") is System.Windows.Controls.TextBlock ledNameTextBlock)
+            {
+                ledNameTextBlock.FontWeight = FontWeights.Normal;
+            }
+
+            // Restore mode header weight
+            int column = Grid.GetColumn(element);
+            BoldModeHeader(column, false);
+        }
+    }
+
+    private void BoldModeHeader(int column, bool bold)
+    {
+        FontWeight weight = bold ? FontWeights.Bold : FontWeights.SemiBold;
+
+        switch (column)
+        {
+            case 0:
+                if (FindName("DefaultModeHeader") is Controls.LabelWithHelp defaultHeader)
+                {
+                    defaultHeader.FontWeight = weight;
+                }
+
+                break;
+            case 1:
+                if (FindName("OnModeHeader") is System.Windows.Controls.TextBlock onHeader)
+                {
+                    onHeader.FontWeight = weight;
+                }
+
+                break;
+            case 2:
+                if (FindName("OffModeHeader") is System.Windows.Controls.TextBlock offHeader)
+                {
+                    offHeader.FontWeight = weight;
+                }
+
+                break;
+            case 3:
+                if (FindName("BlinkModeHeader") is System.Windows.Controls.TextBlock blinkHeader)
+                {
+                    blinkHeader.FontWeight = weight;
+                }
+
+                break;
+            case 4:
+                if (FindName("HotkeyModeHeader") is Controls.LabelWithHelp hotkeyHeader)
+                {
+                    hotkeyHeader.FontWeight = weight;
+                }
+
+                break;
+            case 5:
+                if (FindName("DiskWriteModeHeader") is Controls.LabelWithHelp diskWriteHeader)
+                {
+                    diskWriteHeader.FontWeight = weight;
+                }
+
+                break;
+            case 6:
+                if (FindName("DiskReadModeHeader") is Controls.LabelWithHelp diskReadHeader)
+                {
+                    diskReadHeader.FontWeight = weight;
+                }
+
+                break;
+        }
+    }
+
 
 }

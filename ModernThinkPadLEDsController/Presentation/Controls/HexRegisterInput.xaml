@@ -6,7 +6,8 @@
              xmlns:converters="clr-namespace:ModernThinkPadLEDsController.Presentation.Converters"
              mc:Ignorable="d"
              d:DesignHeight="30"
-             d:DesignWidth="60">
+             d:DesignWidth="60"
+             HorizontalAlignment="Left">
     <UserControl.Resources>
         <converters:HexByteConverter x:Key="HexByte"/>
     </UserControl.Resources>
