@@ -68,8 +68,8 @@ Releases are automated via GitHub Actions. When you push a version tag, a workfl
    Use semantic versioning (`v{major}.{minor}.{patch}`):
 
    ```shell
-   git tag v1.0.0
-   git push origin v1.0.0
+   git tag 1.0.0
+   git push origin 1.0.0
    ```
 
 3. **GitHub Actions automatically:**
@@ -77,7 +77,7 @@ Releases are automated via GitHub Actions. When you push a version tag, a workfl
    - Builds the MSI installer using WiX Toolset
    - Creates a GitHub release with:
      - Auto-generated release notes
-     - `ModernThinkPadLEDsController-v1.0.0-win-x64.msi` download
+     - `ModernThinkPadLEDsController-1.0.0-win-x64.msi` download
 
 ### Building MSI Locally
 
