@@ -25,8 +25,9 @@ public static class LoggingConfiguration
     /// <summary>
     /// Configures Serilog with appropriate sinks and formatting for this application.
     /// </summary>
+    /// <param name="initialLogLevel">Initial log level from saved settings (defaults to Information)</param>
     /// <exception cref="InvalidOperationException">Fatal errors that cannot be recovered</exception>
-    public static void ConfigureSerilog()
+    public static void ConfigureSerilog(string initialLogLevel = "Information")
     {
         try
         {
@@ -47,13 +48,20 @@ public static class LoggingConfiguration
             EmergencyLog($"Log file path: {logFilePath}");
 
             EmergencyLog("Configuring Serilog LoggerConfiguration...");
-            Log.Logger = new LoggerConfiguration()
-                // Set minimum log level - Debug for development, Information for production
+
+            // Parse the initial log level from settings, fallback to Information
+            if (!Enum.TryParse<LogEventLevel>(initialLogLevel, ignoreCase: true, out LogEventLevel startupLevel))
+            {
 #if DEBUG
-                .MinimumLevel.Debug()
+                startupLevel = LogEventLevel.Debug;
 #else
-                .MinimumLevel.Information()
+                startupLevel = LogEventLevel.Information;
 #endif
+            }
+
+            Log.Logger = new LoggerConfiguration()
+                // Set minimum log level from settings
+                .MinimumLevel.Is(startupLevel)
                 .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
                 .MinimumLevel.Override("System", LogEventLevel.Warning)
 
@@ -160,4 +168,45 @@ public static class LoggingConfiguration
             return false;
         }
     }
+
+    /// <summary>
+    /// Changes the minimum log level at runtime.
+    /// </summary>
+    /// <param name="levelName">Log level name: Verbose, Debug, Information, Warning, Error, or Fatal</param>
+    public static void SetLogLevel(string levelName)
+    {
+        if (Enum.TryParse<LogEventLevel>(levelName, ignoreCase: true, out LogEventLevel level))
+        {
+            Serilog.Core.LoggingLevelSwitch levelSwitch = new Serilog.Core.LoggingLevelSwitch(level);
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.ControlledBy(levelSwitch)
+                .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+                .MinimumLevel.Override("System", LogEventLevel.Warning)
+                .Enrich.FromLogContext()
+                .Enrich.WithProcessId()
+                .Enrich.WithMachineName()
+                .WriteTo.Console(
+                    outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
+                .WriteTo.File(
+                    path: Path.Combine(_logDirectory, "app-.log"),
+                    outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}] [{Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}",
+                    shared: false,
+                    flushToDiskInterval: TimeSpan.FromSeconds(1),
+                    rollingInterval: RollingInterval.Day,
+                    retainedFileCountLimit: 30)
+                .WriteTo.EventLog(
+                    source: "ModernThinkPadLEDsController",
+                    logName: "Application",
+                    manageEventSource: false,
+                    restrictedToMinimumLevel: LogEventLevel.Warning)
+                .CreateLogger();
+
+            Log.Information("Log level changed to {LogLevel}", level);
+        }
+        else
+        {
+            Log.Warning("Invalid log level: {LogLevel}", levelName);
+        }
+    }
 }
+

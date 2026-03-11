@@ -51,6 +51,9 @@ public static class AppSettingsDefaults
     /// <summary>Default setting for whether to enable hardware access at all. Disabling is not recommended.</summary>
     public const bool ENABLE_HARDWARE_ACCESS = true;
 
+    /// <summary>Default logging level (Information, Debug, Verbose, Warning, Error).</summary>
+    public const string LOG_LEVEL = "Information";
+
     /// <summary>Minimum allowed LED blink interval in milliseconds.</summary>
     public const int MIN_BLINK_INTERVAL_MS = 100;
 

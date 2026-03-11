@@ -61,11 +61,15 @@ public partial class App : System.Windows.Application
             emergencyLogger.Log($"Args: {string.Join(" ", e.Args)}");
 
             // ══════════════════════════════════════════════════════════════
-            // CRITICAL: Initialize logging FIRST before anything else
-            // This ensures all subsequent operations including errors are logged
+            // CRITICAL: Load settings FIRST to get log level preference
+            // Then initialize logging with the saved level
             // ══════════════════════════════════════════════════════════════
+            emergencyLogger.Log("Loading app settings...");
+            AppSettings appSettings = AppSettings.Load();
+            emergencyLogger.Log($"Settings loaded. Log level: {appSettings.LogLevel}");
+
             emergencyLogger.Log("Calling ConfigureSerilog()...");
-            LoggingConfiguration.ConfigureSerilog();
+            LoggingConfiguration.ConfigureSerilog(appSettings.LogLevel);
             emergencyLogger.Log("ConfigureSerilog() completed");
 
             base.OnStartup(e);
@@ -164,9 +168,11 @@ public partial class App : System.Windows.Application
         });
 
         AppSettings settings = AppSettings.Load();
+
         bool startedInSafeMode = args.Any(IsSafeModeArgument);
         bool startWithHardwareAccess = settings.EnableHardwareAccess && !startedInSafeMode;
         string? startupReason = null;
+
         if (!startWithHardwareAccess)
         {
             startupReason = startedInSafeMode

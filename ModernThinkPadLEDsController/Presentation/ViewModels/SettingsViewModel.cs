@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ModernThinkPadLEDsController.Hardware;
+using ModernThinkPadLEDsController.Logging;
 using ModernThinkPadLEDsController.Settings;
 using ModernThinkPadLEDsController.Shell;
 
@@ -197,6 +198,24 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     public bool HasHardwareAccessWarning => !string.IsNullOrWhiteSpace(HardwareAccessWarningMessage);
 
+    [ObservableProperty]
+    private string _logLevel = AppSettingsDefaults.LOG_LEVEL;
+
+    partial void OnLogLevelChanged(string value)
+    {
+        if (_isLoading)
+            return;
+
+        LoggingConfiguration.SetLogLevel(value);
+        _settings.LogLevel = value;
+        TriggerSave();
+    }
+
+    /// <summary>
+    /// Available log levels sorted from most detailed to least detailed.
+    /// </summary>
+    public string[] AvailableLogLevels { get; } = { "Verbose", "Debug", "Information", "Warning", "Error" };
+
     public string AppVersion { get; } =
         System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "—";
 
@@ -253,6 +272,7 @@ public sealed partial class SettingsViewModel : ObservableObject
             DimLedsWhenFullscreen = _settings.DimLedsWhenFullscreen;
             PersistSettingsOnChange = _settings.PersistSettingsOnChange;
             EnableHardwareAccess = _settings.EnableHardwareAccess;
+            LogLevel = _settings.LogLevel;
             DriverStatus = _runtime.GetHardwareAccessStatus();
             HardwareAccessWarningMessage = null;
             StartWithWindows = _runtime.IsStartupEnabled();
