@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Extensions.Logging;
 using ModernThinkPadLEDsController.Hardware;
+using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
 
 namespace ModernThinkPadLEDsController.Presentation.Views;
@@ -30,9 +31,16 @@ public partial class PawnIOSetupWindow : FluentWindow
     public PawnIOSetupWindow()
     {
         InitializeComponent();
+        SourceInitialized += OnWindowSourceInitialized;
         _logger = LoggerFactory.Create(_ => { }).CreateLogger<PawnIOSetupWindow>();
 
         _logger.LogInformation("PawnIO setup window opened");
+    }
+
+    private void OnWindowSourceInitialized(object? sender, EventArgs e)
+    {
+        SystemThemeWatcher.Watch(this);
+        SourceInitialized -= OnWindowSourceInitialized;
     }
 
     private void InstallButton_Click(object sender, RoutedEventArgs e)

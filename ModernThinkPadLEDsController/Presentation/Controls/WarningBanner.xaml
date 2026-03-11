@@ -9,7 +9,8 @@
     <Border CornerRadius="4"
             Padding="12,8"
             Background="{DynamicResource SystemFillColorCautionBackgroundBrush}">
-        <TextBlock TextWrapping="Wrap">
+        <TextBlock TextWrapping="Wrap"
+                   Foreground="{DynamicResource SystemFillColorCautionBrush}">
             <Run Text="⚠️ "/><Run Text="{Binding Message, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
         </TextBlock>
     </Border>

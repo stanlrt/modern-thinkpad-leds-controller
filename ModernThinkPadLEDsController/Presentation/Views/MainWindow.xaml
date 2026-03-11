@@ -13,6 +13,7 @@
     MinHeight="400"
     WindowStartupLocation="CenterScreen"
     ShowInTaskbar="True"
+    Background="{DynamicResource ApplicationBackgroundBrush}"
     Icon="pack://application:,,,/Resources/favicon.ico"
     Closing="OnWindowClosing">
 
@@ -35,7 +36,7 @@
         </Style>
     </ui:FluentWindow.Resources>
 
-    <Grid>
+    <Grid Background="{DynamicResource ApplicationBackgroundBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -58,6 +59,7 @@
 
         <!-- Main vertical scroll for entire page -->
         <ScrollViewer Grid.Row="1"
+                      Background="{DynamicResource ApplicationBackgroundBrush}"
                       VerticalScrollBarVisibility="Auto"
                       Padding="12"
                       PreviewMouseWheel="MainScrollViewer_PreviewMouseWheel"
@@ -65,7 +67,7 @@
             <StackPanel>
 
                 <!-- ============================================================ -->
-                <!-- SECTION 1 — LED mode table                                   -->
+                <!-- SECTION 1 â€” LED mode table                                   -->
                 <!-- ============================================================ -->
                 <ui:Card Padding="12,10"
                          Margin="0,0,0,32">
@@ -188,7 +190,7 @@
                                                    SharedSizeGroup="Row7"/>
                                 </Grid.RowDefinitions>
 
-                                <!-- ── Header row ── -->
+                                <!-- â”€â”€ Header row â”€â”€ -->
                                 <controls:LabelWithHelp x:Name="DefaultModeHeader"
                                                         Grid.Row="0"
                                                         Grid.Column="0"
@@ -255,7 +257,7 @@
                                                         Label="Reg addr"
                                                         HelpText="Custom EC register ID (hex). Leave empty to use the default. Use this if your laptop uses different register IDs. Find values on ThinkWiki or via trial &amp; error with the Custom EC Write dialog."/>
 
-                                <!-- ── Power ── -->
+                                <!-- â”€â”€ Power â”€â”€ -->
                                 <RadioButton Grid.Row="1"
                                              Grid.Column="0"
                                              GroupName="g_Power"
@@ -361,7 +363,7 @@
                                                            HexExample="00"
                                                            Value="{Binding MainVm.Power.CustomRegisterId}"/>
 
-                                <!-- ── Mute ── -->
+                                <!-- â”€â”€ Mute â”€â”€ -->
                                 <RadioButton Grid.Row="2"
                                              Grid.Column="0"
                                              GroupName="g_Mute"
@@ -467,7 +469,7 @@
                                                            HexExample="04"
                                                            Value="{Binding MainVm.Mute.CustomRegisterId}"/>
 
-                                <!-- ── Red Dot ── -->
+                                <!-- â”€â”€ Red Dot â”€â”€ -->
                                 <RadioButton Grid.Row="3"
                                              Grid.Column="0"
                                              GroupName="g_RedDot"
@@ -573,7 +575,7 @@
                                                            HexExample="0A"
                                                            Value="{Binding MainVm.RedDot.CustomRegisterId}"/>
 
-                                <!-- ── Microphone ── -->
+                                <!-- â”€â”€ Microphone â”€â”€ -->
                                 <RadioButton Grid.Row="4"
                                              Grid.Column="0"
                                              GroupName="g_Microphone"
@@ -679,7 +681,7 @@
                                                            HexExample="0E"
                                                            Value="{Binding MainVm.Microphone.CustomRegisterId}"/>
 
-                                <!-- ── Sleep ── -->
+                                <!-- â”€â”€ Sleep â”€â”€ -->
                                 <RadioButton Grid.Row="5"
                                              Grid.Column="0"
                                              GroupName="g_Sleep"
@@ -785,7 +787,7 @@
                                                            HexExample="07"
                                                            Value="{Binding MainVm.Sleep.CustomRegisterId}"/>
 
-                                <!-- ── Fn Lock ── -->
+                                <!-- â”€â”€ Fn Lock â”€â”€ -->
                                 <RadioButton Grid.Row="6"
                                              Grid.Column="0"
                                              GroupName="g_FnLock"
@@ -891,7 +893,7 @@
                                                            HexExample="06"
                                                            Value="{Binding MainVm.FnLock.CustomRegisterId}"/>
 
-                                <!-- ── Camera ── -->
+                                <!-- â”€â”€ Camera â”€â”€ -->
                                 <RadioButton Grid.Row="7"
                                              Grid.Column="0"
                                              GroupName="g_Camera"
@@ -1004,29 +1006,51 @@
 
 
                 <!-- ============================================================ -->
-                <!-- SECTION 2 — Tab panels                                       -->
+                <!-- SECTION 2 â€” Tab panels                                       -->
                 <!-- ============================================================ -->
-                <TabControl Margin="0,0,0,0">
-                    <!-- ── Hotkey tab ── -->
+                <TabControl Margin="0,0,0,0"
+                            Background="{DynamicResource ApplicationBackgroundBrush}">
+                    <!-- â”€â”€ Hotkey tab â”€â”€ -->
                     <TabItem Header="Hotkey">
                         <StackPanel Margin="10,12">
                             <TextBlock Text="LEDs assigned to 'Hotkey' cycle through the selected states each time the shortcut is pressed."
-                                       Opacity="0.6"
+                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"
                                        TextWrapping="Wrap"
                                        Margin="0,0,0,24"/>
                             <Border x:Name="HotkeyBorder"
                                     CornerRadius="4"
                                     Margin="0,0,0,8"
-                                    Background="{DynamicResource ControlFillColorDefaultBrush}"
+                                    Background="{DynamicResource AppInputBackgroundBrush}"
+                                    BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                    BorderThickness="1"
                                     HorizontalAlignment="Left"
                                     Cursor="Hand"
                                     MouseDown="OnHotkeyBorderClick">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="BorderBrush"
+                                                Value="{DynamicResource ControlStrokeColorDefaultBrush}"/>
+                                        <Style.Triggers>
+                                            <Trigger Property="IsMouseOver"
+                                                     Value="True">
+                                                <Setter Property="BorderBrush"
+                                                        Value="{DynamicResource ControlStrokeColorSecondaryBrush}"/>
+                                            </Trigger>
+                                            <Trigger Property="IsKeyboardFocusWithin"
+                                                     Value="True">
+                                                <Setter Property="BorderBrush"
+                                                        Value="{DynamicResource AccentFillColorDefaultBrush}"/>
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
                                 <TextBox x:Name="HotkeyTextBox"
                                          Text="{Binding MainVm.HotkeyDisplayText, Mode=OneWay}"
                                          FontFamily="Consolas"
                                          FontSize="14"
                                          BorderThickness="0"
                                          Background="Transparent"
+                                         Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                          IsReadOnly="True"
                                          IsTabStop="False"
                                          Cursor="Hand"
@@ -1037,8 +1061,7 @@
                             </Border>
                             <TextBlock Text="{Binding HotkeyHintText, Mode=OneWay}"
                                        FontSize="11"
-                                       Opacity="0.6"
-                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"
                                        Margin="0,0,0,6"/>
                             <controls:WarningBanner
                                 Visibility="{Binding MainVm.HasHotkeyWarning, Converter={StaticResource BoolToVis}}"
@@ -1063,7 +1086,7 @@
                         </StackPanel>
                     </TabItem>
 
-                    <!-- ── Blinking tab ── -->
+                    <!-- â”€â”€ Blinking tab â”€â”€ -->
                     <TabItem Header="Blinking">
                         <StackPanel Margin="10,12">
                             <controls:LabeledSlider
@@ -1077,7 +1100,7 @@
                         </StackPanel>
                     </TabItem>
 
-                    <!-- ── Disk tab ── -->
+                    <!-- â”€â”€ Disk tab â”€â”€ -->
                     <TabItem Header="Disk">
                         <StackPanel Margin="10,12">
                             <!-- Warning shown only when disk counters are unavailable -->
@@ -1087,13 +1110,13 @@
                                     Background="{DynamicResource SystemFillColorCautionBackgroundBrush}"
                                     Visibility="{Binding MainVm.DiskMonitoringUnavailable, Converter={StaticResource BoolToVis}}">
                                 <TextBlock TextWrapping="Wrap"
-                                           Text="⚠  Disk performance counters are not available on this system. Disk Read and Disk Write modes will have no effect."/>
+                                           Text="âš   Disk performance counters are not available on this system. Disk Read and Disk Write modes will have no effect."/>
                             </Border>
 
                             <!-- Message shown when no LEDs are using disk monitoring -->
                             <TextBlock Text="No LED is mapped to disk operations, so polling is disabled. You can control the polling interval here once you chose a disk operation in the table above.."
                                        FontStyle="Italic"
-                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"
                                        TextWrapping="Wrap"
                                        Margin="0,0,0,0">
                                 <TextBlock.Style>
@@ -1122,7 +1145,7 @@
                         </StackPanel>
                     </TabItem>
 
-                    <!-- ── Keyboard Backlight tab ── -->
+                    <!-- â”€â”€ Keyboard Backlight tab â”€â”€ -->
                     <TabItem Header="Keyboard Backlight">
                         <StackPanel Margin="10,12">
                             <CheckBox Content="Set custom keyboard brightness level (re-applied every LED interval, see App Settings)"
@@ -1177,7 +1200,7 @@
                         </StackPanel>
                     </TabItem>
 
-                    <!-- ── App Settings tab ── -->
+                    <!-- â”€â”€ App Settings tab â”€â”€ -->
                     <TabItem Header="App Settings">
                         <StackPanel Margin="10,12">
                             <TextBlock Text="Settings"
@@ -1222,27 +1245,27 @@
                                        Margin="0,24,0,4"/>
                             <ComboBox ItemsSource="{Binding SettingsVm.AvailableLogLevels}"
                                       SelectedItem="{Binding SettingsVm.LogLevel}"
+                                      Background="{DynamicResource AppInputBackgroundBrush}"
                                       Width="200"
                                       HorizontalAlignment="Left"
                                       Margin="0,8,0,4"/>
                             <TextBlock Text="How detailed logs should be (verbose: highly detailed, errors: only critical errors). More detailed logs can help with troubleshooting but may impact performance and generate large log files over time."
                                        FontSize="11"
-                                       Opacity="0.6"
-                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"
                                        TextWrapping="Wrap"
                                        Margin="0,0,0,0"/>
                             <TextBlock Text="Driver"
                                        FontWeight="SemiBold"
                                        Margin="0,24,0,4"/>
                             <TextBlock Text="{Binding SettingsVm.DriverStatus}"
-                                       Opacity="0.6"
+                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}"
                                        Margin="0,0,0,16"/>
                             <TextBlock Text="Version"
                                        FontWeight="SemiBold"
                                        Margin="0,0,0,4"/>
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="{Binding SettingsVm.AppVersion}"
-                                           Opacity="0.6"
+                                           Foreground="{DynamicResource TextFillColorTertiaryBrush}"
                                            Margin="0,0,8,0"/>
                                 <TextBlock>
                                     <Hyperlink Click="OnCheckForUpdateClicked">

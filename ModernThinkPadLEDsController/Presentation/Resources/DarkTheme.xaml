@@ -1,0 +1,25 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Dark theme-specific overrides -->
+    <!-- In dark mode, inputs use default fill (no special tint needed) -->
+    <!-- This references the WPF-UI default control fill color -->
+    <!-- Note: The actual Color value is populated by App.xaml.cs LoadThemeSpecificResources()
+         by copying from ControlFillColorDefaultBrush, since XAML doesn't support direct resource aliasing -->
+    <SolidColorBrush x:Key="AppInputBackgroundBrush"
+            Color="Transparent"/>
+
+    <!-- CheckBox styling to match RadioButton appearance -->
+    <!-- These are also populated by App.xaml.cs LoadThemeSpecificResources() -->
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked"
+            Color="Transparent"/>
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver"
+            Color="Transparent"/>
+    <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPressed"
+            Color="Transparent"/>
+    <SolidColorBrush x:Key="CheckBoxCheckBorderBrush"
+            Color="Transparent"/>
+    <SolidColorBrush x:Key="CheckBoxCheckGlyphForeground"
+            Color="Transparent"/>
+
+</ResourceDictionary>

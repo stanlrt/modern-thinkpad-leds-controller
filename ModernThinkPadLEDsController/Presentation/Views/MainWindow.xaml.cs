@@ -8,6 +8,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using ModernThinkPadLEDsController.Shell;
 using ModernThinkPadLEDsController.Presentation.ViewModels;
+using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
 
 namespace ModernThinkPadLEDsController.Presentation.Views;
@@ -60,6 +61,7 @@ public partial class MainWindow : FluentWindow, INotifyPropertyChanged
 
     private void OnWindowInitialized(object? sender, EventArgs e)
     {
+        SystemThemeWatcher.Watch(this);
         WindowSizing.RegisterSizingEvents(this);
         TryAttachHorizontalMouseWheelHook();
     }
@@ -206,7 +208,7 @@ public partial class MainWindow : FluentWindow, INotifyPropertyChanged
         }
     }
 
-    private void OnHotkeyCapture(object sender, System.Windows.Input.KeyEventArgs e)
+    private void OnHotkeyCapture(object sender, KeyEventArgs e)
     {
         if (!MainVm.IsRecordingHotkey)
         {
@@ -230,6 +232,7 @@ public partial class MainWindow : FluentWindow, INotifyPropertyChanged
 
         // Remove focus
         HotkeyTextBox.MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
+        HotkeyHintText = HOTKEY_HINT_IDLE;
     }
 
     private void UpdateHotkeyDisplayFromSettings()

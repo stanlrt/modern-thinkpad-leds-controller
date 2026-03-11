@@ -16,6 +16,7 @@
         <StackPanel Orientation="Horizontal"
                     VerticalAlignment="Center">
             <Slider Minimum="{Binding Minimum, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                    Style="{DynamicResource {x:Type Slider}}"
                     Maximum="{Binding Maximum, RelativeSource={RelativeSource AncestorType=UserControl}}"
                     Width="200"
                     Value="{Binding Value, RelativeSource={RelativeSource AncestorType=UserControl}}"
@@ -24,6 +25,7 @@
             <TextBox Width="Auto"
                      Margin="8,0,0,0"
                      Padding="4,2"
+                     Background="{DynamicResource AppInputBackgroundBrush}"
                      PreviewTextInput="NumberValidationTextBox"
                      LostFocus="TextBox_LostFocus"
                      x:Name="ValueTextBox"
@@ -48,8 +50,7 @@
         <!-- Description -->
         <TextBlock Text="{Binding Description, RelativeSource={RelativeSource AncestorType=UserControl}}"
                    FontSize="11"
-                   Opacity="0.6"
-                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"
                    TextWrapping="Wrap"
                    Margin="0,8,0,0"
                    Visibility="{Binding DescriptionVisibility, RelativeSource={RelativeSource AncestorType=UserControl}}"/>

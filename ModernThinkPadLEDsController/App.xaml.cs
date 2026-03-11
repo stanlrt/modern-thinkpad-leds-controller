@@ -4,6 +4,7 @@ using DryIoc;
 using DryIoc.Microsoft.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Win32;
 using ModernThinkPadLEDsController.Hardware;
 using ModernThinkPadLEDsController.Lighting;
 using ModernThinkPadLEDsController.Logging;
@@ -15,6 +16,7 @@ using ModernThinkPadLEDsController.Runtime;
 using ModernThinkPadLEDsController.Settings;
 using ModernThinkPadLEDsController.Shell;
 using Serilog;
+using Wpf.Ui.Appearance;
 
 namespace ModernThinkPadLEDsController;
 
@@ -47,6 +49,7 @@ public partial class App : Application
     private ApplicationCoordinator? _app;
     private SettingsPersistenceService? _settingsPersistence;
     private ApplicationExceptionCoordinator? _exceptionCoordinator;
+    private ResourceDictionary? _themeResourceDictionary;
 
     private Mutex? _singleInstanceMutex;
     private bool _mutexOwned;
@@ -72,8 +75,16 @@ public partial class App : Application
             LoggingConfiguration.ConfigureSerilog(appSettings.LogLevel);
             emergencyLogger.Log("ConfigureSerilog() completed");
 
+            // Set up theme change handlers
+            ApplicationThemeManager.Changed += OnApplicationThemeChanged;
+            SystemEvents.UserPreferenceChanged += OnSystemUserPreferenceChanged;
+
             base.OnStartup(e);
             emergencyLogger.Log("base.OnStartup() completed");
+
+            // Apply system theme and load theme-specific resource overrides
+            ApplySystemTheme();
+            emergencyLogger.Log("Applied system theme");
 
             // Build dependency injection container
             _serviceProvider = CreateServiceProvider(e.Args);
@@ -259,6 +270,85 @@ public partial class App : Application
         return _safeModeArguments.Any(safeModeArg => string.Equals(arg, safeModeArg, StringComparison.OrdinalIgnoreCase));
     }
 
+    private void OnApplicationThemeChanged(ApplicationTheme theme, System.Windows.Media.Color accent)
+    {
+        _ = accent;
+        Dispatcher.BeginInvoke(() => LoadThemeSpecificResources(theme));
+    }
+
+    private void OnSystemUserPreferenceChanged(object? sender, UserPreferenceChangedEventArgs e)
+    {
+        // Detect Windows theme/color changes and re-apply system theme
+        if (e.Category == UserPreferenceCategory.General ||
+            e.Category == UserPreferenceCategory.Color)
+        {
+            Dispatcher.BeginInvoke(() =>
+            {
+                _logger?.LogDebug("Windows theme preference changed, re-applying system theme");
+                ApplySystemTheme();
+            });
+        }
+    }
+
+    private void ApplySystemTheme()
+    {
+        // Apply system theme (dark/light based on Windows settings)
+        ApplicationThemeManager.ApplySystemTheme();
+
+        // Apply system accent color
+        ApplicationTheme currentTheme = ApplicationThemeManager.GetAppTheme();
+        ApplicationAccentColorManager.Apply(
+            ApplicationAccentColorManager.GetColorizationColor(),
+            currentTheme,
+            true,
+            true);
+
+        // Load theme-specific resource overrides
+        LoadThemeSpecificResources(currentTheme);
+    }
+
+    private void LoadThemeSpecificResources(ApplicationTheme theme)
+    {
+        // Remove previous theme dictionary if it exists
+        if (_themeResourceDictionary != null)
+        {
+            Resources.MergedDictionaries.Remove(_themeResourceDictionary);
+        }
+
+        // Load appropriate theme resource dictionary
+        string themeFile = theme == ApplicationTheme.Light ? "LightTheme.xaml" : "DarkTheme.xaml";
+        _themeResourceDictionary = new ResourceDictionary
+        {
+            Source = new Uri($"pack://application:,,,/Presentation/Resources/{themeFile}", UriKind.Absolute)
+        };
+
+        Resources.MergedDictionaries.Add(_themeResourceDictionary);
+
+        // Populate theme-specific brushes from WPF-UI resources
+        // XAML doesn't support resource aliasing, so we copy the brush references here
+        string inputBackgroundKey = theme == ApplicationTheme.Light
+            ? "ControlFillColorSecondaryBrush"
+            : "ControlFillColorDefaultBrush";
+        CopyBrushResource(inputBackgroundKey, "AppInputBackgroundBrush");
+
+        // Sync CheckBox styling with RadioButton for visual consistency
+        CopyBrushResource("RadioButtonOuterEllipseCheckedStroke", "CheckBoxCheckBackgroundFillChecked");
+        CopyBrushResource("RadioButtonOuterEllipseCheckedStrokePointerOver", "CheckBoxCheckBackgroundFillCheckedPointerOver");
+        CopyBrushResource("RadioButtonOuterEllipseCheckedStrokePointerOver", "CheckBoxCheckBackgroundFillCheckedPressed");
+        CopyBrushResource("RadioButtonOuterEllipseCheckedStroke", "CheckBoxCheckBorderBrush");
+        CopyBrushResource("RadioButtonCheckGlyphFill", "CheckBoxCheckGlyphForeground");
+
+        _logger?.LogDebug("Loaded theme-specific resources: {ThemeFile}", themeFile);
+    }
+
+    private void CopyBrushResource(string sourceKey, string targetKey)
+    {
+        if (_themeResourceDictionary != null && TryFindResource(sourceKey) is System.Windows.Media.Brush sourceBrush)
+        {
+            _themeResourceDictionary[targetKey] = sourceBrush;
+        }
+    }
+
     private bool TryInitializeSingleInstance()
     {
         _logger?.LogDebug("Checking for existing application instance");
@@ -372,6 +462,7 @@ public partial class App : Application
 
             _logger?.LogInformation("Shutdown sequence completed");
 
+            SystemEvents.UserPreferenceChanged -= OnSystemUserPreferenceChanged;
             LoggingConfiguration.CloseAndFlush();
             Shutdown();
         }
@@ -385,6 +476,8 @@ public partial class App : Application
 
     private void DisposeApplicationResources()
     {
+        ApplicationThemeManager.Changed -= OnApplicationThemeChanged;
+
         try
         {
             _logger?.LogDebug("Disposing DI service provider (will dispose all services automatically)");
@@ -398,7 +491,6 @@ public partial class App : Application
 
         try
         {
-            _logger?.LogDebug("Releasing single instance mutex");
             if (_mutexOwned)
             {
                 _singleInstanceMutex?.ReleaseMutex();

@@ -14,6 +14,7 @@
 
     <TextBox Width="40"
              Margin="8,4,0,4"
+             Background="{DynamicResource AppInputBackgroundBrush}"
              MaxLength="2"
              CharacterCasing="Upper"
              ToolTipService.InitialShowDelay="100"
