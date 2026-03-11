@@ -21,7 +21,8 @@
              Text="{Binding Value, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource HexByte}, UpdateSourceTrigger=PropertyChanged}">
         <TextBox.ToolTip>
             <ToolTip>
-                <TextBlock>
+                <TextBlock TextWrapping="Wrap"
+                           MaxWidth="300">
                     <Run Text="Hex register ID (e.g., "/>
                     <Run Text="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource AncestorType=ToolTip}}"/>
                     <Run Text="). Leave empty for default."/>
