@@ -116,7 +116,21 @@ internal static class StartupTaskManager
     /// </summary>
     private static void WriteTaskXml(string filePath, string username, string executablePath)
     {
+        string? workingDirectory = Path.GetDirectoryName(executablePath);
+
         XNamespace taskNamespace = "http://schemas.microsoft.com/windows/2004/02/mit/task";
+
+        // Build the Exec element with Command and Arguments
+        XElement execElement = new XElement(taskNamespace + "Exec",
+            new XElement(taskNamespace + "Command", executablePath),
+            new XElement(taskNamespace + "Arguments", "--minimized"));
+
+        // Add WorkingDirectory if available
+        if (!string.IsNullOrWhiteSpace(workingDirectory))
+        {
+            execElement.Add(new XElement(taskNamespace + "WorkingDirectory", workingDirectory));
+        }
+
         XDocument document = new XDocument(
           new XDeclaration("1.0", "utf-16", null),
           new XElement(taskNamespace + "Task",
@@ -136,10 +150,7 @@ internal static class StartupTaskManager
               new XElement(taskNamespace + "DisallowStartIfOnBatteries", false),
               new XElement(taskNamespace + "StopIfGoingOnBatteries", false),
               new XElement(taskNamespace + "ExecutionTimeLimit", "PT0S")),
-            new XElement(taskNamespace + "Actions",
-              new XElement(taskNamespace + "Exec",
-                new XElement(taskNamespace + "Command", executablePath),
-                new XElement(taskNamespace + "Arguments", "--minimized")))));
+            new XElement(taskNamespace + "Actions", execElement)));
 
         XmlWriterSettings settings = new XmlWriterSettings
         {
