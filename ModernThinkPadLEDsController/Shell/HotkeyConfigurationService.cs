@@ -47,11 +47,11 @@ public sealed class HotkeyConfigurationService
             return new HotkeyCaptureResult(
                 true,
                 GetHotkeyDisplayText(),
-                $"⚠ The hotkey '{displayText}' is already in use by Windows or another application. Please choose a different combination.");
+                $"The hotkey '{displayText}' is already in use by Windows or another application. Please choose a different combination.");
         }
 
         string? warningMessage = hotkey.Modifiers == HotkeyModifiers.None
-            ? $"⚠ Warning: '{displayText}' has no modifier keys. This may interfere with normal keyboard usage."
+            ? $"'{displayText}' has no modifier keys. This may interfere with normal keyboard usage."
             : null;
 
         return new HotkeyCaptureResult(true, displayText, warningMessage);

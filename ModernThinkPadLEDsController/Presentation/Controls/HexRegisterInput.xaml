@@ -1,0 +1,31 @@
+<UserControl x:Class="ModernThinkPadLEDsController.Presentation.Controls.HexRegisterInput"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:converters="clr-namespace:ModernThinkPadLEDsController.Presentation.Converters"
+             mc:Ignorable="d"
+             d:DesignHeight="30"
+             d:DesignWidth="60">
+    <UserControl.Resources>
+        <converters:HexByteConverter x:Key="HexByte"/>
+    </UserControl.Resources>
+
+    <TextBox Width="40"
+             Margin="8,4,0,4"
+             MaxLength="2"
+             CharacterCasing="Upper"
+             ToolTipService.InitialShowDelay="100"
+             Tag="{Binding HexExample, RelativeSource={RelativeSource AncestorType=UserControl}}"
+             Text="{Binding Value, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource HexByte}, UpdateSourceTrigger=PropertyChanged}">
+        <TextBox.ToolTip>
+            <ToolTip>
+                <TextBlock>
+                    <Run Text="Hex register ID (e.g., "/>
+                    <Run Text="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource AncestorType=ToolTip}}"/>
+                    <Run Text="). Leave empty for default."/>
+                </TextBlock>
+            </ToolTip>
+        </TextBox.ToolTip>
+    </TextBox>
+</UserControl>

@@ -108,7 +108,7 @@ public sealed class SettingsRuntimeService : ISettingsRuntimeService
 
             return new HardwareAccessPreferenceChangeResult(
                 false,
-                "Hardware access is saved for the next launch. Restart the app to load PawnIO and touch the EC again.");
+                "Restart the app to regain hardware access.");
         }
 
         bool disabledNow = _hardwareAccess.DisableForSession();
@@ -120,7 +120,7 @@ public sealed class SettingsRuntimeService : ISettingsRuntimeService
         return new HardwareAccessPreferenceChangeResult(
             disabledNow,
             disabledNow
-                ? "Hardware access is disabled immediately for this session and will stay off on the next launch."
+                ? "Hardware access is now disabled and will stay off until manually turned back on."
                 : null);
     }
 

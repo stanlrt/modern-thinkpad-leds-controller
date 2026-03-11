@@ -5,6 +5,7 @@
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     xmlns:converters="clr-namespace:ModernThinkPadLEDsController.Presentation.Converters"
     xmlns:lighting="clr-namespace:ModernThinkPadLEDsController.Lighting"
+    xmlns:controls="clr-namespace:ModernThinkPadLEDsController.Presentation.Controls"
     Title="Modern ThinkPad LEDs Controller"
     Width="1000"
     Height="700"
@@ -34,7 +35,7 @@
                     <Image Source="pack://application:,,,/Resources/favicon.ico"
                            Width="20"
                            Height="20"
-                           Margin="16,0,0,0"/>
+                           Margin="8,0,0,0"/>
                     <TextBlock Text="Modern ThinkPad LEDs Controller"
                                Margin="8,0,0,0"
                                VerticalAlignment="Center"/>
@@ -46,7 +47,8 @@
         <ScrollViewer Grid.Row="1"
                       VerticalScrollBarVisibility="Auto"
                       Padding="12"
-                      PreviewMouseWheel="MainScrollViewer_PreviewMouseWheel">
+                      PreviewMouseWheel="MainScrollViewer_PreviewMouseWheel"
+                      PanningMode="Both">
             <StackPanel>
 
                 <!-- ============================================================ -->
@@ -59,7 +61,8 @@
                                   HorizontalScrollBarVisibility="Auto"
                                   VerticalScrollBarVisibility="Disabled"
                                   PreviewMouseWheel="TableScrollViewer_PreviewMouseWheel"
-                                  Padding="0,0,0,8">
+                                  Padding="0,0,0,8"
+                                  PanningMode="Both">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
@@ -108,38 +111,14 @@
                                        VerticalAlignment="Bottom"
                                        Margin="4,0,20,6"/>
 
-                            <StackPanel Grid.Row="0"
-                                        Grid.Column="1"
-                                        Orientation="Horizontal"
-                                        HorizontalAlignment="Left"
-                                        VerticalAlignment="Bottom"
-                                        Margin="8,0,16,6">
-                                <TextBlock Text="Default"
-                                           FontWeight="SemiBold"
-                                           VerticalAlignment="Center"/>
-                                <Border Margin="7,0,0,0"
-                                        Width="16"
-                                        Height="16"
-                                        CornerRadius="8"
-                                        Background="{DynamicResource ControlFillColorSecondaryBrush}"
-                                        VerticalAlignment="Center"
-                                        Cursor="Help"
-                                        ToolTipService.ShowDuration="20000">
-                                    <Border.ToolTip>
-                                        <ToolTip>
-                                            <TextBlock MaxWidth="240"
-                                                       TextWrapping="Wrap"
-                                                       Text="Let the LED follow the default OS behaviour."/>
-                                        </ToolTip>
-                                    </Border.ToolTip>
-                                    <TextBlock Text="?"
-                                               FontSize="10"
-                                               FontWeight="SemiBold"
-                                               HorizontalAlignment="Center"
-                                               VerticalAlignment="Center"
-                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                </Border>
-                            </StackPanel>
+                            <controls:LabelWithHelp Grid.Row="0"
+                                                    Grid.Column="1"
+                                                    HorizontalAlignment="Left"
+                                                    VerticalAlignment="Bottom"
+                                                    Margin="8,0,16,6"
+                                                    Label="Default"
+                                                    FontWeight="SemiBold"
+                                                    HelpText="Let the LED follow the default OS behaviour."/>
 
                             <TextBlock Grid.Row="0"
                                        Grid.Column="2"
@@ -163,137 +142,41 @@
                                        VerticalAlignment="Bottom"
                                        Margin="8,0,16,6"/>
 
-                            <StackPanel Grid.Row="0"
-                                        Grid.Column="5"
-                                        Orientation="Horizontal"
-                                        HorizontalAlignment="Left"
-                                        VerticalAlignment="Bottom"
-                                        Margin="8,0,16,6">
-                                <TextBlock Text="Hotkey"
-                                           FontWeight="SemiBold"
-                                           VerticalAlignment="Center"/>
-                                <Border Margin="7,0,0,0"
-                                        Width="16"
-                                        Height="16"
-                                        CornerRadius="8"
-                                        Background="{DynamicResource ControlFillColorSecondaryBrush}"
-                                        VerticalAlignment="Center"
-                                        Cursor="Help"
-                                        ToolTipService.ShowDuration="20000">
-                                    <Border.ToolTip>
-                                        <ToolTip>
-                                            <TextBlock MaxWidth="240"
-                                                       TextWrapping="Wrap"
-                                                       Text="Make the LED cycle through the selected states each time the hotkey is pressed. Configure the states in the Hotkey tab below."/>
-                                        </ToolTip>
-                                    </Border.ToolTip>
-                                    <TextBlock Text="?"
-                                               FontSize="10"
-                                               FontWeight="SemiBold"
-                                               HorizontalAlignment="Center"
-                                               VerticalAlignment="Center"
-                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                </Border>
-                            </StackPanel>
+                            <controls:LabelWithHelp Grid.Row="0"
+                                                    Grid.Column="5"
+                                                    HorizontalAlignment="Left"
+                                                    VerticalAlignment="Bottom"
+                                                    Margin="8,0,16,6"
+                                                    Label="Hotkey"
+                                                    FontWeight="SemiBold"
+                                                    HelpText="Make the LED cycle through the selected states each time the hotkey is pressed. Configure the states in the Hotkey tab below."/>
 
-                            <StackPanel Grid.Row="0"
-                                        Grid.Column="6"
-                                        Orientation="Horizontal"
-                                        HorizontalAlignment="Left"
-                                        VerticalAlignment="Bottom"
-                                        Margin="8,0,16,6">
-                                <TextBlock Text="Disk Write"
-                                           FontWeight="SemiBold"
-                                           VerticalAlignment="Center"/>
-                                <Border Margin="7,0,0,0"
-                                        Width="16"
-                                        Height="16"
-                                        CornerRadius="8"
-                                        Background="{DynamicResource ControlFillColorSecondaryBrush}"
-                                        VerticalAlignment="Center"
-                                        Cursor="Help"
-                                        ToolTipService.ShowDuration="20000">
-                                    <Border.ToolTip>
-                                        <ToolTip>
-                                            <TextBlock MaxWidth="240"
-                                                       TextWrapping="Wrap"
-                                                       Text="LED turns on whenever disk write activity is detected. Configure the polling interval in the Disk tab below."/>
-                                        </ToolTip>
-                                    </Border.ToolTip>
-                                    <TextBlock Text="?"
-                                               FontSize="10"
-                                               FontWeight="SemiBold"
-                                               HorizontalAlignment="Center"
-                                               VerticalAlignment="Center"
-                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                </Border>
-                            </StackPanel>
+                            <controls:LabelWithHelp Grid.Row="0"
+                                                    Grid.Column="6"
+                                                    HorizontalAlignment="Left"
+                                                    VerticalAlignment="Bottom"
+                                                    Margin="8,0,16,6"
+                                                    Label="Disk Write"
+                                                    FontWeight="SemiBold"
+                                                    HelpText="LED turns on whenever disk write activity is detected. Configure the polling interval in the Disk tab below."/>
 
-                            <StackPanel Grid.Row="0"
-                                        Grid.Column="7"
-                                        Orientation="Horizontal"
-                                        HorizontalAlignment="Left"
-                                        VerticalAlignment="Bottom"
-                                        Margin="8,0,0,6">
-                                <TextBlock Text="Disk Read"
-                                           FontWeight="SemiBold"
-                                           VerticalAlignment="Center"/>
-                                <Border Margin="7,0,0,0"
-                                        Width="16"
-                                        Height="16"
-                                        CornerRadius="8"
-                                        Background="{DynamicResource ControlFillColorSecondaryBrush}"
-                                        VerticalAlignment="Center"
-                                        Cursor="Help"
-                                        ToolTipService.ShowDuration="20000">
-                                    <Border.ToolTip>
-                                        <ToolTip>
-                                            <TextBlock MaxWidth="240"
-                                                       TextWrapping="Wrap"
-                                                       Text="LED turns on whenever disk read activity is detected. Configure the polling interval in the Disk tab below."/>
-                                        </ToolTip>
-                                    </Border.ToolTip>
-                                    <TextBlock Text="?"
-                                               FontSize="10"
-                                               FontWeight="SemiBold"
-                                               HorizontalAlignment="Center"
-                                               VerticalAlignment="Center"
-                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                </Border>
-                            </StackPanel>
+                            <controls:LabelWithHelp Grid.Row="0"
+                                                    Grid.Column="7"
+                                                    HorizontalAlignment="Left"
+                                                    VerticalAlignment="Bottom"
+                                                    Margin="8,0,0,6"
+                                                    Label="Disk Read"
+                                                    FontWeight="SemiBold"
+                                                    HelpText="LED turns on whenever disk read activity is detected. Configure the polling interval in the Disk tab below."/>
 
-                            <StackPanel Grid.Row="0"
-                                        Grid.Column="8"
-                                        Orientation="Horizontal"
-                                        HorizontalAlignment="Left"
-                                        VerticalAlignment="Bottom"
-                                        Margin="8,0,0,6">
-                                <TextBlock Text="Reg addr"
-                                           FontWeight="SemiBold"
-                                           VerticalAlignment="Center"/>
-                                <Border Margin="7,0,0,0"
-                                        Width="16"
-                                        Height="16"
-                                        CornerRadius="8"
-                                        Background="{DynamicResource ControlFillColorSecondaryBrush}"
-                                        VerticalAlignment="Center"
-                                        Cursor="Help"
-                                        ToolTipService.ShowDuration="20000">
-                                    <Border.ToolTip>
-                                        <ToolTip>
-                                            <TextBlock MaxWidth="280"
-                                                       TextWrapping="Wrap"
-                                                       Text="Custom EC register ID (hex). Leave empty to use the default. Use this if your laptop uses different register IDs. Find values on ThinkWiki or via trial &amp; error with the Custom EC Write dialog."/>
-                                        </ToolTip>
-                                    </Border.ToolTip>
-                                    <TextBlock Text="?"
-                                               FontSize="10"
-                                               FontWeight="SemiBold"
-                                               HorizontalAlignment="Center"
-                                               VerticalAlignment="Center"
-                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                </Border>
-                            </StackPanel>
+                            <controls:LabelWithHelp Grid.Row="0"
+                                                    Grid.Column="8"
+                                                    HorizontalAlignment="Left"
+                                                    VerticalAlignment="Bottom"
+                                                    Margin="8,0,0,6"
+                                                    Label="Reg addr"
+                                                    FontWeight="SemiBold"
+                                                    HelpText="Custom EC register ID (hex). Leave empty to use the default. Use this if your laptop uses different register IDs. Find values on ThinkWiki or via trial &amp; error with the Custom EC Write dialog."/>
 
                             <!-- ── Power ── -->
                             <TextBlock Grid.Row="1"
@@ -380,14 +263,10 @@
                                     </Style>
                                 </RadioButton.Style>
                             </RadioButton>
-                            <TextBox Grid.Row="1"
-                                     Grid.Column="8"
-                                     Width="40"
-                                     Margin="8,4,0,4"
-                                     MaxLength="2"
-                                     CharacterCasing="Upper"
-                                     ToolTip="Hex register ID (e.g., 00). Leave empty for default."
-                                     Text="{Binding MainVm.Power.CustomRegisterId, Converter={StaticResource HexByte}, UpdateSourceTrigger=PropertyChanged}"/>
+                            <controls:HexRegisterInput Grid.Row="1"
+                                                       Grid.Column="8"
+                                                       HexExample="00"
+                                                       Value="{Binding MainVm.Power.CustomRegisterId}"/>
 
                             <!-- ── Mute ── -->
                             <TextBlock Grid.Row="2"
@@ -474,14 +353,10 @@
                                     </Style>
                                 </RadioButton.Style>
                             </RadioButton>
-                            <TextBox Grid.Row="2"
-                                     Grid.Column="8"
-                                     Width="40"
-                                     Margin="8,4,0,4"
-                                     MaxLength="2"
-                                     CharacterCasing="Upper"
-                                     ToolTip="Hex register ID (e.g., 04). Leave empty for default."
-                                     Text="{Binding MainVm.Mute.CustomRegisterId, Converter={StaticResource HexByte}, UpdateSourceTrigger=PropertyChanged}"/>
+                            <controls:HexRegisterInput Grid.Row="2"
+                                                       Grid.Column="8"
+                                                       HexExample="04"
+                                                       Value="{Binding MainVm.Mute.CustomRegisterId}"/>
 
                             <!-- ── Red Dot ── -->
                             <TextBlock Grid.Row="3"
@@ -568,14 +443,10 @@
                                     </Style>
                                 </RadioButton.Style>
                             </RadioButton>
-                            <TextBox Grid.Row="3"
-                                     Grid.Column="8"
-                                     Width="40"
-                                     Margin="8,4,0,4"
-                                     MaxLength="2"
-                                     CharacterCasing="Upper"
-                                     ToolTip="Hex register ID (e.g., 0A). Leave empty for default."
-                                     Text="{Binding MainVm.RedDot.CustomRegisterId, Converter={StaticResource HexByte}, UpdateSourceTrigger=PropertyChanged}"/>
+                            <controls:HexRegisterInput Grid.Row="3"
+                                                       Grid.Column="8"
+                                                       HexExample="0A"
+                                                       Value="{Binding MainVm.RedDot.CustomRegisterId}"/>
 
                             <!-- ── Microphone ── -->
                             <TextBlock Grid.Row="4"
@@ -662,14 +533,10 @@
                                     </Style>
                                 </RadioButton.Style>
                             </RadioButton>
-                            <TextBox Grid.Row="4"
-                                     Grid.Column="8"
-                                     Width="40"
-                                     Margin="8,4,0,4"
-                                     MaxLength="2"
-                                     CharacterCasing="Upper"
-                                     ToolTip="Hex register ID (e.g., 0E). Leave empty for default."
-                                     Text="{Binding MainVm.Microphone.CustomRegisterId, Converter={StaticResource HexByte}, UpdateSourceTrigger=PropertyChanged}"/>
+                            <controls:HexRegisterInput Grid.Row="4"
+                                                       Grid.Column="8"
+                                                       HexExample="0E"
+                                                       Value="{Binding MainVm.Microphone.CustomRegisterId}"/>
 
                             <!-- ── Sleep ── -->
                             <TextBlock Grid.Row="5"
@@ -756,14 +623,10 @@
                                     </Style>
                                 </RadioButton.Style>
                             </RadioButton>
-                            <TextBox Grid.Row="5"
-                                     Grid.Column="8"
-                                     Width="40"
-                                     Margin="8,4,0,4"
-                                     MaxLength="2"
-                                     CharacterCasing="Upper"
-                                     ToolTip="Hex register ID (e.g., 07). Leave empty for default."
-                                     Text="{Binding MainVm.Sleep.CustomRegisterId, Converter={StaticResource HexByte}, UpdateSourceTrigger=PropertyChanged}"/>
+                            <controls:HexRegisterInput Grid.Row="5"
+                                                       Grid.Column="8"
+                                                       HexExample="07"
+                                                       Value="{Binding MainVm.Sleep.CustomRegisterId}"/>
 
                             <!-- ── Fn Lock ── -->
                             <TextBlock Grid.Row="6"
@@ -850,14 +713,10 @@
                                     </Style>
                                 </RadioButton.Style>
                             </RadioButton>
-                            <TextBox Grid.Row="6"
-                                     Grid.Column="8"
-                                     Width="40"
-                                     Margin="8,4,0,4"
-                                     MaxLength="2"
-                                     CharacterCasing="Upper"
-                                     ToolTip="Hex register ID (e.g., 06). Leave empty for default."
-                                     Text="{Binding MainVm.FnLock.CustomRegisterId, Converter={StaticResource HexByte}, UpdateSourceTrigger=PropertyChanged}"/>
+                            <controls:HexRegisterInput Grid.Row="6"
+                                                       Grid.Column="8"
+                                                       HexExample="06"
+                                                       Value="{Binding MainVm.FnLock.CustomRegisterId}"/>
 
                             <!-- ── Camera ── -->
                             <TextBlock Grid.Row="7"
@@ -944,14 +803,10 @@
                                     </Style>
                                 </RadioButton.Style>
                             </RadioButton>
-                            <TextBox Grid.Row="7"
-                                     Grid.Column="8"
-                                     Width="40"
-                                     Margin="8,4,0,4"
-                                     MaxLength="2"
-                                     CharacterCasing="Upper"
-                                     ToolTip="Hex register ID (e.g., 0F). Leave empty for default."
-                                     Text="{Binding MainVm.Camera.CustomRegisterId, Converter={StaticResource HexByte}, UpdateSourceTrigger=PropertyChanged}"/>
+                            <controls:HexRegisterInput Grid.Row="7"
+                                                       Grid.Column="8"
+                                                       HexExample="0F"
+                                                       Value="{Binding MainVm.Camera.CustomRegisterId}"/>
                         </Grid>
                     </ScrollViewer>
                 </ui:Card>
@@ -968,7 +823,7 @@
                             <TextBlock Text="LEDs assigned to 'Hotkey' cycle through the selected states each time the shortcut is pressed."
                                        Opacity="0.6"
                                        TextWrapping="Wrap"
-                                       Margin="0,0,0,16"/>
+                                       Margin="0,0,0,24"/>
                             <Border x:Name="HotkeyBorder"
                                     CornerRadius="4"
                                     Margin="0,0,0,8"
@@ -992,18 +847,13 @@
                             </Border>
                             <TextBlock Text="Click to change the hotkey combination"
                                        FontSize="11"
+                                       Opacity="0.6"
                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                        Margin="0,0,0,6"/>
-
-                            <!-- Warning box for hotkey issues -->
-                            <Border CornerRadius="4"
-                                    Padding="12,8"
-                                    Margin="0,0,0,14"
-                                    Background="{DynamicResource SystemFillColorCautionBackgroundBrush}"
-                                    Visibility="{Binding MainVm.HasHotkeyWarning, Converter={StaticResource BoolToVis}}">
-                                <TextBlock Text="{Binding MainVm.HotkeyWarningMessage}"
-                                           TextWrapping="Wrap"/>
-                            </Border>
+                            <controls:WarningBanner
+                                Visibility="{Binding MainVm.HasHotkeyWarning, Converter={StaticResource BoolToVis}}"
+                                Margin="0,8,0,16"
+                                Message="{Binding MainVm.HotkeyWarningMessage}"/>
                             <TextBlock Text="Cycle through..."
                                        FontWeight="SemiBold"
                                        Margin="0,16,0,8"/>
@@ -1026,27 +876,14 @@
                     <!-- ── Blinking tab ── -->
                     <TabItem Header="Blinking">
                         <StackPanel Margin="10,12">
-                            <TextBlock Text="Blink interval"
-                                       FontWeight="SemiBold"
-                                       Margin="0,0,0,8"/>
-                            <StackPanel Orientation="Horizontal"
-                                        VerticalAlignment="Center">
-                                <Slider Minimum="100"
-                                        Maximum="2000"
-                                        Width="200"
-                                        Value="{Binding SettingsVm.BlinkIntervalMs}"
-                                        TickFrequency="50"
-                                        IsSnapToTickEnabled="True"/>
-                                <TextBlock Text="{Binding SettingsVm.BlinkIntervalMs, StringFormat={}{0} ms}"
-                                           VerticalAlignment="Center"
-                                           Width="60"
-                                           Margin="8,0,0,0"/>
-                            </StackPanel>
-                            <TextBlock Text="Controls how fast LEDs blink when set to Blink mode. Lower values = faster blinking."
-                                       FontSize="11"
-                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                       TextWrapping="Wrap"
-                                       Margin="0,8,0,0"/>
+                            <controls:LabeledSlider
+                                Label="Blink interval"
+                                Minimum="100"
+                                Maximum="2000"
+                                Value="{Binding SettingsVm.BlinkIntervalMs}"
+                                TickFrequency="50"
+                                Unit="ms"
+                                Description="Controls how fast LEDs blink when set to Blink mode. Lower values imply faster blinking."/>
                         </StackPanel>
                     </TabItem>
 
@@ -1083,77 +920,37 @@
                                     </Style>
                                 </TextBlock.Style>
                             </TextBlock>
-
-                            <!-- Poll interval slider shown when at least one LED is using disk monitoring -->
-                            <TextBlock Text="Poll interval"
-                                       FontWeight="SemiBold"
-                                       Margin="0,0,0,8"
-                                       Visibility="{Binding MainVm.HasDiskModeLeds, Converter={StaticResource BoolToVis}}"/>
-                            <StackPanel Orientation="Horizontal"
-                                        VerticalAlignment="Center"
-                                        Visibility="{Binding MainVm.HasDiskModeLeds, Converter={StaticResource BoolToVis}}">
-                                <Slider Minimum="100"
-                                        Maximum="1000"
-                                        Width="200"
-                                        Value="{Binding SettingsVm.DiskPollIntervalMs}"
-                                        TickFrequency="50"
-                                        IsSnapToTickEnabled="True"/>
-                                <TextBlock Text="{Binding SettingsVm.DiskPollIntervalMs, StringFormat={}{0} ms}"
-                                           VerticalAlignment="Center"
-                                           Width="60"
-                                           Margin="8,0,0,0"/>
-                            </StackPanel>
-                            <TextBlock Text="Lower intervals increase CPU usage but provide more responsive LED feedback."
-                                       FontSize="11"
-                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                       TextWrapping="Wrap"
-                                       Margin="0,8,0,0"
-                                       Visibility="{Binding MainVm.HasDiskModeLeds, Converter={StaticResource BoolToVis}}"/>
+                            <controls:LabeledSlider
+                                Visibility="{Binding MainVm.HasDiskModeLeds, Converter={StaticResource BoolToVis}}"
+                                Label="Poll interval"
+                                Minimum="100"
+                                Maximum="1000"
+                                Value="{Binding SettingsVm.DiskPollIntervalMs}"
+                                TickFrequency="50"
+                                Unit="ms"
+                                Description="Lower intervals increase CPU usage but provide more responsive LED feedback."/>
                         </StackPanel>
                     </TabItem>
 
                     <!-- ── Keyboard Backlight tab ── -->
                     <TabItem Header="Keyboard Backlight">
                         <StackPanel Margin="10,12">
-                            <TextBlock Text="Brightness Level"
-                                       FontWeight="SemiBold"
-                                       Margin="0,0,0,8"/>
-                            <StackPanel Orientation="Horizontal"
-                                        VerticalAlignment="Center">
-                                <Slider Grid.Column="0"
-                                        Minimum="0"
-                                        Maximum="255"
-                                        Width="200"
-                                        TickFrequency="1"
-                                        IsSnapToTickEnabled="True"
-                                        Value="{Binding SettingsVm.KeyboardBrightnessLevel}"/>
-                                <TextBlock Grid.Column="1"
-                                           Text="{Binding SettingsVm.KeyboardBrightnessPercent, StringFormat={}{0} %}"
-                                           VerticalAlignment="Center"
-                                           TextAlignment="Right"
-                                           Margin="8,0,0,0"/>
-                            </StackPanel>
-
-                            <!-- Warning for low brightness values -->
-                            <Border CornerRadius="4"
-                                    Padding="12,8"
-                                    Margin="0,8,0,8"
-                                    Background="{DynamicResource SystemFillColorCautionBackgroundBrush}"
-                                    Visibility="{Binding SettingsVm.ShowKeyboardBrightnessWarning, Converter={StaticResource BoolToVis}}">
-                                <TextBlock TextWrapping="Wrap">
-                                    <Run Text="⚠️ Warning: Values below 25% may appear completely off on some ThinkPad models."/>
-                                </TextBlock>
-                            </Border>
-
-                            <TextBlock Text="Some ThinkPads only support few predefined levels. Value will get floored."
-                                       FontSize="11"
-                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                       TextWrapping="Wrap"
-                                       Margin="0,0,0,16"/>
+                            <controls:LabeledSlider
+                                Label="Brightness Level"
+                                Minimum="0"
+                                Maximum="255"
+                                Value="{Binding SettingsVm.KeyboardBrightnessLevel}"
+                                TickFrequency="1"
+                                Unit="%"
+                                Description="Some ThinkPads only support few predefined levels. Value will get floored."/>
+                            <controls:WarningBanner
+                                Margin="0,8,0,0"
+                                Visibility="{Binding SettingsVm.ShowKeyboardBrightnessWarning, Converter={StaticResource BoolToVis}}"
+                                Message="Values below 25% may appear completely off on some ThinkPad models."/>
 
                             <TextBlock Text="Additional options"
                                        FontWeight="SemiBold"
-                                       Margin="0,0,0,8"/>
+                                       Margin="0,24,0,8"/>
                             <CheckBox Content="Remember level and restore after sleep or lid-open"
                                       IsChecked="{Binding SettingsVm.RememberKeyboardBacklight}"
                                       Margin="0,0,0,6"
@@ -1190,40 +987,24 @@
                                       Padding="0,4"/>
                             <CheckBox Content="Enable hardware access to PawnIO and the EC (turning off applies immediately; turning back on requires restart)"
                                       IsChecked="{Binding SettingsVm.EnableHardwareAccess}"
-                                      Margin="0,0,0,12"
+                                      Margin="0,0,0,0"
                                       Padding="0,4"/>
-                            <Border CornerRadius="4"
-                                    Padding="12,8"
-                                    Margin="0,0,0,16"
-                                    Background="{DynamicResource SystemFillColorCautionBackgroundBrush}"
-                                    Visibility="{Binding SettingsVm.HasHardwareAccessWarning, Converter={StaticResource BoolToVis}}">
-                                <TextBlock Text="{Binding SettingsVm.HardwareAccessWarningMessage}"
-                                           TextWrapping="Wrap"/>
-                            </Border>
-                            <TextBlock Text="LED re-apply interval"
-                                       FontWeight="SemiBold"
-                                       Margin="0,0,0,4"/>
-                            <StackPanel Orientation="Horizontal"
-                                        VerticalAlignment="Center">
-                                <Slider Minimum="250"
-                                        Maximum="3000"
-                                        Width="200"
-                                        TickFrequency="250"
-                                        IsSnapToTickEnabled="True"
-                                        Value="{Binding SettingsVm.LedReapplyIntervalMs}"
-                                        VerticalAlignment="Center"/>
-                                <TextBlock Grid.Column="1"
-                                           Text="{Binding SettingsVm.LedReapplyIntervalMs, StringFormat={}{0} ms}"
-                                           Margin="12,0,0,0"
-                                           VerticalAlignment="Center"/>
-                            </StackPanel>
-                            <TextBlock Text="How often the app re-asserts user-controlled LED states when firmware or the OS changes them externally. Lower values react faster but cause more EC traffic."
-                                       Opacity="0.6"
-                                       TextWrapping="Wrap"
-                                       Margin="0,0,0,16"/>
+                            <controls:WarningBanner
+                                Visibility="{Binding SettingsVm.HasHardwareAccessWarning, Converter={StaticResource BoolToVis}}"
+                                Margin="0,8,0,0"
+                                Message="{Binding SettingsVm.HardwareAccessWarningMessage}"/>
+                            <controls:LabeledSlider
+                                Label="LED re-apply interval"
+                                Margin="0,24,0,0"
+                                Minimum="250"
+                                Maximum="3000"
+                                Value="{Binding SettingsVm.LedReapplyIntervalMs}"
+                                TickFrequency="250"
+                                Unit="ms"
+                                Description="How often the app re-asserts user-controlled LED states when firmware or the OS changes them externally. Lower values react faster but cause more EC traffic."/>
                             <TextBlock Text="Driver"
                                        FontWeight="SemiBold"
-                                       Margin="0,0,0,4"/>
+                                       Margin="0,24,0,4"/>
                             <TextBlock Text="{Binding SettingsVm.DriverStatus}"
                                        Opacity="0.6"
                                        Margin="0,0,0,16"/>

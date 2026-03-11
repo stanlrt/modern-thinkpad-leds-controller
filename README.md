@@ -25,9 +25,7 @@ It also adds:
 3. Follow the installation prompts.
 4. When the app starts, grant admin privileges. They are required to control the LEDs securely via PawnIO.
 5. If you do not yet have [PawnIO](https://pawnio.eu/) installed and running, the app will offer to install it.
-6. The app will automatically start after PawnIO is running.
-7. If you want it to start with Windows later, enable that option from the app settings.
-8. You can close the app. It will minimise to the taskbar tray.
+6. You can close the app. It will minimise to the taskbar tray.;
 
 ![screenshot](./screenshot.png)
 
