@@ -1,5 +1,5 @@
 <!-- markdownlint-disable-next-line MD033 MD041 -->
-<img src="./Logo.png" width="100px" alt="Logo" />
+<img src="./.readme-files/logo.png" width="100px" alt="Logo" />
 
 # Modern ThinkPad LEDs Controller
 
@@ -27,7 +27,7 @@ It also adds:
 5. If you do not yet have [PawnIO](https://pawnio.eu/) installed and running, the app will offer to install it.
 6. You can close the app. It will minimise to the taskbar tray.;
 
-![screenshot](./screenshot.png)
+![screenshot](./.readme-files/screenshot.png)
 
 ## A note about BSODs
 
