@@ -196,14 +196,12 @@
                                                         VerticalAlignment="Bottom"
                                                         Margin="8,0,16,6"
                                                         Label="Default"
-                                                        FontWeight="SemiBold"
                                                         HelpText="Let the LED follow the default OS behaviour."/>
 
                                 <TextBlock x:Name="OnModeHeader"
                                            Grid.Row="0"
                                            Grid.Column="1"
                                            Text="On"
-                                           FontWeight="SemiBold"
                                            HorizontalAlignment="Left"
                                            VerticalAlignment="Bottom"
                                            Margin="8,0,16,6"/>
@@ -211,7 +209,6 @@
                                            Grid.Row="0"
                                            Grid.Column="2"
                                            Text="Off"
-                                           FontWeight="SemiBold"
                                            HorizontalAlignment="Left"
                                            VerticalAlignment="Bottom"
                                            Margin="8,0,16,6"/>
@@ -219,7 +216,6 @@
                                            Grid.Row="0"
                                            Grid.Column="3"
                                            Text="Blink"
-                                           FontWeight="SemiBold"
                                            HorizontalAlignment="Left"
                                            VerticalAlignment="Bottom"
                                            Margin="8,0,16,6"/>
@@ -231,7 +227,6 @@
                                                         VerticalAlignment="Bottom"
                                                         Margin="8,0,16,6"
                                                         Label="Hotkey"
-                                                        FontWeight="SemiBold"
                                                         HelpText="Make the LED cycle through the selected states each time the hotkey is pressed. Configure the states in the Hotkey tab below."/>
 
                                 <controls:LabelWithHelp x:Name="DiskWriteModeHeader"
@@ -241,7 +236,6 @@
                                                         VerticalAlignment="Bottom"
                                                         Margin="8,0,16,6"
                                                         Label="Disk Write"
-                                                        FontWeight="SemiBold"
                                                         HelpText="LED turns on whenever disk write activity is detected. Configure the polling interval in the Disk tab below."/>
 
                                 <controls:LabelWithHelp x:Name="DiskReadModeHeader"
@@ -251,7 +245,6 @@
                                                         VerticalAlignment="Bottom"
                                                         Margin="8,0,0,6"
                                                         Label="Disk Read"
-                                                        FontWeight="SemiBold"
                                                         HelpText="LED turns on whenever disk read activity is detected. Configure the polling interval in the Disk tab below."/>
 
                                 <controls:LabelWithHelp Grid.Row="0"
@@ -260,7 +253,6 @@
                                                         VerticalAlignment="Bottom"
                                                         Margin="8,0,0,6"
                                                         Label="Reg addr"
-                                                        FontWeight="SemiBold"
                                                         HelpText="Custom EC register ID (hex). Leave empty to use the default. Use this if your laptop uses different register IDs. Find values on ThinkWiki or via trial &amp; error with the Custom EC Write dialog."/>
 
                                 <!-- ── Power ── -->
@@ -1224,7 +1216,7 @@
                                 Value="{Binding SettingsVm.LedReapplyIntervalMs}"
                                 TickFrequency="250"
                                 Unit="ms"
-                                Description="How often the app re-asserts user-controlled LED states when firmware or the OS changes them externally. Lower values react faster but cause more EC traffic."/>
+                                Description="How often the app re-asserts user-controlled LED states when firmware or the OS changes them externally. Lower values react faster but cause more EC traffic. To opt-out a LED, set it to 'Default' in the table above."/>
                             <TextBlock Text="Logging Level"
                                        FontWeight="SemiBold"
                                        Margin="0,24,0,4"/>
