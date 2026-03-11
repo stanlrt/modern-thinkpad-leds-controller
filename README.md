@@ -5,7 +5,7 @@
 
 ## What is it?
 
-**Modern ThinkPad LEDs Controller** is a full rework of the legacy [ThinkPadLEDControl](https://github.com/valinet/ThinkPadLEDControl).
+**Modern ThinkPad LEDs Controller** is a full rework of the long-serving, but legacy [ThinkPadLEDControl](https://github.com/valinet/ThinkPadLEDControl).
 
 It offers a **nicer WPF UI**, and more importantly **ditches the dated, unsecure WinRing0** for the modern [PawnIO](https://pawnio.eu/) driver (also used by newer versions of FanControls and OpenRGG).
 
