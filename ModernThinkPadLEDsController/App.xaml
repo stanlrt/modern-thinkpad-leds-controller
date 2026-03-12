@@ -33,7 +33,7 @@
             <!-- ── TabItem: WinUI3-style with accent underline on selected tab ── -->
             <Style TargetType="TabItem">
                 <Setter Property="Foreground"
-                        Value="{DynamicResource TextFillColorSecondaryBrush}"/>
+                        Value="{DynamicResource TextFillColorPrimaryBrush}"/>
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="TabItem">
@@ -70,8 +70,6 @@
                                     <Setter TargetName="Underline"
                                             Property="Visibility"
                                             Value="Visible"/>
-                                    <Setter Property="Foreground"
-                                            Value="{DynamicResource TextFillColorPrimaryBrush}"/>
                                 </Trigger>
                                 <MultiTrigger>
                                     <MultiTrigger.Conditions>

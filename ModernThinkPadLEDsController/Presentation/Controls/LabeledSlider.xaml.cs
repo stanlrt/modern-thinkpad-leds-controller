@@ -1,7 +1,5 @@
-using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 
 namespace ModernThinkPadLEDsController.Presentation.Controls
 {
@@ -33,20 +31,12 @@ namespace ModernThinkPadLEDsController.Presentation.Controls
         /// </summary>
         public static readonly DependencyProperty ValueProperty =
             DependencyProperty.Register(nameof(Value), typeof(double), typeof(LabeledSlider),
-                new FrameworkPropertyMetadata(0.0, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, OnValueChanged));
+                new FrameworkPropertyMetadata(0.0, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault));
 
         public double Value
         {
             get => (double)GetValue(ValueProperty);
             set => SetValue(ValueProperty, value);
-        }
-
-        private static void OnValueChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            if (d is LabeledSlider control)
-            {
-                control.ValidateValue((double)e.NewValue);
-            }
         }
 
         /// <summary>
@@ -125,91 +115,6 @@ namespace ModernThinkPadLEDsController.Presentation.Controls
         {
             get => (Visibility)GetValue(DescriptionVisibilityProperty);
             set => SetValue(DescriptionVisibilityProperty, value);
-        }
-
-        /// <summary>
-        /// Validation error message
-        /// </summary>
-        public static readonly DependencyProperty ValidationErrorProperty =
-            DependencyProperty.Register(nameof(ValidationError), typeof(string), typeof(LabeledSlider),
-                new PropertyMetadata(string.Empty));
-
-        public string ValidationError
-        {
-            get => (string)GetValue(ValidationErrorProperty);
-            set => SetValue(ValidationErrorProperty, value);
-        }
-
-        /// <summary>
-        /// Validation error visibility
-        /// </summary>
-        public static readonly DependencyProperty ValidationErrorVisibilityProperty =
-            DependencyProperty.Register(nameof(ValidationErrorVisibility), typeof(Visibility), typeof(LabeledSlider),
-                new PropertyMetadata(Visibility.Collapsed));
-
-        public Visibility ValidationErrorVisibility
-        {
-            get => (Visibility)GetValue(ValidationErrorVisibilityProperty);
-            set => SetValue(ValidationErrorVisibilityProperty, value);
-        }
-
-        private static readonly Regex _regex = new Regex("^[0-9]+$");
-
-        /// <summary>
-        /// Validates that only numeric input is allowed in the TextBox
-        /// </summary>
-        private void NumberValidationTextBox(object sender, TextCompositionEventArgs e)
-        {
-            // Allow only digits and optionally a minus sign at the beginning
-            e.Handled = !IsTextNumeric(e.Text);
-        }
-
-        private static bool IsTextNumeric(string text)
-        {
-            // Allow digits only (no decimal point since Value is bound as integer)
-            return _regex.IsMatch(text);
-        }
-
-        /// <summary>
-        /// Validates the value when the TextBox loses focus
-        /// </summary>
-        private void TextBox_LostFocus(object sender, RoutedEventArgs e)
-        {
-            if (sender is TextBox textBox)
-            {
-                if (double.TryParse(textBox.Text, out double value))
-                {
-                    Value = value; // This will trigger validation through OnValueChanged
-                }
-                else
-                {
-                    ValidationError = "Please enter a valid number";
-                    ValidationErrorVisibility = Visibility.Visible;
-                    Value = Minimum;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Validates the current value and shows/hides error message accordingly
-        /// </summary>
-        private void ValidateValue(double value)
-        {
-            if (value < Minimum)
-            {
-                ValidationError = $"Value must be at least {Minimum}";
-                ValidationErrorVisibility = Visibility.Visible;
-            }
-            else if (value > Maximum)
-            {
-                ValidationError = $"Value must be at most {Maximum}";
-                ValidationErrorVisibility = Visibility.Visible;
-            }
-            else
-            {
-                ValidationError = string.Empty;
-                ValidationErrorVisibility = Visibility.Collapsed;
-            }
         }
     }
 }

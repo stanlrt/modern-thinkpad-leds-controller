@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              mc:Ignorable="d"
              d:DesignHeight="100"
              d:DesignWidth="400">
@@ -13,39 +14,26 @@
                    Margin="0,0,0,8"/>
 
         <!-- Slider + Value Display -->
-        <StackPanel Orientation="Horizontal"
-                    VerticalAlignment="Center">
+        <StackPanel Orientation="Horizontal">
             <Slider Minimum="{Binding Minimum, RelativeSource={RelativeSource AncestorType=UserControl}}"
                     Style="{DynamicResource {x:Type Slider}}"
                     Maximum="{Binding Maximum, RelativeSource={RelativeSource AncestorType=UserControl}}"
                     Width="200"
+                    VerticalAlignment="Center"
                     Value="{Binding Value, RelativeSource={RelativeSource AncestorType=UserControl}}"
                     TickFrequency="{Binding TickFrequency, RelativeSource={RelativeSource AncestorType=UserControl}}"
                     IsSnapToTickEnabled="True"/>
-            <TextBox Width="Auto"
-                     Margin="8,0,0,0"
-                     Padding="4,2"
-                     Background="{DynamicResource AppInputBackgroundBrush}"
-                     PreviewTextInput="NumberValidationTextBox"
-                     LostFocus="TextBox_LostFocus"
-                     x:Name="ValueTextBox"
-                     Text="{Binding Value, RelativeSource={RelativeSource AncestorType=UserControl}, StringFormat={}{0}, UpdateSourceTrigger=PropertyChanged}">
-                <Validation.ErrorTemplate>
-                    <ControlTemplate/>
-                </Validation.ErrorTemplate>
-            </TextBox>
+            <ui:NumberBox Margin="8,0,0,0"
+                          SpinButtonPlacementMode="Compact"
+                          VerticalAlignment="Center"
+                          Minimum="{Binding Minimum, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                          Maximum="{Binding Maximum, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                          SmallChange="{Binding TickFrequency, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                          Value="{Binding Value, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
             <TextBlock Text="{Binding Unit, RelativeSource={RelativeSource AncestorType=UserControl}}"
                        VerticalAlignment="Center"
                        Margin="4,0,0,0"/>
         </StackPanel>
-
-        <!-- Validation Error -->
-        <TextBlock Text="{Binding ValidationError, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                   FontSize="11"
-                   Foreground="Red"
-                   TextWrapping="Wrap"
-                   Margin="0,4,0,0"
-                   Visibility="{Binding ValidationErrorVisibility, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
 
         <!-- Description -->
         <TextBlock Text="{Binding Description, RelativeSource={RelativeSource AncestorType=UserControl}}"
