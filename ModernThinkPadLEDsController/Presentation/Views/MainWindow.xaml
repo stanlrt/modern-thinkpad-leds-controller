@@ -1,8 +1,9 @@
-<ui:FluentWindow
+<local:FixedFluentWindow
     x:Class="ModernThinkPadLEDsController.Presentation.Views.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    xmlns:local="clr-namespace:ModernThinkPadLEDsController.Presentation.Views"
     xmlns:converters="clr-namespace:ModernThinkPadLEDsController.Presentation.Converters"
     xmlns:lighting="clr-namespace:ModernThinkPadLEDsController.Lighting"
     xmlns:controls="clr-namespace:ModernThinkPadLEDsController.Presentation.Controls"
@@ -47,7 +48,8 @@
         <ui:TitleBar Grid.Row="0">
             <ui:TitleBar.Header>
                 <StackPanel Orientation="Horizontal"
-                            VerticalAlignment="Center">
+                            VerticalAlignment="Center"
+                            IsHitTestVisible="False">
                     <Image Source="pack://application:,,,/Resources/favicon.ico"
                            Width="20"
                            Height="20"
@@ -1293,6 +1295,6 @@
             </StackPanel>
         </ScrollViewer>
     </Grid>
-</ui:FluentWindow>
+</local:FixedFluentWindow>
 
 

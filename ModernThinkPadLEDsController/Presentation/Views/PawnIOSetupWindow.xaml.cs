@@ -10,7 +10,7 @@ namespace ModernThinkPadLEDsController.Presentation.Views;
 /// <summary>
 /// Guides the user through PawnIO installation.
 /// </summary>
-public partial class PawnIOSetupWindow : FluentWindow
+public partial class PawnIOSetupWindow : FixedFluentWindow
 {
     private const string PAWN_IO_DOWNLOAD_URL = "https://pawnio.eu/";
 

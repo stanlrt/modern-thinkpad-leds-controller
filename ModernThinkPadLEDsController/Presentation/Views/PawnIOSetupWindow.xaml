@@ -1,16 +1,17 @@
-<ui:FluentWindow x:Class="ModernThinkPadLEDsController.Presentation.Views.PawnIOSetupWindow"
-                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-                 Title="PawnIO Driver Setup"
-                 Icon="pack://application:,,,/Resources/favicon.ico"
-                 Width="500"
-                 SizeToContent="Height"
-                 WindowStartupLocation="CenterScreen"
-                 WindowBackdropType="Mica"
-                 ExtendsContentIntoTitleBar="True"
-                 Background="Transparent"
-                 ResizeMode="NoResize">
+<local:FixedFluentWindow x:Class="ModernThinkPadLEDsController.Presentation.Views.PawnIOSetupWindow"
+                         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                         xmlns:local="clr-namespace:ModernThinkPadLEDsController.Presentation.Views"
+                         Title="PawnIO Driver Setup"
+                         Icon="pack://application:,,,/Resources/favicon.ico"
+                         Width="500"
+                         SizeToContent="Height"
+                         WindowStartupLocation="CenterScreen"
+                         WindowBackdropType="Mica"
+                         ExtendsContentIntoTitleBar="True"
+                         Background="Transparent"
+                         ResizeMode="NoResize">
 
     <Grid Margin="30">
         <Grid.RowDefinitions>
@@ -88,5 +89,5 @@
 
         </StackPanel>
     </Grid>
-</ui:FluentWindow>
+</local:FixedFluentWindow>
 

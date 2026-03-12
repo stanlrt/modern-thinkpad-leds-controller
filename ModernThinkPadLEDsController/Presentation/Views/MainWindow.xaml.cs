@@ -18,7 +18,7 @@ namespace ModernThinkPadLEDsController.Presentation.Views;
 /// <summary>
 /// Hosts the main settings and LED configuration UI.
 /// </summary>
-public partial class MainWindow : FluentWindow, INotifyPropertyChanged
+public partial class MainWindow : FixedFluentWindow, INotifyPropertyChanged
 {
 
     private const int WM_MOUSEHWHEEL = 0x020E;
