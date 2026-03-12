@@ -52,7 +52,7 @@ public static class AppSettingsDefaults
     public const bool ENABLE_HARDWARE_ACCESS = true;
 
     /// <summary>Default logging level (Information, Debug, Verbose, Warning, Error).</summary>
-    public const string LOG_LEVEL = "Information";
+    public const string LOG_LEVEL = "Error";
 
     /// <summary>Minimum allowed LED blink interval in milliseconds.</summary>
     public const int MIN_BLINK_INTERVAL_MS = 100;
