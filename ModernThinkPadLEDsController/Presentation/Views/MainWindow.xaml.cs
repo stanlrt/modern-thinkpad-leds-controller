@@ -8,8 +8,10 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using ModernThinkPadLEDsController.Shell;
 using ModernThinkPadLEDsController.Presentation.ViewModels;
+using Serilog;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
+using MessageBox = Wpf.Ui.Controls.MessageBox;
 
 namespace ModernThinkPadLEDsController.Presentation.Views;
 
@@ -180,6 +182,25 @@ public partial class MainWindow : FluentWindow, INotifyPropertyChanged
             FileName = "https://github.com/stanlrt/modern-thinkpad-leds-controller/releases",
             UseShellExecute = true
         });
+    }
+
+    private async void OnOpenLogFolderClicked(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            Logging.LoggingConfiguration.OpenLogFolder();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Failed to open log folder");
+
+            MessageBox messageBox = new()
+            {
+                Title = "Error",
+                Content = $"Failed to open log folder: {ex.Message}",
+            };
+            await messageBox.ShowDialogAsync();
+        }
     }
 
     // --- Hotkey capture methods ---

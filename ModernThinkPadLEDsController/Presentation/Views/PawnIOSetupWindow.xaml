@@ -7,7 +7,9 @@
                  Width="500"
                  SizeToContent="Height"
                  WindowStartupLocation="CenterScreen"
-                 Background="{DynamicResource ApplicationBackgroundBrush}"
+                 WindowBackdropType="Mica"
+                 ExtendsContentIntoTitleBar="True"
+                 Background="Transparent"
                  ResizeMode="NoResize">
 
     <Grid Margin="30">

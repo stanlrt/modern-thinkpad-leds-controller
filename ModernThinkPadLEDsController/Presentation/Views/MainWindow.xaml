@@ -13,7 +13,9 @@
     MinHeight="400"
     WindowStartupLocation="CenterScreen"
     ShowInTaskbar="True"
-    Background="{DynamicResource ApplicationBackgroundBrush}"
+    ExtendsContentIntoTitleBar="True"
+    WindowBackdropType="Mica"
+    Background="Transparent"
     Icon="pack://application:,,,/Resources/favicon.ico"
     Closing="OnWindowClosing">
 
@@ -36,7 +38,7 @@
         </Style>
     </ui:FluentWindow.Resources>
 
-    <Grid Background="{DynamicResource ApplicationBackgroundBrush}">
+    <Grid Background="Transparent">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -59,7 +61,7 @@
 
         <!-- Main vertical scroll for entire page -->
         <ScrollViewer Grid.Row="1"
-                      Background="{DynamicResource ApplicationBackgroundBrush}"
+                      Background="Transparent"
                       VerticalScrollBarVisibility="Auto"
                       Padding="12"
                       PreviewMouseWheel="MainScrollViewer_PreviewMouseWheel"
@@ -1011,7 +1013,7 @@
                 <!-- SECTION 2 â€” Tab panels                                       -->
                 <!-- ============================================================ -->
                 <TabControl Margin="0,0,0,0"
-                            Background="{DynamicResource ApplicationBackgroundBrush}">
+                            Background="Transparent">
                     <!-- â”€â”€ Hotkey tab â”€â”€ -->
                     <TabItem Header="Hotkey">
                         <StackPanel Margin="10,12">
