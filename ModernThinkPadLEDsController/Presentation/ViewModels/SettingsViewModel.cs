@@ -5,6 +5,7 @@ using ModernThinkPadLEDsController.Hardware;
 using ModernThinkPadLEDsController.Logging;
 using ModernThinkPadLEDsController.Settings;
 using ModernThinkPadLEDsController.Shell;
+using Serilog;
 
 namespace ModernThinkPadLEDsController.Presentation.ViewModels;
 
@@ -215,6 +216,21 @@ public sealed partial class SettingsViewModel : ObservableObject
     /// Available log levels sorted from most detailed to least detailed.
     /// </summary>
     public string[] AvailableLogLevels { get; } = { "Verbose", "Debug", "Information", "Warning", "Error" };
+
+    [RelayCommand]
+    private void OpenLogFolder()
+    {
+        try
+        {
+            LoggingConfiguration.OpenLogFolder();
+        }
+        catch (Exception ex)
+        {
+            // Log the error and show a warning message to the user
+            Log.Error(ex, "Failed to open log folder");
+            HardwareAccessWarningMessage = "Failed to open log folder: " + ex.Message;
+        }
+    }
 
     public string AppVersion { get; } =
         System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "—";

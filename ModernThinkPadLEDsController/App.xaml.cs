@@ -151,7 +151,7 @@ public partial class App : Application
 
             string message = $"Fatal startup error:\n\n{ex.GetType().Name}: {ex.Message}\n\n" +
                          $"Stack Trace:\n{ex.StackTrace}\n\n" +
-                         $"See logs at: {StartupEmergencyLogger.LogDirectory}";
+                         $"See logs at: {StartupEmergencyLogger.LogDirectory}\emergency.log";
 
             MessageBox.Show(message, "Startup Error", MessageBoxButton.OK, MessageBoxImage.Error);
 

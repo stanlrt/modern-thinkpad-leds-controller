@@ -63,7 +63,8 @@
                       VerticalScrollBarVisibility="Auto"
                       Padding="12"
                       PreviewMouseWheel="MainScrollViewer_PreviewMouseWheel"
-                      PanningMode="Both">
+                      PanningMode="Both"
+                      FocusVisualStyle="{x:Null}">
             <StackPanel>
 
                 <!-- ============================================================ -->
@@ -151,7 +152,8 @@
                                       VerticalScrollBarVisibility="Disabled"
                                       PreviewMouseWheel="TableScrollViewer_PreviewMouseWheel"
                                       Padding="0,0,0,8"
-                                      PanningMode="Both">
+                                      PanningMode="Both"
+                                      FocusVisualStyle="{x:Null}">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
@@ -1243,12 +1245,20 @@
                             <TextBlock Text="Logging Level"
                                        FontWeight="SemiBold"
                                        Margin="0,24,0,4"/>
-                            <ComboBox ItemsSource="{Binding SettingsVm.AvailableLogLevels}"
-                                      SelectedItem="{Binding SettingsVm.LogLevel}"
-                                      Background="{DynamicResource AppInputBackgroundBrush}"
-                                      Width="200"
-                                      HorizontalAlignment="Left"
-                                      Margin="0,8,0,4"/>
+                            <StackPanel Orientation="Horizontal"
+                                        Margin="0,0,0,4">
+                                <ComboBox ItemsSource="{Binding SettingsVm.AvailableLogLevels}"
+                                          SelectedItem="{Binding SettingsVm.LogLevel}"
+                                          Background="{DynamicResource AppInputBackgroundBrush}"
+                                          Width="200"
+                                          Margin="0,0,16,0"
+                                          HorizontalAlignment="Left"/>
+                                <TextBlock VerticalAlignment="Center">
+                                    <Hyperlink Click="OnOpenLogFolderClicked">
+                                        Open log folder
+                                    </Hyperlink>
+                                </TextBlock>
+                            </StackPanel>
                             <TextBlock Text="How detailed logs should be (verbose: highly detailed, errors: only critical errors). More detailed logs can help with troubleshooting but may impact performance and generate large log files over time."
                                        FontSize="11"
                                        Foreground="{DynamicResource TextFillColorTertiaryBrush}"
@@ -1266,7 +1276,7 @@
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="{Binding SettingsVm.AppVersion}"
                                            Foreground="{DynamicResource TextFillColorTertiaryBrush}"
-                                           Margin="0,0,8,0"/>
+                                           Margin="0,0,16,0"/>
                                 <TextBlock>
                                     <Hyperlink Click="OnCheckForUpdateClicked">
                                         Check for update

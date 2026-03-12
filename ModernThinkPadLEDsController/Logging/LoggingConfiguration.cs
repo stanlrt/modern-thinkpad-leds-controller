@@ -1,5 +1,6 @@
 using Serilog;
 using Serilog.Events;
+using System.Diagnostics;
 using System.IO;
 using System.Security.Principal;
 
@@ -159,9 +160,9 @@ public static class LoggingConfiguration
     {
         try
         {
-            WindowsIdentity identity = System.Security.Principal.WindowsIdentity.GetCurrent();
-            WindowsPrincipal principal = new System.Security.Principal.WindowsPrincipal(identity);
-            return principal.IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
+            WindowsIdentity identity = WindowsIdentity.GetCurrent();
+            WindowsPrincipal principal = new(identity);
+            return principal.IsInRole(WindowsBuiltInRole.Administrator);
         }
         catch
         {
@@ -207,6 +208,24 @@ public static class LoggingConfiguration
         {
             Log.Warning("Invalid log level: {LogLevel}", levelName);
         }
+    }
+
+    /// <summary>
+    /// Opens the log folder in Windows Explorer.
+    /// </summary>
+    public static void OpenLogFolder()
+    {
+        if (!Directory.Exists(_logDirectory))
+        {
+            Directory.CreateDirectory(_logDirectory);
+        }
+
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = _logDirectory,
+            UseShellExecute = true,
+            Verb = "open"
+        });
     }
 }
 
