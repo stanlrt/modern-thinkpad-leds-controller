@@ -6,6 +6,7 @@ using ModernThinkPadLEDsController.Logging;
 using ModernThinkPadLEDsController.Settings;
 using ModernThinkPadLEDsController.Shell;
 using Serilog;
+using Serilog.Events;
 
 namespace ModernThinkPadLEDsController.Presentation.ViewModels;
 
@@ -200,9 +201,9 @@ public sealed partial class SettingsViewModel : ObservableObject
     public bool HasHardwareAccessWarning => !string.IsNullOrWhiteSpace(HardwareAccessWarningMessage);
 
     [ObservableProperty]
-    private string _logLevel = AppSettingsDefaults.LOG_LEVEL;
+    private LogEventLevel _logLevel = AppSettingsDefaults.LOG_LEVEL;
 
-    partial void OnLogLevelChanged(string value)
+    partial void OnLogLevelChanged(LogEventLevel value)
     {
         if (_isLoading)
             return;
@@ -215,7 +216,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     /// <summary>
     /// Available log levels sorted from most detailed to least detailed.
     /// </summary>
-    public string[] AvailableLogLevels { get; } = { "Verbose", "Debug", "Information", "Warning", "Error" };
+    public LogEventLevel[] AvailableLogLevels { get; } = { LogEventLevel.Verbose, LogEventLevel.Debug, LogEventLevel.Information, LogEventLevel.Warning, LogEventLevel.Error };
 
     [RelayCommand]
     private void OpenLogFolder()

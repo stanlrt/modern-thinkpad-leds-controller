@@ -5,6 +5,7 @@ using System.Windows.Input;
 using ModernThinkPadLEDsController.Lighting;
 using ModernThinkPadLEDsController.Shell;
 using Serilog;
+using Serilog.Events;
 
 namespace ModernThinkPadLEDsController;
 
@@ -66,7 +67,7 @@ public sealed class AppSettings
     public bool SuppressDiskCounterWarning { get; set; } = AppSettingsDefaults.SUPPRESS_DISK_COUNTER_WARNING;
     public bool PersistSettingsOnChange { get; set; } = AppSettingsDefaults.PERSIST_SETTINGS_ON_CHANGE;
     public bool EnableHardwareAccess { get; set; } = AppSettingsDefaults.ENABLE_HARDWARE_ACCESS;
-    public string LogLevel { get; set; } = AppSettingsDefaults.LOG_LEVEL;
+    public LogEventLevel LogLevel { get; set; } = AppSettingsDefaults.LOG_LEVEL;
 
     public static AppSettings Load()
         => LoadFromPath(_filePath);
