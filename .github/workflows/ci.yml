@@ -7,19 +7,11 @@ on:
     branches: [main]
 
 jobs:
-  checks:
-    name: ${{ matrix.job_name }}
+  prepare:
+    name: restore dependencies
     runs-on: windows-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - job_kind: format_lint
-            job_name: dotnet format + build (analyzers)
-            restore_project: ModernThinkPadLEDsController/ModernThinkPadLEDsController.csproj
-          - job_kind: test
-            job_name: dotnet test (unit & component)
-            restore_project: ModernThinkPadLEDsController.Tests/ModernThinkPadLEDsController.Tests.csproj
+    env:
+      NUGET_PACKAGES: ${{ github.workspace }}\.nuget\packages
 
     steps:
       - name: Checkout
@@ -33,10 +25,41 @@ jobs:
           cache-dependency-path: '**/packages.lock.json'
 
       - name: Restore dependencies
-        run: dotnet restore ${{ matrix.restore_project }}
+        run: dotnet restore ModernThinkPadLEDsController.Tests/ModernThinkPadLEDsController.Tests.csproj
+
+      - name: Upload restored state
+        uses: actions/upload-artifact@v4
+        with:
+          name: restored-state
+          path: |
+            .nuget/packages
+            ModernThinkPadLEDsController/obj
+            ModernThinkPadLEDsController.Tests/obj
+          if-no-files-found: error
+          compression-level: 0
+
+  lint:
+    name: dotnet format + build (analyzers)
+    runs-on: windows-latest
+    needs: prepare
+    env:
+      NUGET_PACKAGES: ${{ github.workspace }}\.nuget\packages
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.103"
+
+      - name: Download restored state
+        uses: actions/download-artifact@v4
+        with:
+          name: restored-state
+          path: ${{ github.workspace }}
 
       - name: Check formatting (dotnet format)
-        if: matrix.job_kind == 'format_lint'
         # Fails if any file deviates from .editorconfig rules.
         # Remove --verify-no-changes locally to auto-fix instead.
         run: >
@@ -46,7 +69,6 @@ jobs:
           --verbosity diagnostic
 
       - name: Lint (build with analyzer warnings as errors)
-        if: matrix.job_kind == 'format_lint'
         # Roslyn analyzers run as part of the build; /warnaserror promotes
         # every analyzer warning to an error so the step fails on violations.
         run: >
@@ -55,8 +77,28 @@ jobs:
           --configuration Release
           /warnaserror
 
+  test:
+    name: dotnet test (unit & component)
+    runs-on: windows-latest
+    needs: prepare
+    env:
+      NUGET_PACKAGES: ${{ github.workspace }}\.nuget\packages
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.103"
+
+      - name: Download restored state
+        uses: actions/download-artifact@v4
+        with:
+          name: restored-state
+          path: ${{ github.workspace }}
+
       - name: Run tests
-        if: matrix.job_kind == 'test'
         run: >
           dotnet test ModernThinkPadLEDsController.Tests/ModernThinkPadLEDsController.Tests.csproj
           --no-restore
@@ -65,7 +107,7 @@ jobs:
           --collect:"XPlat Code Coverage"
 
       - name: Upload test results
-        if: always() && matrix.job_kind == 'test'
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-results
