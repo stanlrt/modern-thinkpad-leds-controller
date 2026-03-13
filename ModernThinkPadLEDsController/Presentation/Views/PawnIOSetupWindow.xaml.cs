@@ -3,7 +3,6 @@ using System.Windows.Controls;
 using Microsoft.Extensions.Logging;
 using ModernThinkPadLEDsController.Hardware;
 using Wpf.Ui.Appearance;
-using Wpf.Ui.Controls;
 
 namespace ModernThinkPadLEDsController.Presentation.Views;
 
@@ -45,7 +44,10 @@ public partial class PawnIOSetupWindow : FixedFluentWindow
 
     private void InstallButton_Click(object sender, RoutedEventArgs e)
     {
-        _logger.LogDebug("Install button clicked in state: {State}", _currentState);
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            _logger.LogDebug("Install button clicked in state: {State}", _currentState);
+        }
 
         switch (_currentState)
         {
@@ -171,7 +173,10 @@ public partial class PawnIOSetupWindow : FixedFluentWindow
                 return;
             }
 
-            _logger.LogInformation("Starting new application instance: {ExePath}", exePath);
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation("Starting new application instance: {ExePath}", exePath);
+            }
 
             // Restart the application
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
@@ -183,7 +188,7 @@ public partial class PawnIOSetupWindow : FixedFluentWindow
             _logger.LogInformation("New instance started, shutting down current instance");
 
             // Exit current instance
-            System.Windows.Application.Current.Shutdown();
+            Application.Current.Shutdown();
         }
         catch (Exception ex)
         {
@@ -196,7 +201,10 @@ public partial class PawnIOSetupWindow : FixedFluentWindow
 
     private void TransitionToState(SetupState newState, string statusMessage, System.Windows.Media.Brush statusColor)
     {
-        _logger.LogDebug("Transitioning from {OldState} to {NewState}", _currentState, newState);
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            _logger.LogDebug("Transitioning from {OldState} to {NewState}", _currentState, newState);
+        }
         _currentState = newState;
 
         UpdateUIForState(statusMessage, statusColor);

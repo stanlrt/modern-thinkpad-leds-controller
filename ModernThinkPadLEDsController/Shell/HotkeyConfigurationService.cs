@@ -59,11 +59,14 @@ public sealed class HotkeyConfigurationService
 
     public bool UpdateHotkey(HotkeyBinding hotkey, string displayText)
     {
-        _logger.LogInformation(
-            "Updating hotkey to {Display} (modifiers={Modifiers:X}, vk={VirtualKey:X})",
-            displayText,
-            (int)hotkey.Modifiers,
-            hotkey.VirtualKey);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation(
+                "Updating hotkey to {Display} (modifiers={Modifiers:X}, vk={VirtualKey:X})",
+                displayText,
+                (int)hotkey.Modifiers,
+                hotkey.VirtualKey);
+        }
 
         bool success = _hotkey.UpdateHotkey(hotkey);
         if (!success)

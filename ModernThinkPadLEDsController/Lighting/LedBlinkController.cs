@@ -8,8 +8,8 @@ namespace ModernThinkPadLEDsController.Lighting;
 public sealed class LedBlinkController : ILedBlinkController
 {
     private readonly LedController _leds;
-    private readonly Dictionary<Led, byte?> _blinkingLeds = new();
-    private readonly object _lock = new();
+    private readonly Dictionary<Led, byte?> _blinkingLeds = [];
+    private readonly Lock _lock = new();
 
     private CancellationTokenSource? _cts;
     private bool _currentState;

@@ -17,7 +17,7 @@ public enum MonitorState
 /// <summary>
 /// Translates window power messages into application-level events.
 /// </summary>
-public sealed class PowerEventMonitor : IWindowAttachedMonitor
+public sealed partial class PowerEventMonitor : IWindowAttachedMonitor
 {
     public event Action<bool>? LidStateChanged;
     public event Action<MonitorState>? MonitorStateChanged;
@@ -47,12 +47,13 @@ public sealed class PowerEventMonitor : IWindowAttachedMonitor
         public byte Data;
     }
 
-    [DllImport("User32.dll", SetLastError = true)]
-    private static extern IntPtr RegisterPowerSettingNotification(
+    [LibraryImport("User32.dll", SetLastError = true)]
+    private static partial IntPtr RegisterPowerSettingNotification(
         IntPtr hRecipient, ref Guid powerSettingGuid, int flags);
 
-    [DllImport("User32.dll", SetLastError = true)]
-    private static extern bool UnregisterPowerSettingNotification(IntPtr handle);
+    [LibraryImport("User32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool UnregisterPowerSettingNotification(IntPtr handle);
 
     /// <summary>
     /// Attaches native power notifications to the provided window.

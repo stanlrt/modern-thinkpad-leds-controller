@@ -22,6 +22,7 @@ public sealed class LedBehaviorService : IDisposable
     private bool _hasObservedMicrophoneMuteState;
     private bool _lastSpeakerMuted;
     private bool _hasObservedSpeakerMuteState;
+    private IReadOnlyDictionary<Led, LedMapping>? _mappings;
 
     private static readonly Led[] _fullscreenManagedLeds =
     [
@@ -255,8 +256,8 @@ public sealed class LedBehaviorService : IDisposable
 
     private IReadOnlyDictionary<Led, LedMapping> Mappings
     {
-        get =>
-        field ?? throw new InvalidOperationException("LedBehaviorService.Initialize must be called before use."); set;
+        get => _mappings ?? throw new InvalidOperationException("LedBehaviorService.Initialize must be called before use.");
+        set => _mappings = value;
     }
 
     private void ApplyLedStateRespectingFullscreen(Led led, bool forceWrite = false)

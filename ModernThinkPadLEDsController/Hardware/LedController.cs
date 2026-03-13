@@ -16,8 +16,8 @@ public sealed class LedController
 
     private readonly EcController _ec;
     private readonly HardwareAccessController _hardwareAccess;
-    private readonly object _cacheLock = new();
-    private readonly Dictionary<byte, LedState> _lastLedStates = new();
+    private readonly Lock _cacheLock = new();
+    private readonly Dictionary<byte, LedState> _lastLedStates = [];
     private byte? _lastKeyboardBacklightLevel;
 
     public LedController(EcController ec, HardwareAccessController hardwareAccess)

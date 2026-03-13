@@ -13,7 +13,7 @@ internal sealed class FakePortIO : Hardware.IPortIO
     private const ushort EC_CTRLPORT = 0x66;
     private const ushort EC_DATAPORT = 0x62;
 
-    private readonly List<(ushort Port, byte Data)> _writes = new();
+    private readonly List<(ushort Port, byte Data)> _writes = [];
 
     /// <summary>All port writes recorded in order.</summary>
     public IReadOnlyList<(ushort Port, byte Data)> AllWrites => _writes;

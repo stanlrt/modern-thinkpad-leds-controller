@@ -39,7 +39,7 @@ public sealed class EcController
     private const byte EC_CTRLPORT_WRITE = 0x81;
 
     private readonly IPortIO _io;
-    private readonly object _transactionLock = new();
+    private readonly Lock _transactionLock = new();
 
     public EcController(IPortIO io)
     {

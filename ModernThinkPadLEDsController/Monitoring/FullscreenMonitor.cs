@@ -8,7 +8,7 @@ namespace ModernThinkPadLEDsController.Monitoring;
 /// <summary>
 /// Detects when another window has entered fullscreen mode.
 /// </summary>
-public sealed class FullscreenMonitor : ILifecycleMonitor, IWindowAttachedMonitor
+public sealed partial class FullscreenMonitor : ILifecycleMonitor, IWindowAttachedMonitor
 {
     public event Action<bool>? FullscreenChanged;
 
@@ -52,29 +52,32 @@ public sealed class FullscreenMonitor : ILifecycleMonitor, IWindowAttachedMonito
         QunsApp = 7,
     }
 
-    [DllImport("user32.dll")]
-    private static extern IntPtr GetForegroundWindow();
+    [LibraryImport("user32.dll")]
+    private static partial IntPtr GetForegroundWindow();
 
-    [DllImport("user32.dll")]
-    private static extern bool IsWindowVisible(IntPtr hWnd);
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool IsWindowVisible(IntPtr hWnd);
 
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern bool GetWindowRect(IntPtr hWnd, out Rect rect);
+    [LibraryImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool GetWindowRect(IntPtr hWnd, out Rect rect);
 
-    [DllImport("user32.dll")]
-    private static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint dwFlags);
+    [LibraryImport("user32.dll")]
+    private static partial IntPtr MonitorFromWindow(IntPtr hwnd, uint dwFlags);
 
-    [DllImport("user32.dll", CharSet = CharSet.Auto)]
-    private static extern bool GetMonitorInfo(IntPtr hMonitor, ref MonitorInfo monitorInfo);
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool GetMonitorInfo(IntPtr hMonitor, ref MonitorInfo monitorInfo);
 
-    [DllImport("user32.dll", EntryPoint = "GetWindowLongPtr", SetLastError = true)]
-    private static extern IntPtr GetWindowLongPtr64(IntPtr hWnd, int nIndex);
+    [LibraryImport("user32.dll", EntryPoint = "GetWindowLongPtr", SetLastError = true)]
+    private static partial IntPtr GetWindowLongPtr64(IntPtr hWnd, int nIndex);
 
-    [DllImport("user32.dll", EntryPoint = "GetWindowLong", SetLastError = true)]
-    private static extern IntPtr GetWindowLongPtr32(IntPtr hWnd, int nIndex);
+    [LibraryImport("user32.dll", EntryPoint = "GetWindowLong", SetLastError = true)]
+    private static partial IntPtr GetWindowLongPtr32(IntPtr hWnd, int nIndex);
 
-    [DllImport("shell32.dll")]
-    private static extern int SHQueryUserNotificationState(out QueryUserNotificationState state);
+    [LibraryImport("shell32.dll")]
+    private static partial int SHQueryUserNotificationState(out QueryUserNotificationState state);
 
     /// <summary>
     /// Sets the app window handle that should be ignored by fullscreen detection.

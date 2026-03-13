@@ -27,7 +27,7 @@ public sealed class LhmDriver : IPortIO, IDisposable
         // Check if PawnIO Windows service is running
         try
         {
-            using ServiceController service = new ServiceController("pawnio");
+            using ServiceController service = new("pawnio");
             ServiceControllerStatus status = service.Status;
             Log.Information("PawnIO service status: {Status}", status);
 
@@ -46,7 +46,7 @@ public sealed class LhmDriver : IPortIO, IDisposable
         try
         {
             Log.Debug("Instantiating LpcAcpiEc module");
-            LpcAcpiEc pawnModule = new LpcAcpiEc();
+            LpcAcpiEc pawnModule = new();
 
             if (!pawnModule.IsLoaded)
             {

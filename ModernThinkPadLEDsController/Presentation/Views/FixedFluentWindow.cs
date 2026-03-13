@@ -1,5 +1,4 @@
 using System.Reflection;
-using System.Windows;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
 

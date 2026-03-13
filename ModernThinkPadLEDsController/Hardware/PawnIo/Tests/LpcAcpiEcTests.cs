@@ -1,5 +1,4 @@
 using FluentAssertions;
-using ModernThinkPadLEDsController.Hardware.PawnIo;
 using Xunit;
 
 namespace ModernThinkPadLEDsController.Hardware.PawnIo.Tests;
@@ -14,7 +13,7 @@ public sealed class LpcAcpiEcTests
     public void Constructor_WithoutPawnIoDriver_ReturnsNonNullInstance()
     {
         // Act - This will fail to load if PawnIO driver isn't running, but shouldn't throw
-        LpcAcpiEc ec = new LpcAcpiEc();
+        LpcAcpiEc ec = new();
 
         // Assert
         ec.Should().NotBeNull();
@@ -24,7 +23,7 @@ public sealed class LpcAcpiEcTests
     public void IsLoaded_PropertyAccess_DoesNotThrow()
     {
         // Arrange - On systems without PawnIO, the module won't load
-        LpcAcpiEc ec = new LpcAcpiEc();
+        LpcAcpiEc ec = new();
 
         // Act & Assert - Main goal: ensure property doesn't throw
         ec.Invoking(e => _ = e.IsLoaded).Should().NotThrow();
@@ -34,7 +33,7 @@ public sealed class LpcAcpiEcTests
     public void Dispose_WhenCalledMultipleTimes_DoesNotThrow()
     {
         // Arrange
-        LpcAcpiEc ec = new LpcAcpiEc();
+        LpcAcpiEc ec = new();
 
         // Act & Assert
         ec.Dispose();
@@ -45,7 +44,7 @@ public sealed class LpcAcpiEcTests
     public void ReadPort_WhenDisposed_DoesNotThrow()
     {
         // Arrange
-        LpcAcpiEc ec = new LpcAcpiEc();
+        LpcAcpiEc ec = new();
         ec.Dispose();
 
         // Act & Assert - If driver isn't loaded, this returns 0 gracefully
@@ -56,7 +55,7 @@ public sealed class LpcAcpiEcTests
     public void WritePort_WhenDisposed_DoesNotThrow()
     {
         // Arrange
-        LpcAcpiEc ec = new LpcAcpiEc();
+        LpcAcpiEc ec = new();
         ec.Dispose();
 
         // Act & Assert - If driver isn't loaded, this no-ops gracefully

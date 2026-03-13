@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using System.Windows.Input;
 using ModernThinkPadLEDsController.Presentation.Services;
 using ModernThinkPadLEDsController.Shell;
 

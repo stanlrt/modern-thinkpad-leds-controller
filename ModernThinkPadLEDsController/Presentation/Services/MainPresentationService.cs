@@ -1,4 +1,3 @@
-using System.Windows.Input;
 using ModernThinkPadLEDsController.Presentation.ViewModels;
 using ModernThinkPadLEDsController.Settings;
 using ModernThinkPadLEDsController.Shell;

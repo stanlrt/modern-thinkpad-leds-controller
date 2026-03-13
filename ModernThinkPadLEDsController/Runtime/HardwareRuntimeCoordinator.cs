@@ -143,14 +143,20 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
 
         bool microphoneMuted = _microphoneMuteMonitor.QueryMuted();
         _ledBehavior.ObserveMicrophoneMuteState(microphoneMuted);
-        _logger.LogDebug("Initial microphone mute state: {IsMuted}", microphoneMuted);
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            _logger.LogDebug("Initial microphone mute state: {IsMuted}", microphoneMuted);
+        }
 
         StartMonitor(_speakerMuteMonitor);
         _logger.LogDebug("Speaker mute monitor started");
 
         bool speakerMuted = _speakerMuteMonitor.QueryMuted();
         _ledBehavior.ObserveSpeakerMuteState(speakerMuted);
-        _logger.LogDebug("Initial speaker mute state: {IsMuted}", speakerMuted);
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            _logger.LogDebug("Initial speaker mute state: {IsMuted}", speakerMuted);
+        }
 
         UpdateLedReapplyLoopState();
     }
@@ -201,7 +207,10 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
     {
         _dispatcher.Dispatch(() =>
         {
-            _logger.LogDebug("Disk mode LEDs changed: {HasDiskModes}", hasDiskModes);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Disk mode LEDs changed: {HasDiskModes}", hasDiskModes);
+            }
 
             if (!_hardwareAccess.IsEnabled)
             {
@@ -234,7 +243,10 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
 
         _dispatcher.Dispatch(() =>
         {
-            _logger.LogDebug("Disk state changed: {State}", state);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Disk state changed: {State}", state);
+            }
             _ledBehavior.OnDiskStateChanged(state);
         });
     }
@@ -243,7 +255,10 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
     {
         _dispatcher.Dispatch(() =>
         {
-            _logger.LogDebug("Microphone mute state changed: {IsMuted}", isMuted);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Microphone mute state changed: {IsMuted}", isMuted);
+            }
             _ledBehavior.ObserveMicrophoneMuteState(isMuted);
         });
     }
@@ -252,7 +267,10 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
     {
         _dispatcher.Dispatch(() =>
         {
-            _logger.LogDebug("Speaker mute state changed: {IsMuted}", isMuted);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Speaker mute state changed: {IsMuted}", isMuted);
+            }
             _ledBehavior.ObserveSpeakerMuteState(isMuted);
         });
     }
@@ -375,7 +393,10 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
 
         _dispatcher.Dispatch(() =>
         {
-            _logger.LogDebug("Lid state changed: {IsOpen}", isOpen);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Lid state changed: {IsOpen}", isOpen);
+            }
             if (isOpen && _settings.RememberKeyboardBacklight && _settings.SavedKeyboardBacklight is int savedKeyboardBacklight)
             {
                 _presentation.SetKeyboardBrightnessLevel(savedKeyboardBacklight);
@@ -392,7 +413,10 @@ public sealed class HardwareRuntimeCoordinator : IDisposable
 
         _dispatcher.Dispatch(() =>
         {
-            _logger.LogDebug("Fullscreen state changed: {IsFullscreen}", isFullscreen);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Fullscreen state changed: {IsFullscreen}", isFullscreen);
+            }
 
             if (!_keyboardBacklightMonitor.HasObservedLevel)
             {

@@ -1,34 +1,35 @@
-using System;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Interop;
-using System.Collections.Generic;
 
 namespace ModernThinkPadLEDsController.Shell;
 
 /// <summary>
 /// Utility class for properly handling windows maximization with auto-hide taskbar support.
 /// </summary>
-public static class WindowSizing
+public static partial class WindowSizing
 {
     private const int WM_GETMINMAXINFO = 0x0024;
     private const int MONITOR_DEFAULTTONEAREST = 0x00000002;
     private const int AUTOHIDE_TASKBAR_MARGIN = 2;
 
-    private static readonly Dictionary<Window, Action> _disposeHandlers = new();
+    private static readonly Dictionary<Window, Action> _disposeHandlers = [];
 
 
-    [DllImport("shell32", CallingConvention = CallingConvention.StdCall)]
-    public static extern int SHAppBarMessage(int dwMessage, ref APPBARDATA pData);
+    [LibraryImport("shell32", EntryPoint = "SHAppBarMessage")]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
+    public static partial int SHAppBarMessage(int dwMessage, ref APPBARDATA pData);
 
-    [DllImport("user32", SetLastError = true)]
-    private static extern IntPtr FindWindow(string? lpClassName, string? lpWindowName);
+    [LibraryImport("user32", SetLastError = true, EntryPoint = "FindWindowW", StringMarshalling = StringMarshalling.Utf16)]
+    private static partial IntPtr FindWindow(string? lpClassName, string? lpWindowName);
 
-    [DllImport("user32")]
-    internal static extern bool GetMonitorInfo(IntPtr hMonitor, MONITORINFO lpmi);
+    [LibraryImport("user32", SetLastError = true, EntryPoint = "GetMonitorInfoW")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO lpmi);
 
-    [DllImport("user32")]
-    internal static extern IntPtr MonitorFromWindow(IntPtr handle, int flags);
+    [LibraryImport("user32", EntryPoint = "MonitorFromWindow")]
+    internal static partial IntPtr MonitorFromWindow(IntPtr handle, int flags);
 
 
     public static void RegisterSizingEvents(Window window)
@@ -70,8 +71,11 @@ public static class WindowSizing
 
         if (monitor != IntPtr.Zero)
         {
-            MONITORINFO monitorInfo = new();
-            GetMonitorInfo(monitor, monitorInfo);
+            MONITORINFO monitorInfo = new()
+            {
+                cbSize = Marshal.SizeOf<MONITORINFO>()
+            };
+            GetMonitorInfo(monitor, ref monitorInfo);
             RECT workArea = monitorInfo.rcWork;
             RECT monitorArea = monitorInfo.rcMonitor;
 
@@ -205,7 +209,7 @@ public static class WindowSizing
         public int uCallbackMessage;
         public int uEdge;
         public RECT rc;
-        public bool lParam;
+        public IntPtr lParam;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -218,12 +222,12 @@ public static class WindowSizing
         public POINT ptMaxTrackSize;
     }
 
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-    public class MONITORINFO
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MONITORINFO
     {
-        public int cbSize = Marshal.SizeOf(typeof(MONITORINFO));
-        public RECT rcMonitor = new();
-        public RECT rcWork = new();
+        public int cbSize;
+        public RECT rcMonitor;
+        public RECT rcWork;
         public int dwFlags;
     }
 

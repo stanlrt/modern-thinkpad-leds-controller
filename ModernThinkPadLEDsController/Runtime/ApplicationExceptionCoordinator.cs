@@ -1,5 +1,3 @@
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 using Microsoft.Extensions.Logging;
@@ -52,7 +50,10 @@ public sealed class ApplicationExceptionCoordinator
             return;
         }
 
-        Logger?.LogCritical(ex, "Unhandled exception on background thread. IsTerminating: {IsTerminating}", e.IsTerminating);
+        if (Logger?.IsEnabled(LogLevel.Critical) == true)
+        {
+            Logger.LogCritical(ex, "Unhandled exception on background thread. IsTerminating: {IsTerminating}", e.IsTerminating);
+        }
 
         if (e.IsTerminating)
         {

@@ -10,7 +10,7 @@ namespace ModernThinkPadLEDsController.Shell;
 /// <summary>
 /// Owns the system tray icon and menu callbacks.
 /// </summary>
-public sealed class TrayIconService : IDisposable
+public sealed partial class TrayIconService : IDisposable
 {
     public event Action? ShowWindowRequested;
     public event Action? ExitRequested;
@@ -18,8 +18,9 @@ public sealed class TrayIconService : IDisposable
     private readonly TaskbarIcon _taskbarIcon = new();
     private Window? _helperWindow;
 
-    [DllImport("user32.dll")]
-    private static extern bool SetForegroundWindow(IntPtr hWnd);
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool SetForegroundWindow(IntPtr hWnd);
 
     public void Initialize()
     {

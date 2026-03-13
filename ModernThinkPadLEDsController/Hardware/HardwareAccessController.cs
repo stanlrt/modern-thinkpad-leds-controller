@@ -1,4 +1,3 @@
-using System.Threading;
 using Serilog;
 
 namespace ModernThinkPadLEDsController.Hardware;

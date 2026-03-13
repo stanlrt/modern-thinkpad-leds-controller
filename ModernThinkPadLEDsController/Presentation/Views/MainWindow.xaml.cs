@@ -10,7 +10,6 @@ using ModernThinkPadLEDsController.Shell;
 using ModernThinkPadLEDsController.Presentation.ViewModels;
 using Serilog;
 using Wpf.Ui.Appearance;
-using Wpf.Ui.Controls;
 using MessageBox = Wpf.Ui.Controls.MessageBox;
 
 namespace ModernThinkPadLEDsController.Presentation.Views;
@@ -28,21 +27,22 @@ public partial class MainWindow : FixedFluentWindow, INotifyPropertyChanged
 
     private bool _horizontalMouseWheelHookAttached;
     private readonly HotkeyConfigurationService _hotkeyConfiguration;
+    private string _hotkeyHintText = HOTKEY_HINT_IDLE;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public string HotkeyHintText
     {
-        get;
+        get => _hotkeyHintText;
         set
         {
-            if (field != value)
+            if (_hotkeyHintText != value)
             {
-                field = value;
+                _hotkeyHintText = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HotkeyHintText)));
             }
         }
-    } = HOTKEY_HINT_IDLE;
+    }
 
     public MainViewModel MainVm { get; }
     public SettingsViewModel SettingsVm { get; }
@@ -79,19 +79,19 @@ public partial class MainWindow : FixedFluentWindow, INotifyPropertyChanged
         const string longestText = "Fn/Caps Lock"; // Known to be the longest
 
         // Find any LED name TextBlock to get font properties
-        if (FindName("FnLockLedName") is not System.Windows.Controls.TextBlock sampleTextBlock)
+        if (FindName("FnLockLedName") is not TextBlock sampleTextBlock)
         {
             return;
         }
 
         // Measure the longest text in bold
-        Typeface typeface = new Typeface(
+        Typeface typeface = new(
             sampleTextBlock.FontFamily,
             sampleTextBlock.FontStyle,
             FontWeights.Bold,
             sampleTextBlock.FontStretch);
 
-        FormattedText formattedText = new FormattedText(
+        FormattedText formattedText = new(
             longestText,
             CultureInfo.CurrentCulture,
             FlowDirection.LeftToRight,

@@ -121,7 +121,7 @@ internal static class StartupTaskManager
         XNamespace taskNamespace = "http://schemas.microsoft.com/windows/2004/02/mit/task";
 
         // Build the Exec element with Command and Arguments
-        XElement execElement = new XElement(taskNamespace + "Exec",
+        XElement execElement = new(taskNamespace + "Exec",
             new XElement(taskNamespace + "Command", executablePath),
             new XElement(taskNamespace + "Arguments", "--minimized"));
 
@@ -131,7 +131,7 @@ internal static class StartupTaskManager
             execElement.Add(new XElement(taskNamespace + "WorkingDirectory", workingDirectory));
         }
 
-        XDocument document = new XDocument(
+        XDocument document = new(
           new XDeclaration("1.0", "utf-16", null),
           new XElement(taskNamespace + "Task",
             new XAttribute("version", "1.3"),
@@ -152,7 +152,7 @@ internal static class StartupTaskManager
               new XElement(taskNamespace + "ExecutionTimeLimit", "PT0S")),
             new XElement(taskNamespace + "Actions", execElement)));
 
-        XmlWriterSettings settings = new XmlWriterSettings
+        XmlWriterSettings settings = new()
         {
             Encoding = Encoding.Unicode,
             Indent = true,

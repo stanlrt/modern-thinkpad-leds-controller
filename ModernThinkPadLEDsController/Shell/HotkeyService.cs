@@ -15,7 +15,7 @@ namespace ModernThinkPadLEDsController.Shell;
 /// a separate background thread or a keyboard hook.
 /// </para>
 /// </summary>
-public sealed class HotkeyService : IDisposable
+public sealed partial class HotkeyService : IDisposable
 {
     /// <summary>
     /// Arbitrary unique hotkey id — must not clash with other RegisterHotKey calls in the process.
@@ -23,11 +23,13 @@ public sealed class HotkeyService : IDisposable
     private const int HOTKEY_ID = 0x3A9C;
     private const int WM_HOTKEY = 0x0312;
 
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern bool RegisterHotKey(IntPtr hWnd, int id, int fsModifiers, int vk);
+    [LibraryImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool RegisterHotKey(IntPtr hWnd, int id, int fsModifiers, int vk);
 
-    [DllImport("user32.dll")]
-    private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool UnregisterHotKey(IntPtr hWnd, int id);
 
     /// <summary>Raised on the UI thread each time the configured hotkey is pressed.</summary>
     public event Action? HotkeyPressed;

@@ -10,7 +10,7 @@ namespace ModernThinkPadLEDsController.TestInfrastructure;
 /// </summary>
 internal sealed class FakeLedBlinkController : ILedBlinkController
 {
-    private readonly Dictionary<Led, byte?> _blinking = new();
+    private readonly Dictionary<Led, byte?> _blinking = [];
 
     /// <summary>Currently registered blinking LEDs and their custom IDs.</summary>
     public IReadOnlyDictionary<Led, byte?> BlinkingLeds => _blinking;

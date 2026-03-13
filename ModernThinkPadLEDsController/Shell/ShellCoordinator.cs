@@ -62,12 +62,18 @@ public sealed class ShellCoordinator : IDisposable
     public void EnsureMainWindowHandle()
     {
         IntPtr handle = _windowHost.EnsureMainWindowHandle();
-        _logger.LogDebug("Main window handle ensured: {Handle}", handle);
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            _logger.LogDebug("Main window handle ensured: {Handle}", handle);
+        }
     }
 
     public void Start(bool startMinimized)
     {
-        _logger.LogInformation("Start minimized: {StartMinimized}", startMinimized);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation("Start minimized: {StartMinimized}", startMinimized);
+        }
 
         if (!startMinimized)
         {
@@ -121,7 +127,7 @@ public sealed class ShellCoordinator : IDisposable
         _hotkey.HotkeyPressed -= OnHotkeyPressed;
         _hotkey.HotkeyPressed += OnHotkeyPressed;
 
-        if (hotkeySuccess)
+        if (hotkeySuccess && _logger.IsEnabled(LogLevel.Information))
         {
             _logger.LogInformation("Hotkey service initialized with {Modifiers:X} + {VirtualKey:X}",
                 (int)hotkey.Modifiers, hotkey.VirtualKey);
@@ -135,6 +141,6 @@ public sealed class ShellCoordinator : IDisposable
 
     private void OnHotkeyPressed()
     {
-        _windowHost.Dispatch(() => _ledBehavior.OnHotkeyPressed());
+        _windowHost.Dispatch(_ledBehavior.OnHotkeyPressed);
     }
 }

@@ -1,4 +1,3 @@
-using System.Text.Json;
 using FluentAssertions;
 using ModernThinkPadLEDsController.Lighting;
 using ModernThinkPadLEDsController.Shell;

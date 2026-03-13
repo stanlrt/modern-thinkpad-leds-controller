@@ -56,7 +56,7 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
-        StartupEmergencyLogger emergencyLogger = new StartupEmergencyLogger("App.OnStartup");
+        StartupEmergencyLogger emergencyLogger = new("App.OnStartup");
 
         try
         {
@@ -75,7 +75,6 @@ public partial class App : Application
             LoggingConfiguration.ConfigureSerilog(appSettings.LogLevel);
             emergencyLogger.Log("ConfigureSerilog() completed");
 
-            // Set up theme change handlers
             ApplicationThemeManager.Changed += OnApplicationThemeChanged;
             SystemEvents.UserPreferenceChanged += OnSystemUserPreferenceChanged;
 
@@ -97,15 +96,20 @@ public partial class App : Application
             HardwareAccessController hardwareAccess = _serviceProvider.GetRequiredService<HardwareAccessController>();
 
             _logger.LogDebug("Application startup initiated");
-            _logger.LogDebug("Command line arguments: {Args}", string.Join(" ", e.Args));
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Command line arguments: {Args}", string.Join(" ", e.Args));
+            }
 
 #if DEBUG
             _logger.LogWarning("Running in DEBUG configuration - memory usage will be 30-50% higher than Release");
 #else
             _logger.LogInformation("Running in RELEASE configuration");
 #endif
-
-            _logger.LogInformation("Hardware access status: {Status}", hardwareAccess.GetStatusDescription());
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation("Hardware access status: {Status}", hardwareAccess.GetStatusDescription());
+            }
             LoggingConfiguration.LogEnvironmentDetails();
 
             // Global exception handlers to prevent silent crashes
@@ -128,7 +132,7 @@ public partial class App : Application
             catch (LhmDriverInitializationException ex)
             {
                 _logger.LogError(ex, "Failed to initialize driver - showing PawnIO setup window");
-                PawnIOSetupWindow setup = new PawnIOSetupWindow();
+                PawnIOSetupWindow setup = new();
                 setup.ShowDialog();
                 Shutdown();
                 return;
@@ -166,7 +170,7 @@ public partial class App : Application
     /// </summary>
     private static IServiceProvider CreateServiceProvider(string[] args)
     {
-        Container container = new Container(rules => rules
+        Container container = new(rules => rules
             .WithoutThrowOnRegisteringDisposableTransient()
             .WithTrackingDisposableTransients());
 
@@ -228,7 +232,7 @@ public partial class App : Application
         services.AddSingleton<DiskActivityMonitor>(sp =>
         {
             AppSettings settings = sp.GetRequiredService<AppSettings>();
-            DiskActivityMonitor monitor = new DiskActivityMonitor(settings.DiskPollIntervalMs);
+            DiskActivityMonitor monitor = new(settings.DiskPollIntervalMs);
             monitor.TryInitialize(); // Initialize on creation
             return monitor;
         });
@@ -241,7 +245,7 @@ public partial class App : Application
         // UI services
         services.AddSingleton<TrayIconService>(__ =>
         {
-            TrayIconService tray = new TrayIconService();
+            TrayIconService tray = new();
             tray.Initialize();
             return tray;
         });
@@ -338,7 +342,10 @@ public partial class App : Application
         CopyBrushResource("RadioButtonOuterEllipseCheckedStroke", "CheckBoxCheckBorderBrush");
         CopyBrushResource("RadioButtonCheckGlyphFill", "CheckBoxCheckGlyphForeground");
 
-        _logger?.LogDebug("Loaded theme-specific resources: {ThemeFile}", themeFile);
+        if (_logger?.IsEnabled(LogLevel.Debug) == true)
+        {
+            _logger?.LogDebug("Loaded theme-specific resources: {ThemeFile}", themeFile);
+        }
     }
 
     private void CopyBrushResource(string sourceKey, string targetKey)
@@ -356,7 +363,8 @@ public partial class App : Application
         _singleInstanceMutex = new Mutex(
             initiallyOwned: true,
             name: "ModernThinkPadLEDsController_SingleInstance",
-            out bool isFirstInstance);
+            out bool isFirstInstance
+        );
 
         _mutexOwned = isFirstInstance;
 
@@ -373,7 +381,7 @@ public partial class App : Application
             {
                 _logger?.LogWarning("Could not find/activate existing window - showing message");
                 MessageBox.Show(
-                    "Modern ThinkPad LEDs Controller is already running.\n\nLook for its icon in the system tray.",
+                    $"{ApplicationInfo.WINDOW_TITLE} is already running.\n\nLook for its icon in the system tray.",
                     "Already Running",
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
@@ -395,9 +403,7 @@ public partial class App : Application
     {
         try
         {
-            // Try to find the window by its title
-            // MainWindow's title is "Modern ThinkPad LEDs Controller"
-            IntPtr hWnd = FindWindow(null, "Modern ThinkPad LEDs Controller");
+            IntPtr hWnd = FindWindow(null, ApplicationInfo.WINDOW_TITLE);
 
             if (hWnd == IntPtr.Zero)
             {
@@ -405,7 +411,10 @@ public partial class App : Application
                 return false;
             }
 
-            _logger?.LogDebug("Found existing window handle: {Handle}", hWnd);
+            if (_logger?.IsEnabled(LogLevel.Debug) == true)
+            {
+                _logger.LogDebug("Found existing window handle: {Handle}", hWnd);
+            }
 
             if (IsIconic(hWnd))
             {
@@ -417,7 +426,10 @@ public partial class App : Application
 
             // Bring the window to the foreground
             bool success = SetForegroundWindow(hWnd);
-            _logger?.LogDebug("SetForegroundWindow result: {Success}", success);
+            if (_logger?.IsEnabled(LogLevel.Debug) == true)
+            {
+                _logger.LogDebug("SetForegroundWindow result: {Success}", success);
+            }
 
             return success;
         }

@@ -4,10 +4,11 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
     xmlns:local="clr-namespace:ModernThinkPadLEDsController.Presentation.Views"
+    xmlns:app="clr-namespace:ModernThinkPadLEDsController"
     xmlns:converters="clr-namespace:ModernThinkPadLEDsController.Presentation.Converters"
     xmlns:lighting="clr-namespace:ModernThinkPadLEDsController.Lighting"
     xmlns:controls="clr-namespace:ModernThinkPadLEDsController.Presentation.Controls"
-    Title="Modern ThinkPad LEDs Controller"
+    Title="{x:Static app:ApplicationInfo.WINDOW_TITLE}"
     Width="1000"
     Height="700"
     MinWidth="640"
@@ -54,7 +55,7 @@
                            Width="20"
                            Height="20"
                            Margin="8,0,0,0"/>
-                    <TextBlock Text="Modern ThinkPad LEDs Controller"
+                    <TextBlock Text="{x:Static app:ApplicationInfo.WINDOW_TITLE}"
                                Margin="8,0,0,0"
                                VerticalAlignment="Center"/>
                 </StackPanel>

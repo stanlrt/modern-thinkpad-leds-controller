@@ -1,5 +1,4 @@
 using FluentAssertions;
-using ModernThinkPadLEDsController.Hardware;
 using Xunit;
 
 namespace ModernThinkPadLEDsController.Hardware.Tests;

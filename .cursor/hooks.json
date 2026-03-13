@@ -1,0 +1,12 @@
+{
+    "version": 1,
+    "hooks": {
+        "afterAgentResponse": [
+            {
+                "type": "prompt",
+                "prompt": "If you modified code, run dotnet build to verify the changes.",
+                "timeout": 10
+            }
+        ]
+    }
+}

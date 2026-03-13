@@ -1,4 +1,3 @@
-using System;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -16,7 +15,7 @@ namespace ModernThinkPadLEDsController.Hardware.PawnIo;
 /// This code is derived from LibreHardwareMonitor (MPL-2.0 license).
 /// Original source: https://github.com/LibreHardwareMonitor/LibreHardwareMonitor
 /// </remarks>
-internal sealed class PawnIoDriver : IDisposable
+internal sealed partial class PawnIoDriver : IDisposable
 {
     private const uint DEVICE_TYPE = 41394u << 16;
     private const int FN_NAME_LENGTH = 32;
@@ -160,8 +159,8 @@ internal sealed class PawnIoDriver : IDisposable
     /// <summary>
     /// P/Invoke declarations for Windows API functions.
     /// </summary>
-    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    private static extern SafeFileHandle CreateFileW(
+    [LibraryImport("kernel32.dll", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+    private static partial SafeFileHandle CreateFileW(
         string lpFileName,
         FileAccess dwDesiredAccess,
         FileShare dwShareMode,
@@ -170,9 +169,9 @@ internal sealed class PawnIoDriver : IDisposable
         uint dwFlagsAndAttributes,
         IntPtr hTemplateFile);
 
-    [DllImport("kernel32.dll", SetLastError = true)]
+    [LibraryImport("kernel32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern unsafe bool DeviceIoControl(
+    private static unsafe partial bool DeviceIoControl(
         IntPtr hDevice,
         uint dwIoControlCode,
         void* lpInBuffer,

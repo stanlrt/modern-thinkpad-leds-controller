@@ -1,4 +1,3 @@
-using System;
 using System.Diagnostics;
 using System.IO;
 using Microsoft.Extensions.Logging;
@@ -57,7 +56,10 @@ public static class PawnIOInstaller
                     return false;
                 }
 
-                _logger.LogDebug("Extracting installer to: {TempPath}", tempPath);
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug("Extracting installer to: {TempPath}", tempPath);
+                }
 
                 using (FileStream fileStream = File.Create(tempPath))
                 {
@@ -67,7 +69,7 @@ public static class PawnIOInstaller
 
             _logger.LogInformation("Launching PawnIO installer with elevation");
 
-            ProcessStartInfo startInfo = new ProcessStartInfo
+            ProcessStartInfo startInfo = new()
             {
                 FileName = tempPath,
                 UseShellExecute = true,
@@ -82,7 +84,10 @@ public static class PawnIOInstaller
                 process.WaitForExit();
 
                 int exitCode = process.ExitCode;
-                _logger.LogInformation("Installer completed with exit code: {ExitCode}", exitCode);
+                if (_logger.IsEnabled(LogLevel.Information))
+                {
+                    _logger.LogInformation("Installer completed with exit code: {ExitCode}", exitCode);
+                }
 
                 try
                 {

@@ -143,5 +143,12 @@ dotnet_naming_style.camel_case_underscore_style.required_prefix = _
 dotnet_naming_style.camel_case_underscore_style.capitalization = camel_case
 
 # Roslynator
+dotnet_diagnostic.IDE0028.severity = warning
+dotnet_diagnostic.IDE0200.severity = warning
+dotnet_diagnostic.IDE0005.severity = warning
+dotnet_diagnostic.SYSLIB1054.severity = warning
+dotnet_diagnostic.CA1873.severity = warning
+dotnet_diagnostic.IDE0090.severity = warning
+dotnet_diagnostic.IDE0330.severity = warning
 dotnet_diagnostic.RCS1141.severity = none
 dotnet_analyzer_diagnostic.category-roslynator.severity = warning

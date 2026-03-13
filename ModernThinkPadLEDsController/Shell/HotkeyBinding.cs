@@ -7,7 +7,7 @@ namespace ModernThinkPadLEDsController.Shell;
 /// <summary>
 /// Represents a complete hotkey binding as modifier flags plus a virtual-key code.
 /// </summary>
-public sealed class HotkeyBinding
+public sealed partial class HotkeyBinding
 {
     private enum ModifierVirtualKey
     {
@@ -27,8 +27,8 @@ public sealed class HotkeyBinding
         (ModifierVirtualKey.RWin,    HotkeyModifiers.Win),
     ];
 
-    [DllImport("user32.dll")]
-    private static extern short GetKeyState(ModifierVirtualKey virtualKey);
+    [LibraryImport("user32.dll")]
+    private static partial short GetKeyState(ModifierVirtualKey virtualKey);
 
     public HotkeyModifiers Modifiers { get; set; } = AppSettingsDefaults.HOTKEY_MODIFIERS;
     public int VirtualKey { get; set; } = AppSettingsDefaults.HOTKEY_VIRTUAL_KEY;

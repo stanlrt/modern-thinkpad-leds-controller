@@ -1,6 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using System.Windows.Input;
-using ModernThinkPadLEDsController.Hardware;
 using ModernThinkPadLEDsController.Lighting;
 using ModernThinkPadLEDsController.Shell;
 
@@ -283,7 +282,7 @@ public sealed partial class MainViewModel : ObservableObject
     /// </summary>
     public string FormatHotkeyDisplay(HotkeyBinding hotkey)
     {
-        List<string> parts = new List<string>();
+        List<string> parts = [];
 
         if ((hotkey.Modifiers & HotkeyModifiers.Control) != 0)
         {

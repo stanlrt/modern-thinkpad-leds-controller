@@ -1,6 +1,5 @@
 using FluentAssertions;
 using ModernThinkPadLEDsController.Hardware;
-using ModernThinkPadLEDsController.Lighting;
 using ModernThinkPadLEDsController.Monitoring;
 using ModernThinkPadLEDsController.TestInfrastructure;
 using Xunit;

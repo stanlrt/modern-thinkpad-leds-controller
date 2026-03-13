@@ -10,18 +10,16 @@ namespace ModernThinkPadLEDsController.TestInfrastructure;
 /// </summary>
 internal sealed class FakeUiDispatcher : IUiDispatcher
 {
-    private int _dispatchCount;
-
     /// <summary>Number of times <see cref="Dispatch"/> was called.</summary>
-    public int DispatchCount => _dispatchCount;
+    public int DispatchCount { get; private set; }
 
     /// <inheritdoc />
     public void Dispatch(Action action)
     {
-        _dispatchCount++;
+        DispatchCount++;
         action();
     }
 
     /// <summary>Reset the dispatch counter.</summary>
-    public void Reset() => _dispatchCount = 0;
+    public void Reset() => DispatchCount = 0;
 }

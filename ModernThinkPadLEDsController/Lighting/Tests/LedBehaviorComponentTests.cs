@@ -1,6 +1,5 @@
 using FluentAssertions;
 using ModernThinkPadLEDsController.Hardware;
-using ModernThinkPadLEDsController.Lighting;
 using ModernThinkPadLEDsController.TestInfrastructure;
 using Xunit;
 
@@ -70,7 +69,7 @@ public sealed class LedBehaviorComponentTests
     public void ReapplyManagedStates_MixedModes_OnlyReappliesEligibleModes()
     {
         (LedBehaviorService svc, _, FakePortIO io) = Build();
-        var mappings = new Dictionary<Led, LedMapping>
+        Dictionary<Led, LedMapping> mappings = new()
         {
             [Led.Power] = new LedMapping { Mode = LedMode.On },
             [Led.Mute] = new LedMapping { Mode = LedMode.DiskRead },
@@ -97,7 +96,7 @@ public sealed class LedBehaviorComponentTests
         svc.Initialize(TestSettingsBuilder.AllMappings(LedMode.On));
 
         // Calling ApplyAll after Initialize should succeed without throwing
-        Action act = () => svc.ApplyAll();
+        Action act = svc.ApplyAll;
         act.Should().NotThrow();
     }
 
@@ -106,7 +105,7 @@ public sealed class LedBehaviorComponentTests
     {
         (LedBehaviorService svc, _, _) = Build();
 
-        Action act = () => svc.ApplyAll();
+        Action act = svc.ApplyAll;
 
         act.Should().Throw<InvalidOperationException>("Initialize must be called before use");
     }

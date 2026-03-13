@@ -166,7 +166,7 @@ public static class LoggingConfiguration
     /// <param name="level">Log level name: Verbose, Debug, Information, Warning, Error, or Fatal</param>
     public static void SetLogLevel(LogEventLevel level)
     {
-        Serilog.Core.LoggingLevelSwitch levelSwitch = new Serilog.Core.LoggingLevelSwitch(level);
+        Serilog.Core.LoggingLevelSwitch levelSwitch = new(level);
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.ControlledBy(levelSwitch)
             .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
