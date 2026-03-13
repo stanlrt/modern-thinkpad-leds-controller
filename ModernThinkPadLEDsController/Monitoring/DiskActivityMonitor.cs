@@ -83,7 +83,7 @@ public sealed class DiskActivityMonitor : ILifecycleMonitor
         Stop();
         _cts = new CancellationTokenSource();
         // Task.Run starts the loop on a .NET thread-pool thread (background thread).
-        _ = Task.Run(() => MonitorLoop(_cts.Token));
+        Task.Run(() => MonitorLoop(_cts.Token));
     }
 
     public void Stop()

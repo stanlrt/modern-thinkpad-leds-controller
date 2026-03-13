@@ -35,7 +35,7 @@ public sealed class SpeakerMuteMonitor : ILifecycleMonitor
         _lastState = QueryMuted();
 
         _cts = new CancellationTokenSource();
-        _ = Task.Run(() => PollLoop(_cts.Token));
+        Task.Run(() => PollLoop(_cts.Token));
     }
 
     public void Stop()

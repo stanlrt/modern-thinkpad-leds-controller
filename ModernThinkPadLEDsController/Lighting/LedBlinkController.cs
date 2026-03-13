@@ -34,7 +34,7 @@ public sealed class LedBlinkController : ILedBlinkController
     {
         Stop(); // Stop any existing blink loop
         _cts = new CancellationTokenSource();
-        _ = Task.Run(() => BlinkLoop(_cts.Token));
+        Task.Run(() => BlinkLoop(_cts.Token));
     }
 
     public void Stop()

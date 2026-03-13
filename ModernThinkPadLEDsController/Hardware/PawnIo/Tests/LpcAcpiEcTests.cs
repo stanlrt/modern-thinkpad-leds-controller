@@ -26,7 +26,7 @@ public sealed class LpcAcpiEcTests
         LpcAcpiEc ec = new();
 
         // Act & Assert - Main goal: ensure property doesn't throw
-        ec.Invoking(e => _ = e.IsLoaded).Should().NotThrow();
+        ec.Invoking(e => e.IsLoaded).Should().NotThrow();
     }
 
     [Fact]

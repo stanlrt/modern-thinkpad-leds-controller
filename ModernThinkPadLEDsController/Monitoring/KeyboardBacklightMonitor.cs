@@ -33,7 +33,7 @@ public sealed class KeyboardBacklightMonitor : ILifecycleMonitor
             _history.Enqueue(initialLevel);
         }
 
-        _ = Task.Run(() => PollLoop(_cts.Token));
+        Task.Run(() => PollLoop(_cts.Token));
     }
 
     public void Stop()
