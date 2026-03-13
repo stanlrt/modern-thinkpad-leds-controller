@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   checks:
-    name: ci pipeline
+    name: Full pipeline
     runs-on: windows-latest
     env:
       NUGET_PACKAGES: ${{ github.workspace }}\.nuget\packages
@@ -42,7 +42,7 @@ jobs:
             const response = await github.rest.checks.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              name: "dotnet format + build (analyzers)",
+              name: "Formatting & linting",
               head_sha: context.sha,
               status: "in_progress",
               output: {
@@ -110,7 +110,7 @@ jobs:
             const response = await github.rest.checks.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              name: "dotnet test (unit & component)",
+              name: "Tests (unit & component)",
               head_sha: context.sha,
               status: "in_progress",
               output: {
