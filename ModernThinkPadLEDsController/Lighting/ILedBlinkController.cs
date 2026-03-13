@@ -11,4 +11,5 @@ internal interface ILedBlinkController : IDisposable
     void Pause();
     void Resume();
     void SetBlinkInterval(int intervalMs);
+    Task BlinkLedFor(Led led, int durationMs);
 }

@@ -30,4 +30,6 @@ internal sealed class FakeLedBlinkController : ILedBlinkController
     public void SetBlinkInterval(int intervalMs) { }
 
     public void Dispose() { }
+
+    public Task BlinkLedFor(Led led, int durationMs) => Task.CompletedTask;
 }

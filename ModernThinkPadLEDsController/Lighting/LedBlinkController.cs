@@ -5,22 +5,16 @@ namespace ModernThinkPadLEDsController.Lighting;
 /// <summary>
 /// Tracks which LEDs are in Blink mode and actively toggles them
 /// </summary>
-public sealed class LedBlinkController : ILedBlinkController
+public sealed class LedBlinkController(LedController leds, int blinkIntervalMs = 500) : ILedBlinkController
 {
-    private readonly LedController _leds;
+    private readonly LedController _leds = leds;
     private readonly Dictionary<Led, byte?> _blinkingLeds = [];
     private readonly Lock _lock = new();
 
     private CancellationTokenSource? _cts;
     private bool _currentState;
     private bool _isPaused;
-    private int _blinkIntervalMs;
-
-    public LedBlinkController(LedController leds, int blinkIntervalMs = 500)
-    {
-        _leds = leds;
-        _blinkIntervalMs = blinkIntervalMs;
-    }
+    private int _blinkIntervalMs = blinkIntervalMs;
 
     /// <summary>
     /// Update the blink interval dynamically
@@ -109,6 +103,21 @@ public sealed class LedBlinkController : ILedBlinkController
         lock (_lock)
         {
             _isPaused = false;
+        }
+    }
+
+    public async Task BlinkLedFor(Led led, int durationMs)
+    {
+        AddBlinkingLed(led, null);
+        Start();
+        try
+        {
+            await Task.Delay(durationMs);
+        }
+        finally
+        {
+            RemoveBlinkingLed(led);
+            Stop();
         }
     }
 
