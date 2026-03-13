@@ -9,9 +9,13 @@ on:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
+permissions:
+  contents: read
+  checks: write
+
 jobs:
-  prepare:
-    name: restore dependencies
+  checks:
+    name: ci pipeline
     runs-on: windows-latest
     env:
       NUGET_PACKAGES: ${{ github.workspace }}\.nuget\packages
@@ -30,39 +34,27 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore ModernThinkPadLEDsController.Tests/ModernThinkPadLEDsController.Tests.csproj
 
-      - name: Upload restored state
-        uses: actions/upload-artifact@v4
+      - name: Start lint check
+        id: lint_check_start
+        uses: actions/github-script@v7
         with:
-          name: restored-state
-          path: |
-            .nuget/packages
-            ModernThinkPadLEDsController/obj
-            ModernThinkPadLEDsController.Tests/obj
-          if-no-files-found: error
-          compression-level: 0
-
-  lint:
-    name: dotnet format + build (analyzers)
-    runs-on: windows-latest
-    needs: prepare
-    env:
-      NUGET_PACKAGES: ${{ github.workspace }}\.nuget\packages
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: "10.0.103"
-
-      - name: Download restored state
-        uses: actions/download-artifact@v4
-        with:
-          name: restored-state
-          path: ${{ github.workspace }}
+          script: |
+            const response = await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: "dotnet format + build (analyzers)",
+              head_sha: context.sha,
+              status: "in_progress",
+              output: {
+                title: "Lint started",
+                summary: "Running dotnet format and analyzer-enforced build."
+              }
+            });
+            core.setOutput("check_run_id", String(response.data.id));
 
       - name: Check formatting (dotnet format)
+        id: lint_run
+        continue-on-error: true
         # Fails if any file deviates from .editorconfig rules.
         # Remove --verify-no-changes locally to auto-fix instead.
         run: >
@@ -72,6 +64,8 @@ jobs:
           --verbosity diagnostic
 
       - name: Lint (build with analyzer warnings as errors)
+        id: lint_build
+        continue-on-error: true
         # Roslyn analyzers run as part of the build; /warnaserror promotes
         # every analyzer warning to an error so the step fails on violations.
         run: >
@@ -80,28 +74,56 @@ jobs:
           --configuration Release
           /warnaserror
 
-  test:
-    name: dotnet test (unit & component)
-    runs-on: windows-latest
-    needs: prepare
-    env:
-      NUGET_PACKAGES: ${{ github.workspace }}\.nuget\packages
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+      - name: Complete lint check
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          CHECK_RUN_ID: ${{ steps.lint_check_start.outputs.check_run_id }}
+          LINT_FORMAT_OUTCOME: ${{ steps.lint_run.outcome }}
+          LINT_BUILD_OUTCOME: ${{ steps.lint_build.outcome }}
         with:
-          dotnet-version: "10.0.103"
+          script: |
+            const formatOutcome = process.env.LINT_FORMAT_OUTCOME;
+            const buildOutcome = process.env.LINT_BUILD_OUTCOME;
+            const isSuccess = formatOutcome === "success" && buildOutcome === "success";
 
-      - name: Download restored state
-        uses: actions/download-artifact@v4
+            await github.rest.checks.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              check_run_id: Number(process.env.CHECK_RUN_ID),
+              status: "completed",
+              conclusion: isSuccess ? "success" : "failure",
+              output: {
+                title: "Lint completed",
+                summary: isSuccess
+                  ? "Formatting and analyzer build passed."
+                  : `Formatting outcome: ${formatOutcome}; build outcome: ${buildOutcome}.`
+              }
+            });
+
+      - name: Start test check
+        id: test_check_start
+        if: always()
+        uses: actions/github-script@v7
         with:
-          name: restored-state
-          path: ${{ github.workspace }}
+          script: |
+            const response = await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: "dotnet test (unit & component)",
+              head_sha: context.sha,
+              status: "in_progress",
+              output: {
+                title: "Tests started",
+                summary: "Running unit and component tests."
+              }
+            });
+            core.setOutput("check_run_id", String(response.data.id));
 
       - name: Run tests
+        id: test_run
+        if: ${{ steps.lint_run.outcome == 'success' && steps.lint_build.outcome == 'success' }}
+        continue-on-error: true
         run: >
           dotnet test ModernThinkPadLEDsController.Tests/ModernThinkPadLEDsController.Tests.csproj
           --no-restore
@@ -109,9 +131,61 @@ jobs:
           --logger "trx;LogFileName=test-results.trx"
           --collect:"XPlat Code Coverage"
 
-      - name: Upload test results
+      - name: Complete test check
         if: always()
+        uses: actions/github-script@v7
+        env:
+          CHECK_RUN_ID: ${{ steps.test_check_start.outputs.check_run_id }}
+          LINT_FORMAT_OUTCOME: ${{ steps.lint_run.outcome }}
+          LINT_BUILD_OUTCOME: ${{ steps.lint_build.outcome }}
+          TEST_OUTCOME: ${{ steps.test_run.outcome }}
+        with:
+          script: |
+            const lintPassed =
+              process.env.LINT_FORMAT_OUTCOME === "success" &&
+              process.env.LINT_BUILD_OUTCOME === "success";
+            const testOutcome = process.env.TEST_OUTCOME;
+
+            let conclusion = "skipped";
+            let summary = "Skipped because lint/build failed.";
+
+            if (lintPassed) {
+              const testPassed = testOutcome === "success";
+              conclusion = testPassed ? "success" : "failure";
+              summary = testPassed
+                ? "All unit and component tests passed."
+                : `Test outcome: ${testOutcome}.`;
+            }
+
+            await github.rest.checks.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              check_run_id: Number(process.env.CHECK_RUN_ID),
+              status: "completed",
+              conclusion,
+              output: {
+                title: "Tests completed",
+                summary
+              }
+            });
+
+      - name: Upload test results
+        if: ${{ always() && steps.test_run.outcome != 'skipped' }}
         uses: actions/upload-artifact@v4
         with:
           name: test-results
           path: "**/*.trx"
+
+      - name: Fail workflow if lint or tests failed
+        if: always()
+        shell: pwsh
+        run: |
+          if ("${{ steps.lint_run.outcome }}" -ne "success" -or "${{ steps.lint_build.outcome }}" -ne "success") {
+            Write-Error "Lint failed."
+            exit 1
+          }
+
+          if ("${{ steps.test_run.outcome }}" -ne "success") {
+            Write-Error "Tests failed or were skipped."
+            exit 1
+          }
